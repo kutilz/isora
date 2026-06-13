@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#0a0c10" />
+  <title>AuralAI — Data Collection</title>
+  <style>
+    /* ══ RESET & BASE ══════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0a0c10;
+      --bg2:      #111318;
+      --bg3:      #181b22;
+      --border:   #2a2e38;
+      --accent:   #00d4aa;
+      --orange:   #f59e0b;
+      --green:    #22c55e;
+      --red:      #ef4444;
+      --yellow:   #eab308;
+      --purple:   #a855f7;
+      --text:     #e2e8f0;
+      --text2:    #94a3b8;
+      --text3:    #8294a8; /* was #64748b — bumped for WCAG 4.5:1 */
+      --font:     'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+      --r:        12px;
+      --safe-top: env(safe-area-inset-top, 0px);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 14px;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      -webkit-tap-highlight-color: transparent;
+      padding-top: var(--safe-top);
+    }
+
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-track { background: var(--bg2); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ══ HEADER ════════════════════════════════════════════════ */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon { font-size: 20px; color: var(--accent); }
+    .logo-text { font-size: 15px; font-weight: 700; letter-spacing: 0.5px; }
+    .logo-sub  { color: var(--text3); font-size: 11px; font-weight: 400; }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 11px;
+      color: var(--text3);
+      background: var(--bg3);
+    }
+
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--text3); transition: all 0.3s;
+    }
+    .status-dot.live    { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 1.5s infinite; }
+    .status-dot.stopped { background: var(--text3); }
+    .status-dot.error   { background: var(--red); }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    /* ══ CAMERA PREVIEW ════════════════════════════════════════ */
+    .camera-section {
+      background: #000;
+      position: relative;
+      width: 100%;
+      /* Maintain 4:3 aspect ratio for the camera */
+      aspect-ratio: 4 / 3;
+      max-height: 50dvh;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    #cameraImg {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: opacity 0.1s;
+    }
+
+    .cam-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    /* Frame counter overlay */
+    .cam-frame-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.65);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 11px;
+      color: var(--accent);
+      backdrop-filter: blur(4px);
+    }
+
+    /* Flash effect on capture */
+    .cam-flash {
+      position: absolute;
+      inset: 0;
+      background: white;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.05s;
+    }
+
+    /* Corner brackets (QRIS style) */
+    .cam-corners {
+      position: absolute;
+      inset: 16px;
+      pointer-events: none;
+    }
+    .cam-corners::before, .cam-corners::after,
+    .cam-corners .corner-br, .cam-corners .corner-bl {
+      content: '';
+      position: absolute;
+      width: 20px; height: 20px;
+      border-color: var(--accent);
+      border-style: solid;
+      opacity: 0.6;
+    }
+    .cam-corners::before { top:0; left:0; border-width: 2px 0 0 2px; }
+    .cam-corners::after  { top:0; right:0; border-width: 2px 2px 0 0; }
+    .cam-corners .corner-br { bottom:0; right:0; border-width: 0 2px 2px 0; }
+    .cam-corners .corner-bl { bottom:0; left:0; border-width: 0 0 2px 2px; }
+
+    /* Scanning line animation when capturing */
+    .cam-scanline {
+      position: absolute;
+      left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      animation: scan 2s linear infinite;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .cam-scanline.active { opacity: 0.5; }
+    @keyframes scan { 0%{top:0} 100%{top:100%} }
+
+    /* Disconnected overlay */
+    .cam-disconnected {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.8);
+      gap: 8px;
+      display: none;
+    }
+    .cam-disconnected.show { display: flex; }
+    .cam-disconnected-icon { font-size: 36px; opacity: 0.5; }
+    .cam-disconnected-text { font-size: 12px; color: var(--text3); }
+
+    /* ══ STATS ROW ══════════════════════════════════════════════ */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .stat-cell {
+      background: var(--bg2);
+      padding: 10px 8px;
+      text-align: center;
+    }
+
+    .stat-num {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat-num.orange { color: var(--orange); }
+    .stat-num.green  { color: var(--green); }
+    .stat-num.red    { color: var(--red); }
+
+    .stat-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text3);
+      margin-top: 3px;
+    }
+
+    /* ══ CONTROLS ════════════════════════════════════════════════ */
+    .controls {
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .main-btn {
+      width: 100%;
+      padding: 18px;
+      border: 2px solid;
+      border-radius: var(--r);
+      font-family: var(--font);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .btn-start {
+      background: rgba(34,197,94,0.12);
+      border-color: var(--green);
+      color: var(--green);
+    }
+    .btn-start:active { background: rgba(34,197,94,0.25); transform: scale(0.98); }
+
+    .btn-stop {
+      background: rgba(239,68,68,0.12);
+      border-color: var(--red);
+      color: var(--red);
+    }
+    .btn-stop:active { background: rgba(239,68,68,0.25); transform: scale(0.98); }
+
+    /* ── Settings row ── */
+    .settings-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .setting-group {
+      flex: 1;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 10px 12px;
+    }
+
+    .setting-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text3);
+      margin-bottom: 6px;
+    }
+
+    .setting-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .setting-val {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--orange);
+      min-width: 40px;
+      text-align: center;
+    }
+
+    .setting-btn {
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg3);
+      color: var(--text);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.1s;
+      flex-shrink: 0;
+    }
+    .setting-btn:active { background: var(--border); transform: scale(0.93); }
+
+    /* ══ STORAGE BAR ════════════════════════════════════════════ */
+    .storage-bar-wrap {
+      padding: 0 16px 10px;
+      flex-shrink: 0;
+    }
+
+    .storage-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--text3);
+      margin-bottom: 5px;
+    }
+
+    .storage-bar {
+      height: 4px;
+      background: var(--bg3);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .storage-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--green), var(--orange));
+      border-radius: 2px;
+      transition: width 0.5s ease;
+    }
+
+    .storage-fill.critical { background: var(--red); }
+
+    /* ══ GALLERY ════════════════════════════════════════════════ */
+    .gallery-section {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border-top: 1px solid var(--border);
+    }
+
+    .gallery-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .gallery-title {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text3);
+    }
+
+    .gallery-count {
+      font-size: 11px;
+      color: var(--accent);
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      padding: 2px;
+      overflow-y: auto;
+      flex: 1;
+      background: var(--border);
+    }
+
+    .gallery-thumb {
+      aspect-ratio: 4/3;
+      background: var(--bg3);
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .gallery-thumb:active { opacity: 0.7; }
+
+    .gallery-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .gallery-thumb-num {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      background: rgba(0,0,0,0.6);
+      color: var(--text2);
+      font-size: 9px;
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    .gallery-empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      color: var(--text3);
+      padding: 40px 20px;
+      font-size: 12px;
+      background: var(--bg);
+    }
+
+    /* ══ FULLSCREEN VIEWER ══════════════════════════════════════ */
+    .viewer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.95);
+      z-index: 100;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .viewer-overlay.open { display: flex; }
+
+    .viewer-img {
+      max-width: 100%;
+      max-height: 80dvh;
+      object-fit: contain;
+    }
+
+    .viewer-meta {
+      color: var(--text3);
+      font-size: 11px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .viewer-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 36px;
+      height: 36px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      color: var(--text);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ══ TOAST ══════════════════════════════════════════════════ */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 8px 18px;
+      font-size: 12px;
+      color: var(--text);
+      z-index: 200;
+      transition: transform 0.3s ease;
+      white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.ok   { border-color: var(--green); color: var(--green); }
+    .toast.err  { border-color: var(--red);   color: var(--red); }
+
+    /* ══ FOCUS VISIBLE (WCAG 2.4.7) ════════════════════════════ */
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* ══ GALLERY THUMB keyboard focus ══════════════════════════ */
+    .gallery-thumb [role="button"]:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+    /* ══ RESPONSIVE: bigger screens ════════════════════════════ */
+    @media (min-width: 480px) {
+      .camera-section { max-height: 60dvh; }
+      .gallery-grid   { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    /* ══ MODE AMBIL DATA — hero toggle (non-technical first) ═════ */
+    .mode-hero {
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg2);
+    }
+    .mode-hero-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .mode-hero-icon { font-size: 30px; line-height: 1; }
+    .mode-hero-title {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      line-height: 1.3;
+    }
+    .mode-hero-state {
+      margin-left: auto;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 20px;
+      letter-spacing: 1px;
+      white-space: nowrap;
+      border: 1px solid var(--border);
+      color: var(--text3);
+      background: var(--bg3);
+    }
+    .mode-hero-state.on {
+      color: #04110d;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .mode-desc {
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: var(--text2);
+    }
+    /* The one big switch a non-technical helper presses. */
+    .mode-toggle-btn {
+      width: 100%;
+      padding: 20px;
+      border: none;
+      border-radius: var(--r);
+      font-family: var(--font);
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: transform 0.12s, filter 0.12s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 60px;
+    }
+    .mode-toggle-btn:active { transform: scale(0.985); }
+    .mode-toggle-btn.is-off {
+      background: var(--accent);
+      color: #04110d;
+    }
+    .mode-toggle-btn.is-on {
+      background: rgba(239,68,68,0.12);
+      color: var(--red);
+      border: 2px solid var(--red);
+    }
+    .mode-toggle-btn:disabled { opacity: 0.5; cursor: default; }
+
+    /* Recording banner shown while the mode is active */
+    .rec-banner {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: rgba(0,212,170,0.08);
+      border-bottom: 1px solid var(--border);
+    }
+    .rec-banner.paused { background: rgba(245,158,11,0.08); }
+    .rec-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      background: var(--red);
+      box-shadow: 0 0 10px var(--red);
+      animation: pulse 1.3s infinite;
+      flex-shrink: 0;
+    }
+    .rec-banner.paused .rec-dot { background: var(--orange); box-shadow: none; animation: none; }
+    .rec-text { font-size: 14px; font-weight: 700; }
+    .rec-sub  { font-size: 11px; color: var(--text3); margin-top: 2px; }
+    .rec-count {
+      margin-left: auto;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Whole technical workspace is hidden until the mode is on */
+    #workspace { display: none; }
+    body.mode-on #workspace { display: block; }
+    body.mode-on .mode-intro { display: none; }
+
+    /* Advanced settings collapsed by default for non-technical helpers */
+    .advanced summary {
+      cursor: pointer;
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text3);
+      padding: 4px 0;
+      list-style: none;
+    }
+    .advanced summary::-webkit-details-marker { display: none; }
+    .advanced summary::before { content: '⚙ '; }
+  </style>
+</head>
+<body>
+
+  <!-- ── HEADER ──────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header-left">
+      <span class="logo-icon" aria-hidden="true">◉</span>
+      <div>
+        <span class="logo-text">AuralAI <span class="logo-sub">Data Collection</span></span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <!-- WCAG Badge -->
+      <div style="display:inline-flex;align-items:center;gap:5px;padding:3px 8px 3px 10px;background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.3);border-radius:12px;font-size:10px;color:#00d4aa;white-space:nowrap;position:relative;" role="complementary" aria-label="Informasi aksesibilitas">
+        <span style="font-weight:700;letter-spacing:0.5px;">WCAG 2.1 AA</span>
+        <button onclick="this.setAttribute('aria-expanded',this.getAttribute('aria-expanded')==='true'?'false':'true')"
+                aria-label="Detail standar aksesibilitas"
+                style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid currentColor;font-size:9px;font-weight:700;background:transparent;color:inherit;cursor:pointer;font-family:inherit;padding:0;line-height:1;">i</button>
+      </div>
+      <button id="btnDownloadZip" onclick="downloadZip()" aria-label="Download semua foto sebagai file ZIP"
+              style="display:none;background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.5);
+                     border-radius:8px;color:#a855f7;font-family:inherit;font-size:11px;
+                     padding:5px 10px;cursor:pointer;white-space:nowrap;">
+        <span aria-hidden="true">⬇</span> Download ZIP
+      </button>
+      <div class="status-pill" aria-live="polite" aria-label="Status koneksi">
+        <span class="status-dot stopped" id="statusDot" aria-hidden="true"></span>
+        <span id="statusText">Offline</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── MODE AMBIL DATA — hero toggle (primary control) ─────── -->
+  <section class="mode-hero" aria-labelledby="modeHeroTitle">
+    <div class="mode-hero-top">
+      <span class="mode-hero-icon" aria-hidden="true">📷</span>
+      <span class="mode-hero-title" id="modeHeroTitle">Mode Ambil Data</span>
+      <span class="mode-hero-state" id="modeState" aria-live="polite">MATI</span>
+    </div>
+    <p class="mode-desc" id="modeDesc">
+      Saat dinyalakan, alat akan fokus memotret terus-menerus untuk
+      mengumpulkan data. Fitur bantu suara untuk tunanetra dimatikan sementara.
+      Cukup nyalakan, lalu bawa alatnya jalan-jalan.
+    </p>
+    <button class="mode-toggle-btn is-off" id="modeToggleBtn"
+            onclick="toggleMode()" aria-pressed="false"
+            aria-label="Nyalakan atau matikan Mode Ambil Data">
+      <span id="modeToggleText">▶  Nyalakan Mode Ambil Data</span>
+    </button>
+  </section>
+
+  <!-- Friendly hint shown only when the mode is OFF -->
+  <div class="mode-intro" style="padding:18px 16px;color:var(--text3);font-size:13px;line-height:1.6;text-align:center;">
+    Mode ambil data sedang <strong>mati</strong>.<br/>
+    Tekan tombol hijau di atas untuk mulai mengumpulkan foto.
+  </div>
+
+  <!-- ── WORKSPACE (visible only while Mode Ambil Data is ON) ─── -->
+  <main id="workspace">
+
+  <!-- Recording status banner -->
+  <div class="rec-banner" id="recBanner" role="status" aria-live="polite">
+    <span class="rec-dot" id="recDot" aria-hidden="true"></span>
+    <div>
+      <div class="rec-text" id="recText">Sedang merekam</div>
+      <div class="rec-sub" id="recSub">Foto tersimpan otomatis di alat</div>
+    </div>
+    <div class="rec-count" id="recCount" aria-label="Jumlah foto">0</div>
+  </div>
+
+  <!-- ── CAMERA PREVIEW ──────────────────────────────────────── -->
+  <div class="camera-section">
+    <img id="cameraImg" src="" alt="Camera Feed" />
+
+    <div class="cam-overlay">
+      <div class="cam-corners">
+        <span class="corner-br"></span>
+        <span class="corner-bl"></span>
+      </div>
+      <div class="cam-scanline" id="scanline"></div>
+      <div class="cam-frame-badge" id="frameBadge">#0</div>
+    </div>
+
+    <div class="cam-flash" id="camFlash"></div>
+
+    <div class="cam-disconnected" id="camDisconnected">
+      <div class="cam-disconnected-icon">📷</div>
+      <div class="cam-disconnected-text">Menunggu koneksi ke MaixCAM...</div>
+    </div>
+  </div>
+
+  <!-- ── STATS ROW ───────────────────────────────────────────── -->
+  <div class="stats-row" role="region" aria-label="Statistik capture">
+    <div class="stat-cell">
+      <div class="stat-num green" id="statCount" aria-live="polite" aria-label="Jumlah foto">0</div>
+      <div class="stat-label" aria-hidden="true">Foto</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num orange" id="statElapsed" aria-live="polite" aria-label="Waktu berjalan">0:00</div>
+      <div class="stat-label" aria-hidden="true">Waktu</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num" id="statInterval" aria-live="polite" aria-label="Interval capture">1.0s</div>
+      <div class="stat-label" aria-hidden="true">Interval</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num" id="statFree" aria-live="polite" aria-label="Ruang bebas megabyte">—</div>
+      <div class="stat-label" aria-hidden="true">Free MB</div>
+    </div>
+  </div>
+
+  <!-- ── CONTROLS ─────────────────────────────────────────────── -->
+  <div class="controls">
+    <!-- Pause / resume capture without leaving the mode -->
+    <button class="main-btn btn-stop" id="mainBtn" onclick="toggleCapture()" aria-label="Jeda atau lanjutkan pemotretan">
+      <span id="mainBtnIcon" aria-hidden="true">⏸</span>
+      <span id="mainBtnText">Jeda Sebentar</span>
+    </button>
+
+    <!-- Advanced settings — collapsed; non-technical helpers can ignore -->
+    <details class="advanced">
+      <summary>Pengaturan lanjutan</summary>
+      <div class="settings-row" style="margin-top:10px;">
+        <div class="setting-group" role="group" aria-labelledby="intervalLabel">
+          <div class="setting-label" id="intervalLabel">Jeda antar foto (detik)</div>
+          <div class="setting-control">
+            <button class="setting-btn" onclick="adjustInterval(-0.5)" aria-label="Kurangi interval capture">−</button>
+            <div class="setting-val" id="intervalDisplay" aria-live="polite" aria-atomic="true">1.0</div>
+            <button class="setting-btn" onclick="adjustInterval(+0.5)" aria-label="Tambah interval capture">+</button>
+          </div>
+        </div>
+        <div class="setting-group" role="group" aria-labelledby="qualityLabel">
+          <div class="setting-label" id="qualityLabel">Kualitas foto</div>
+          <div class="setting-control">
+            <button class="setting-btn" onclick="adjustQuality(-5)" aria-label="Kurangi kualitas JPEG">−</button>
+            <div class="setting-val" id="qualityDisplay" aria-live="polite" aria-atomic="true">85</div>
+            <button class="setting-btn" onclick="adjustQuality(+5)" aria-label="Tambah kualitas JPEG">+</button>
+          </div>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- ── STORAGE BAR ─────────────────────────────────────────── -->
+  <div class="storage-bar-wrap">
+    <div class="storage-header">
+      <span>Penyimpanan</span>
+      <span id="storageLabel">— MB tersisa</span>
+    </div>
+    <div class="storage-bar">
+      <div class="storage-fill" id="storageFill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- ── GALLERY ─────────────────────────────────────────────── -->
+  <div class="gallery-section" role="region" aria-labelledby="galleryHeading">
+    <div class="gallery-header">
+      <span class="gallery-title" id="galleryHeading">Foto Terbaru</span>
+      <span class="gallery-count" id="galleryCount" aria-live="polite">0 foto</span>
+    </div>
+    <div class="gallery-grid" id="galleryGrid" role="list" aria-label="Galeri foto yang telah diambil">
+      <div class="gallery-empty">Foto akan muncul di sini setelah capture dimulai</div>
+    </div>
+  </div>
+
+  </main>
+  <!-- ── end #workspace ──────────────────────────────────────── -->
+
+  <!-- ── FULLSCREEN VIEWER ──────────────────────────────────── -->
+  <div class="viewer-overlay" id="viewerOverlay" role="dialog" aria-modal="true" aria-labelledby="viewerMeta" onclick="closeViewer(event)">
+    <button class="viewer-close" onclick="closeViewer()" aria-label="Tutup tampilan foto fullscreen">✕</button>
+    <img class="viewer-img" id="viewerImg" src="" alt="Foto yang dipilih dari galeri" />
+    <div class="viewer-meta" id="viewerMeta" aria-live="polite"></div>
+    <button id="btnDeletePhoto" onclick="deleteCurrentPhoto()" aria-label="Hapus foto ini dari perangkat"
+            style="margin-top:8px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.5);
+                   border-radius:8px;color:#ef4444;font-family:inherit;font-size:13px;
+                   padding:8px 20px;cursor:pointer;">
+      <span aria-hidden="true">🗑</span> Hapus Foto Ini
+    </button>
+  </div>
+
+  <!-- ── TOAST ─────────────────────────────────────────────── -->
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════════════
+const BASE_URL        = '';    // Empty = same host (MaixCAM IP)
+const PREVIEW_INTERVAL= 800;   // ms antar refresh kamera
+const STATUS_INTERVAL = 2000;  // ms antar poll status
+const GALLERY_INTERVAL= 3000;  // ms antar refresh gallery
+
+// ══════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════
+let state = {
+  mode:         false,  // Mode Ambil Data on/off (persistent on device)
+  running:      false,
+  connected:    false,
+  intervalS:    1.0,
+  quality:      85,
+  captureCount: 0,
+  startTime:    null,
+  freeMb:       null,
+  totalMb:      null,
+  gallery:      [],
+  _viewerFile:  null,   // filename currently open in viewer
+  _modeBusy:    false,  // debounce while a mode toggle is in flight
+};
+
+// ══════════════════════════════════════════════════════════════
+// CAMERA PREVIEW
+// ══════════════════════════════════════════════════════════════
+let _previewErrors = 0;
+
+function refreshPreview() {
+  const img = document.getElementById('cameraImg');
+  const url = `${BASE_URL}/snapshot?t=${Date.now()}`;
+  const tmp = new Image();
+  tmp.onload = () => {
+    img.src = tmp.src;
+    _previewErrors = 0;
+    document.getElementById('camDisconnected').classList.remove('show');
+    if (!state.connected) {
+      state.connected = true;
+      setStatus('live', 'Connected');
+    }
+  };
+  tmp.onerror = () => {
+    _previewErrors++;
+    if (_previewErrors >= 3) {
+      document.getElementById('camDisconnected').classList.add('show');
+      state.connected = false;
+      setStatus('error', 'Disconnected');
+    }
+  };
+  tmp.src = url;
+  setTimeout(refreshPreview, PREVIEW_INTERVAL);
+}
+
+// Flash saat capture
+function triggerFlash() {
+  const f = document.getElementById('camFlash');
+  f.style.opacity = '0.8';
+  setTimeout(() => { f.style.opacity = '0'; }, 100);
+}
+
+// ══════════════════════════════════════════════════════════════
+// STATUS POLLING
+// ══════════════════════════════════════════════════════════════
+async function pollStatus() {
+  try {
+    const res  = await fetch(`${BASE_URL}/collect/status`);
+    const data = await res.json();
+
+    state.running      = data.running;
+    state.captureCount = data.capture_count || 0;
+    state.freeMb       = data.free_space_mb;
+    state.totalMb      = data.total_space_mb || state.totalMb;
+    state.intervalS    = data.interval_s   || state.intervalS;
+    state.quality      = data.quality      || state.quality;
+
+    // Mode is owned by the device (persists across reboot); trust it unless we
+    // have an in-flight toggle we haven't seen reflected yet.
+    if (!state._modeBusy && typeof data.data_collection_mode === 'boolean') {
+      state.mode = data.data_collection_mode;
+    }
+
+    if (data.running && !state.startTime) {
+      state.startTime = Date.now() - (data.elapsed_s * 1000);
+    } else if (!data.running) {
+      state.startTime = null;
+    }
+
+    applyModeUI();
+    updateUI();
+  } catch (e) {
+    /* silently ignore — preview errors handle disconnect */
+  }
+  setTimeout(pollStatus, STATUS_INTERVAL);
+}
+
+// ══════════════════════════════════════════════════════════════
+// GALLERY POLLING
+// ══════════════════════════════════════════════════════════════
+let _galleryLastCount = 0;
+
+async function pollGallery() {
+  try {
+    const res  = await fetch(`${BASE_URL}/collect/gallery`);
+    const data = await res.json();
+    const photos = data.photos || [];
+
+    if (photos.length !== _galleryLastCount) {
+      _galleryLastCount = photos.length;
+      state.gallery     = photos;
+      renderGallery();
+      if (photos.length > 0 && state.running) triggerFlash();
+    }
+  } catch {}
+  setTimeout(pollGallery, GALLERY_INTERVAL);
+}
+
+function renderGallery() {
+  const grid  = document.getElementById('galleryGrid');
+  const count = document.getElementById('galleryCount');
+
+  count.textContent = `${state.gallery.length} foto`;
+  document.getElementById('btnDownloadZip').style.display =
+    state.gallery.length > 0 ? '' : 'none';
+
+  if (state.gallery.length === 0) {
+    grid.innerHTML = '<div class="gallery-empty">Foto akan muncul di sini setelah capture dimulai</div>';
+    return;
+  }
+
+  // Show newest first
+  const sorted = [...state.gallery].reverse();
+  grid.innerHTML = sorted.map((p, i) => `
+    <div class="gallery-thumb" role="listitem">
+      <div role="button" tabindex="0"
+           aria-label="Foto nomor ${p.frame_num}, diambil ${p.timestamp}, ukuran ${(p.size_kb||0).toFixed(1)} KB. Tekan Enter untuk lihat penuh"
+           onclick="openViewer('${p.filename}','${p.timestamp}','${(p.size_kb||0).toFixed(1)}')"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openViewer('${p.filename}','${p.timestamp}','${(p.size_kb||0).toFixed(1)}')}"
+           style="display:contents;cursor:pointer;">
+        <img src="${BASE_URL}/collect/photo/${p.filename}" loading="lazy" alt="Foto nomor ${p.frame_num}" />
+        <div class="gallery-thumb-num" aria-hidden="true">#${p.frame_num}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// UI UPDATES
+// ══════════════════════════════════════════════════════════════
+function updateUI() {
+  // Stats
+  document.getElementById('statCount').textContent    = state.captureCount.toLocaleString('id');
+  document.getElementById('statInterval').textContent = `${state.intervalS.toFixed(1)}s`;
+  document.getElementById('intervalDisplay').textContent = state.intervalS.toFixed(1);
+  document.getElementById('qualityDisplay').textContent  = state.quality;
+
+  // Elapsed
+  if (state.startTime && state.running) {
+    const elapsedS  = Math.floor((Date.now() - state.startTime) / 1000);
+    const min = Math.floor(elapsedS / 60);
+    const sec = elapsedS % 60;
+    document.getElementById('statElapsed').textContent = `${min}:${sec.toString().padStart(2,'0')}`;
+  } else {
+    document.getElementById('statElapsed').textContent = '0:00';
+  }
+
+  // Free space + storage bar
+  if (state.freeMb !== null) {
+    const totalMb = state.totalMb || 0;
+    document.getElementById('statFree').textContent = state.freeMb;
+    document.getElementById('storageLabel').textContent =
+      totalMb > 0
+        ? `${state.freeMb} / ${totalMb} MB tersisa`
+        : `${state.freeMb} MB tersisa`;
+
+    const usedPct = totalMb > 0
+      ? Math.min(100, Math.max(0, (totalMb - state.freeMb) / totalMb * 100))
+      : 0;
+    const fill = document.getElementById('storageFill');
+    fill.style.width = usedPct + '%';
+    fill.classList.toggle('critical', state.freeMb < 100);
+
+    const freeEl = document.getElementById('statFree');
+    freeEl.className = 'stat-num' + (state.freeMb < 100 ? ' red' : state.freeMb < 200 ? ' orange' : '');
+  }
+
+  // Frame badge
+  document.getElementById('frameBadge').textContent = `#${state.captureCount}`;
+
+  // Scanline
+  document.getElementById('scanline').classList.toggle('active', state.running);
+
+  // Pause / resume button (within the mode — does not exit Mode Ambil Data)
+  const btn    = document.getElementById('mainBtn');
+  const icon   = document.getElementById('mainBtnIcon');
+  const label  = document.getElementById('mainBtnText');
+  if (state.running) {
+    btn.className   = 'main-btn btn-stop';
+    icon.textContent= '⏸';
+    label.textContent = 'Jeda Sebentar';
+  } else {
+    btn.className   = 'main-btn btn-start';
+    icon.textContent= '▶';
+    label.textContent = 'Lanjutkan Merekam';
+  }
+}
+
+function setStatus(type, text) {
+  document.getElementById('statusDot').className  = `status-dot ${type}`;
+  document.getElementById('statusText').textContent = text;
+}
+
+// ══════════════════════════════════════════════════════════════
+// MODE AMBIL DATA (the one big switch)
+// ══════════════════════════════════════════════════════════════
+function applyModeUI() {
+  document.body.classList.toggle('mode-on', state.mode);
+
+  const stateBadge = document.getElementById('modeState');
+  const btn        = document.getElementById('modeToggleBtn');
+  const btnText    = document.getElementById('modeToggleText');
+
+  if (state.mode) {
+    stateBadge.textContent = 'NYALA';
+    stateBadge.classList.add('on');
+    btn.className = 'mode-toggle-btn is-on';
+    btn.setAttribute('aria-pressed', 'true');
+    btnText.textContent = '■  Matikan Mode Ambil Data';
+  } else {
+    stateBadge.textContent = 'MATI';
+    stateBadge.classList.remove('on');
+    btn.className = 'mode-toggle-btn is-off';
+    btn.setAttribute('aria-pressed', 'false');
+    btnText.textContent = '▶  Nyalakan Mode Ambil Data';
+  }
+
+  // Recording banner (only meaningful while the mode is on)
+  const banner = document.getElementById('recBanner');
+  document.getElementById('recCount').textContent = state.captureCount.toLocaleString('id');
+  if (state.running) {
+    banner.classList.remove('paused');
+    document.getElementById('recText').textContent = 'Sedang merekam';
+    document.getElementById('recSub').textContent  = 'Foto tersimpan otomatis di alat';
+  } else {
+    banner.classList.add('paused');
+    document.getElementById('recText').textContent = 'Dijeda';
+    document.getElementById('recSub').textContent  = 'Tekan "Lanjutkan" untuk merekam lagi';
+  }
+}
+
+async function toggleMode() {
+  const enable = !state.mode;
+  state._modeBusy = true;
+  state.mode = enable;             // optimistic
+  applyModeUI();
+  const btn = document.getElementById('modeToggleBtn');
+  btn.disabled = true;
+  showToast(enable ? 'Menyalakan mode ambil data…' : 'Mematikan mode…');
+  try {
+    const res  = await fetch(`${BASE_URL}/collect/mode`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ enabled: enable }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      state.mode = !!data.data_collection_mode;
+      showToast(state.mode ? 'Mode ambil data NYALA' : 'Mode ambil data MATI', 'ok');
+    } else {
+      state.mode = !enable;       // rollback
+      showToast(`Gagal: ${data.error || data.message || '—'}`, 'err');
+    }
+  } catch (e) {
+    state.mode = !enable;         // rollback
+    showToast('Tidak bisa terhubung ke alat', 'err');
+  } finally {
+    btn.disabled = false;
+    // Give the device a moment to finish the camera handoff before we trust
+    // /collect/status again (auto-start capture happens on the device).
+    setTimeout(() => { state._modeBusy = false; }, 2500);
+    applyModeUI();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// CONTROLS
+// ══════════════════════════════════════════════════════════════
+async function toggleCapture() {
+  if (state.running) {
+    await stopCapture();
+  } else {
+    await startCapture();
+  }
+}
+
+async function startCapture() {
+  try {
+    const res = await fetch(`${BASE_URL}/collect/start`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ interval_s: state.intervalS, quality: state.quality }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      state.running   = true;
+      state.startTime = Date.now();
+      showToast('▶ Capture dimulai', 'ok');
+    } else {
+      showToast(`Error: ${data.message || data.error}`, 'err');
+    }
+  } catch (e) {
+    showToast('Tidak bisa terhubung ke MaixCAM', 'err');
+  }
+  updateUI();
+}
+
+async function stopCapture() {
+  try {
+    const res  = await fetch(`${BASE_URL}/collect/stop`, { method: 'POST' });
+    const data = await res.json();
+    if (data.ok) {
+      state.running = false;
+      showToast(`■ Selesai — ${state.captureCount} foto`, 'ok');
+    }
+  } catch (e) {
+    state.running = false;
+    showToast('Koneksi terputus', 'err');
+  }
+  updateUI();
+}
+
+async function adjustInterval(delta) {
+  const next = Math.max(0.5, Math.min(30, state.intervalS + delta));
+  state.intervalS = Math.round(next * 10) / 10;
+  document.getElementById('intervalDisplay').textContent = state.intervalS.toFixed(1);
+  document.getElementById('statInterval').textContent    = `${state.intervalS.toFixed(1)}s`;
+
+  // Push to device if running
+  if (state.running) {
+    try {
+      await fetch(`${BASE_URL}/collect/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ interval_s: state.intervalS }),
+      });
+    } catch {}
+  }
+  showToast(`Interval: ${state.intervalS.toFixed(1)}s`);
+}
+
+function adjustQuality(delta) {
+  state.quality = Math.max(50, Math.min(100, state.quality + delta));
+  document.getElementById('qualityDisplay').textContent = state.quality;
+  showToast(`JPEG Quality: ${state.quality}`);
+}
+
+// ══════════════════════════════════════════════════════════════
+// VIEWER
+// ══════════════════════════════════════════════════════════════
+let _viewerOpener = null;
+function openViewer(filename, timestamp, sizeKb) {
+  _viewerOpener = document.activeElement;
+  state._viewerFile = filename;
+  document.getElementById('viewerImg').src          = `${BASE_URL}/collect/photo/${filename}`;
+  document.getElementById('viewerImg').alt          = `Foto ${filename} diambil ${timestamp}`;
+  document.getElementById('viewerMeta').textContent = `${filename}  •  ${timestamp}  •  ${sizeKb} KB`;
+  const overlay = document.getElementById('viewerOverlay');
+  overlay.classList.add('open');
+  // Focus tombol tutup
+  setTimeout(() => document.getElementById('viewerOverlay').querySelector('button')?.focus(), 50);
+  overlay.addEventListener('keydown', _trapFocusViewer);
+}
+
+function closeViewer(e) {
+  if (e && e.target !== document.getElementById('viewerOverlay') && e.type !== 'click') return;
+  const overlay = document.getElementById('viewerOverlay');
+  overlay.classList.remove('open');
+  overlay.removeEventListener('keydown', _trapFocusViewer);
+  document.getElementById('viewerImg').src = '';
+  state._viewerFile = null;
+  if (_viewerOpener) { _viewerOpener.focus(); _viewerOpener = null; }
+}
+
+function _trapFocusViewer(e) {
+  if (e.key === 'Escape') { closeViewer(); return; }
+  if (e.key !== 'Tab') return;
+  const overlay = document.getElementById('viewerOverlay');
+  const focusable = [...overlay.querySelectorAll('button:not([disabled])')];
+  if (!focusable.length) return;
+  const first = focusable[0], last = focusable[focusable.length - 1];
+  if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
+  else            { if (document.activeElement === last)  { e.preventDefault(); first.focus(); } }
+}
+
+async function deleteCurrentPhoto() {
+  const filename = state._viewerFile;
+  if (!filename) return;
+  if (!confirm(`Hapus foto ini?\n${filename}`)) return;
+
+  try {
+    const res  = await fetch(`${BASE_URL}/collect/delete`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ filename }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      state.gallery    = state.gallery.filter(p => p.filename !== filename);
+      _galleryLastCount = state.gallery.length;
+      renderGallery();
+      closeViewer();
+      showToast('Foto dihapus', 'ok');
+    } else {
+      showToast(`Gagal: ${data.message || data.error}`, 'err');
+    }
+  } catch (e) {
+    showToast('Error saat menghapus', 'err');
+  }
+}
+
+async function downloadZip() {
+  showToast('Membuat ZIP…');
+  try {
+    const res = await fetch(`${BASE_URL}/collect/download`);
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      showToast(`Gagal: ${d.error || res.status}`, 'err');
+      return;
+    }
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    const cd   = res.headers.get('Content-Disposition') || '';
+    const m    = cd.match(/filename="(.+?)"/);
+    a.download = m ? m[1] : 'dataset.zip';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Download dimulai', 'ok');
+  } catch (e) {
+    showToast('Error download ZIP', 'err');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════════
+let _toastTimer = null;
+function showToast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className   = `toast ${type} show`;
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { el.classList.remove('show'); }, 2500);
+}
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  applyModeUI();
+  updateUI();
+  refreshPreview();
+  setTimeout(pollStatus,  500);
+  setTimeout(pollGallery, 1000);
+  setStatus('stopped', 'Connecting...');
+});
+</script>
+</body>
+</html>

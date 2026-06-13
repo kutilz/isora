@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>I-Sora — Eksplorasi Logo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --sky-900:#0B0E2A;--sky-800:#11163A;--sky-700:#1B2156;
+    --cahaya:#F4A23B;--cahaya-300:#FFD08A;--tilik:#6B9BFF;
+    --kabut:#F7F3EC;--surface:#FFFFFF;--tinta:#11142E;--tinta-70:#42466A;--line:#E6DFD3;
+    --ff:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--ff);color:var(--tinta);background:var(--kabut);-webkit-font-smoothing:antialiased;line-height:1.5}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 28px}
+
+  .head{background:radial-gradient(120% 120% at 50% -20%,var(--sky-700),var(--sky-900));color:#fff;padding:72px 0 64px;text-align:center}
+  .head .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--cahaya);display:inline-flex;align-items:center;gap:10px}
+  .head .eyebrow::before,.head .eyebrow::after{content:"";width:24px;height:1px;background:var(--cahaya)}
+  .head h1{font-size:clamp(30px,5vw,46px);font-weight:800;letter-spacing:-.02em;margin:16px 0 12px}
+  .head p{color:#b9c0e8;max-width:60ch;margin:0 auto;font-size:16px}
+
+  .legend{display:flex;gap:22px;justify-content:center;flex-wrap:wrap;margin-top:26px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#9aa3d6}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;padding:64px 0}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:20px;overflow:hidden;transition:transform .25s ease,box-shadow .25s ease}
+  .card:hover{transform:translateY(-4px);box-shadow:0 18px 40px -22px rgba(11,14,42,.4)}
+
+  .stage{position:relative;background:var(--sky-900);height:200px;display:grid;place-items:center}
+  .num{position:absolute;top:14px;left:16px;font-family:var(--mono);font-size:12px;color:#6c75a8;letter-spacing:.1em}
+  /* small-size + light-bg test chips */
+  .tests{position:absolute;bottom:12px;right:12px;display:flex;gap:8px;align-items:center}
+  .chip{width:34px;height:34px;border-radius:9px;display:grid;place-items:center}
+  .chip.light{background:var(--kabut)}
+  .chip.mini{background:rgba(255,255,255,.06)}
+
+  .body{padding:22px 24px 26px}
+  .body .name{font-size:19px;font-weight:800;letter-spacing:-.01em}
+  .body .id{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--cahaya);margin-top:3px}
+  .body .desc{font-size:14px;color:var(--tinta-70);margin-top:12px;min-height:60px}
+  .body .fit{margin-top:14px;padding-top:13px;border-top:1px solid var(--line);font-size:12.5px;color:var(--tinta-70)}
+  .body .fit b{color:var(--tinta);font-weight:600}
+
+  .pick{background:var(--sky-900);color:#fff;padding:60px 0}
+  .pick .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--cahaya-300);display:inline-flex;align-items:center;gap:10px}
+  .pick .eyebrow::before{content:"";width:24px;height:1px;background:var(--cahaya-300);display:inline-block}
+  .pick h2{font-size:clamp(24px,3.6vw,34px);font-weight:800;letter-spacing:-.02em;margin:16px 0 12px}
+  .pick p{color:#b9c0e8;max-width:64ch;font-size:16px}
+  .pickrow{display:flex;gap:18px;margin-top:30px;flex-wrap:wrap}
+  .pickcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:22px;display:flex;gap:18px;align-items:center;flex:1;min-width:260px}
+  .pickcard .mk{width:64px;height:64px;flex:none;display:grid;place-items:center}
+  .pickcard .t b{font-weight:700;font-size:16px}
+  .pickcard .t small{display:block;color:#9aa3d6;font-size:13px;margin-top:4px}
+
+  :focus-visible{outline:3px solid var(--cahaya);outline-offset:3px;border-radius:6px}
+  @media (max-width:880px){.grid{grid-template-columns:1fr 1fr}}
+  @media (max-width:600px){.grid{grid-template-columns:1fr}}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="head">
+  <div class="wrap">
+    <span class="eyebrow">Eksplorasi Logo</span>
+    <h1>Enam arah untuk I-Sora</h1>
+    <p>Dari yang paling abstrak sampai paling literal. Setiap konsep membawa ide berbeda — pilih satu, atau gabungkan kekuatannya.</p>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--cahaya)"></i> Penggunaan utama (gelap)</span>
+      <span><i class="dot" style="background:var(--kabut)"></i> Uji latar terang</span>
+      <span><i class="dot" style="background:#6c75a8"></i> Uji ukuran kecil</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="grid">
+
+    <!-- 1 PENUNTUN (beacon) -->
+    <article class="card">
+      <div class="stage">
+        <span class="num">01</span>
+        <svg width="120" height="120" viewBox="0 0 100 100" role="img" aria-label="Konsep Penuntun">
+          <defs><radialGradient id="g1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#F4A23B" stop-opacity=".45"/><stop offset="100%" stop-color="#F4A23B" stop-opacity="0"/></radialGradient></defs>
+          <circle cx="50" cy="50" r="46" fill="url(#g1)"/>
+          <circle cx="50" cy="50" r="40" fill="none" stroke="#F4A23B" stroke-width="2.4" opacity=".22"/>
+          <circle cx="50" cy="50" r="27" fill="none" stroke="#F4A23B" stroke-width="2.8" opacity=".5"/>
+          <circle cx="50" cy="50" r="15" fill="none" stroke="#F4A23B" stroke-width="3.2" opacity=".9"/>
+          <circle cx="50" cy="50" r="6" fill="#F4A23B"/>
+        </svg>
+        <div class="tests">
+          <div class="chip light"><svg width="22" height="22" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="#11142E" stroke-width="4" opacity=".2"/><circle cx="50" cy="50" r="26" fill="none" stroke="#11142E" stroke-width="4.5" opacity=".5"/><circle cx="50" cy="50" r="12" fill="none" stroke="#11142E" stroke-width="5" opacity=".85"/><circle cx="50" cy="50" r="7" fill="#F4A23B"/></svg></div>
+          <div class="chip mini"><svg width="18" height="18" viewBox="0 0 100 100"><circle cx="50" cy="50" r="38" fill="none" stroke="#F4A23B" stroke-width="5" opacity=".3"/><circle cx="50" cy="50" r="22" fill="none" stroke="#F4A23B" stroke-width="5.5" opacity=".6"/><circle cx="50" cy="50" r="9" fill="#F4A23B"/></svg></div>
+        </div>
+      </div>
+      <div class="body">
+        <div class="name">Penuntun</div>
+        <div class="id">Beacon · Abstrak</div>
+        <p class="desc">Inti bercahaya dengan riak memancar keluar — kesadaran yang terpancar dari pengguna, gema yang menuntun. Konsep dari brand guide.</p>
+        <p class="fit"><b>Cocok untuk:</b> brand abstrak & premium, ekspresi animasi (riak yang berdenyut).</p>
+      </div>
+    </article>
+
+    <!-- 2 GEMA (forward sonar) -->
+    <article class="card">
+      <div class="stage">
+        <span class="num">02</span>
+        <svg width="120" height="120" viewBox="0 0 100 100" role="img" aria-label="Konsep Gema">
+          <g transform="translate(-4,0)">
+            <circle cx="34" cy="50" r="6" fill="#F4A23B"/>
+            <path d="M44.33 35.26 A18 18 0 0 1 44.33 64.74" fill="none" stroke="#F4A23B" stroke-width="3.4" stroke-linecap="round" opacity=".9"/>
+            <path d="M51.22 25.43 A30 30 0 0 1 51.22 74.57" fill="none" stroke="#F4A23B" stroke-width="3" stroke-linecap="round" opacity=".55"/>
+            <path d="M58.11 15.6 A42 42 0 0 1 58.11 84.4" fill="none" stroke="#F4A23B" stroke-width="2.6" stroke-linecap="round" opacity=".28"/>
+          </g>
+        </svg>
+        <div class="tests">
+          <div class="chip light"><svg width="22" height="22" viewBox="0 0 100 100"><g transform="translate(-4,0)"><circle cx="34" cy="50" r="7" fill="#F4A23B"/><path d="M44.33 35.26 A18 18 0 0 1 44.33 64.74" fill="none" stroke="#11142E" stroke-width="5" stroke-linecap="round" opacity=".85"/><path d="M51.22 25.43 A30 30 0 0 1 51.22 74.57" fill="none" stroke="#11142E" stroke-width="4.5" stroke-linecap="round" opacity=".5"/><path d="M58.11 15.6 A42 42 0 0 1 58.11 84.4" fill="none" stroke="#11142E" stroke-width="4" stroke-linecap="round" opacity=".25"/></g></svg></div>
+          <div class="chip mini"><svg width="18" height="18" viewBox="0 0 100 100"><g transform="translate(-4,0)"><circle cx="36" cy="50" r="9" fill="#F4A23B"/><path d="M48 33 A22 22 0 0 1 48 67" fill="none" stroke="#F4A23B" stroke-width="6" stroke-linecap="round" opacity=".8"/><path d="M57 22 A36 36 0 0 1 57 78" fill="none" stroke="#F4A23B" stroke-width="5" stroke-linecap="round" opacity=".45"/></g></svg></div>
+        </div>
+      </div>
+      <div class="body">
+        <div class="name">Gema</div>
+        <div class="id">Sonar · Arah</div>
+        <p class="desc">Pancaran yang menghadap ke depan, seperti sonar — persepsi yang dilempar ke lingkungan lalu kembali sebagai suara. Punya arah & gerak.</p>
+        <p class="fit"><b>Cocok untuk:</b> kesan dinamis & teknis; bentuknya mengalir membentuk huruf “S”.</p>
+      </div>
+    </article>
+
+    <!-- 3 i MONOGRAM -->
+    <article class="card">
+      <div class="stage">
+        <span class="num">03</span>
+        <svg width="120" height="120" viewBox="0 0 100 100" role="img" aria-label="Konsep monogram i">
+          <defs><radialGradient id="g3" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#F4A23B" stop-opacity=".5"/><stop offset="100%" stop-color="#F4A23B" stop-opacity="0"/></radialGradient></defs>
+          <circle cx="50" cy="26" r="26" fill="url(#g3)"/>
+          <rect x="42" y="44" width="16" height="42" rx="8" fill="#fff"/>
+          <circle cx="50" cy="26" r="14" fill="none" stroke="#F4A23B" stroke-width="2.6" opacity=".5"/>
+          <circle cx="50" cy="26" r="8.5" fill="#F4A23B"/>
+        </svg>
+        <div class="tests">
+          <div class="chip light"><svg width="22" height="22" viewBox="0 0 100 100"><rect x="42" y="44" width="16" height="42" rx="8" fill="#11142E"/><circle cx="50" cy="26" r="13" fill="none" stroke="#11142E" stroke-width="4" opacity=".35"/><circle cx="50" cy="26" r="9" fill="#F4A23B"/></svg></div>
+          <div class="chip mini"><svg width="18" height="18" viewBox="0 0 100 100"><rect x="41" y="44" width="18" height="42" rx="9" fill="#F4A23B"/><circle cx="50" cy="25" r="11" fill="#F4A23B"/></svg></div>
+        </div>
+      </div>
+      <div class="body">
+        <div class="name">Titik-i</div>
+        <div class="id">Monogram · Letterform</div>
+        <p class="desc">Huruf “i” dari I-Sora, di mana titiknya menjadi inti yang bercahaya. “i” = Independen, sekaligus sosok yang berdiri tegak. Paling ownable.</p>
+        <p class="fit"><b>Cocok untuk:</b> ikon aplikasi & foto profil — jernih bahkan di ukuran terkecil.</p>
+      </div>
+    </article>
+
+    <!-- 4 BINTANG PENUNTUN -->
+    <article class="card">
+      <div class="stage">
+        <span class="num">04</span>
+        <svg width="120" height="120" viewBox="0 0 100 100" role="img" aria-label="Konsep bintang penuntun">
+          <defs><radialGradient id="g4" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#F4A23B" stop-opacity=".45"/><stop offset="100%" stop-color="#F4A23B" stop-opacity="0"/></radialGradient></defs>
+          <circle cx="50" cy="50" r="46" fill="url(#g4)"/>
+          <circle cx="50" cy="50" r="42" fill="none" stroke="#F4A23B" stroke-width="2" opacity=".25"/>
+          <path d="M50 8 C53.5 40 60 46.5 92 50 C60 53.5 53.5 60 50 92 C46.5 60 40 53.5 8 50 C40 46.5 46.5 40 50 8 Z" fill="#F4A23B"/>
+        </svg>
+        <div class="tests">
+          <div class="chip light"><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 C53.5 40 60 46.5 92 50 C60 53.5 53.5 60 50 92 C46.5 60 40 53.5 8 50 C40 46.5 46.5 40 50 8 Z" fill="#F4A23B"/><circle cx="50" cy="50" r="44" fill="none" stroke="#11142E" stroke-width="4" opacity=".22"/></svg></div>
+          <div class="chip mini"><svg width="18" height="18" viewBox="0 0 100 100"><path d="M50 6 C54 39 61 46 94 50 C61 54 54 61 50 94 C46 61 39 54 6 50 C39 46 46 39 50 6 Z" fill="#F4A23B"/></svg></div>
+        </div>
+      </div>
+      <div class="body">
+        <div class="name">Bintang Penuntun</div>
+        <div class="id">Guiding Star · Emosional</div>
+        <p class="desc">Cahaya penuntun di langit (Sora) — bintang utara yang memberi arah & harapan. Terasa seperti produk gaya hidup, bukan alat medis.</p>
+        <p class="fit"><b>Cocok untuk:</b> daya tarik emosional & premium; storytelling “terang dalam gelap”.</p>
+      </div>
+    </article>
+
+    <!-- 5 LIHAT -> DENGAR -->
+    <article class="card">
+      <div class="stage">
+        <span class="num">05</span>
+        <svg width="130" height="130" viewBox="0 0 120 100" role="img" aria-label="Konsep lihat menjadi dengar">
+          <circle cx="40" cy="50" r="16" fill="#6B9BFF"/>
+          <circle cx="34" cy="44" r="4.5" fill="#fff" opacity=".9"/>
+          <path d="M68 36 A24 24 0 0 1 68 64" fill="none" stroke="#F4A23B" stroke-width="3.4" stroke-linecap="round" opacity=".9"/>
+          <path d="M78 28 A34 34 0 0 1 78 72" fill="none" stroke="#F4A23B" stroke-width="3" stroke-linecap="round" opacity=".55"/>
+          <path d="M88 20 A44 44 0 0 1 88 80" fill="none" stroke="#F4A23B" stroke-width="2.6" stroke-linecap="round" opacity=".28"/>
+        </svg>
+        <div class="tests">
+          <div class="chip light"><svg width="26" height="22" viewBox="0 0 120 100"><circle cx="40" cy="50" r="16" fill="#2C3680"/><circle cx="34" cy="44" r="4.5" fill="#fff" opacity=".9"/><path d="M68 36 A24 24 0 0 1 68 64" fill="none" stroke="#F4A23B" stroke-width="5" stroke-linecap="round" opacity=".9"/><path d="M80 28 A36 36 0 0 1 80 72" fill="none" stroke="#F4A23B" stroke-width="4.4" stroke-linecap="round" opacity=".5"/></svg></div>
+          <div class="chip mini"><svg width="22" height="18" viewBox="0 0 120 100"><circle cx="42" cy="50" r="20" fill="#6B9BFF"/><path d="M72 32 A28 28 0 0 1 72 68" fill="none" stroke="#F4A23B" stroke-width="7" stroke-linecap="round" opacity=".85"/></svg></div>
+        </div>
+      </div>
+      <div class="body">
+        <div class="name">Lihat → Dengar</div>
+        <div class="id">Lensa + Suara · Naratif</div>
+        <p class="desc">Sebuah lensa (yang dilihat kamera) berubah menjadi gelombang suara (yang didengar). Seluruh cerita produk dalam satu tanda — pakai dua warna mode.</p>
+        <p class="fit"><b>Cocok untuk:</b> menjelaskan produk; paling kuat di ukuran sedang–besar.</p>
+      </div>
+    </article>
+
+    <!-- 6 KACAMATA -->
+    <article class="card">
+      <div class="stage">
+        <span class="num">06</span>
+        <svg width="140" height="120" viewBox="0 0 120 90" role="img" aria-label="Konsep kacamata">
+          <line x1="46" y1="40" x2="54" y2="40" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+          <line x1="14" y1="42" x2="6" y2="36" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+          <line x1="86" y1="42" x2="94" y2="36" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="30" cy="45" r="16" fill="none" stroke="#fff" stroke-width="3.2"/>
+          <circle cx="70" cy="45" r="16" fill="none" stroke="#fff" stroke-width="3.2"/>
+          <circle cx="70" cy="45" r="9" fill="none" stroke="#F4A23B" stroke-width="2.4" opacity=".6"/>
+          <circle cx="70" cy="45" r="4.5" fill="#F4A23B"/>
+        </svg>
+        <div class="tests">
+          <div class="chip light"><svg width="26" height="20" viewBox="0 0 120 90"><line x1="46" y1="40" x2="54" y2="40" stroke="#11142E" stroke-width="4" stroke-linecap="round"/><circle cx="30" cy="45" r="16" fill="none" stroke="#11142E" stroke-width="4"/><circle cx="70" cy="45" r="16" fill="none" stroke="#11142E" stroke-width="4"/><circle cx="70" cy="45" r="5" fill="#F4A23B"/></svg></div>
+          <div class="chip mini"><svg width="24" height="16" viewBox="0 0 120 90"><line x1="46" y1="40" x2="54" y2="40" stroke="#F4A23B" stroke-width="6" stroke-linecap="round"/><circle cx="30" cy="45" r="18" fill="none" stroke="#F4A23B" stroke-width="6"/><circle cx="70" cy="45" r="18" fill="none" stroke="#F4A23B" stroke-width="6"/></svg></div>
+        </div>
+      </div>
+      <div class="body">
+        <div class="name">Bingkai</div>
+        <div class="id">Kacamata · Literal</div>
+        <p class="desc">Siluet kacamata minimalis, dengan satu lensa menyimpan inti cahaya — “mata yang cerdas”. Langsung terbaca sebagai brand smart glasses.</p>
+        <p class="fit"><b>Cocok untuk:</b> ritel & kemasan; paling cepat dikenali fungsinya.</p>
+      </div>
+    </article>
+
+  </div>
+</main>
+
+<section class="pick">
+  <div class="wrap">
+    <span class="eyebrow">Rekomendasiku</span>
+    <h2>Kombinasi 03 + 02</h2>
+    <p>Untuk produk yang harus tampil mungil sebagai ikon aplikasi sekaligus bercerita di konten, aku sarankan <b style="color:#fff">Titik-i (03)</b> sebagai logo utama — paling ownable & tajam di ukuran kecil — dengan ide <b style="color:#fff">Gema (02)</b> hidup di animasi pembuka dan elemen grafis pendukung. <b style="color:var(--cahaya-300)">Bintang Penuntun (04)</b> jadi pilihan kuat kalau kalian ingin nuansa lebih emosional & gaya hidup. Tapi ini ranah selera — kasih tahu mana yang paling “klik”, nanti aku matangkan satu jadi sistem logo final lengkap dengan ruang aman, ukuran minimum, dan file SVG siap pakai.</p>
+
+    <div class="pickrow">
+      <div class="pickcard">
+        <div class="mk"><svg width="60" height="60" viewBox="0 0 100 100" aria-hidden="true"><rect x="42" y="44" width="16" height="42" rx="8" fill="#fff"/><circle cx="50" cy="26" r="13" fill="none" stroke="#F4A23B" stroke-width="2.6" opacity=".5"/><circle cx="50" cy="26" r="8.5" fill="#F4A23B"/></svg></div>
+        <div class="t"><b>Titik-i</b><small>Logo utama · ikon & avatar</small></div>
+      </div>
+      <div class="pickcard">
+        <div class="mk"><svg width="60" height="60" viewBox="0 0 100 100" aria-hidden="true"><g transform="translate(-2,0)"><circle cx="34" cy="50" r="6" fill="#F4A23B"/><path d="M44.33 35.26 A18 18 0 0 1 44.33 64.74" fill="none" stroke="#F4A23B" stroke-width="3.4" stroke-linecap="round" opacity=".9"/><path d="M51.22 25.43 A30 30 0 0 1 51.22 74.57" fill="none" stroke="#F4A23B" stroke-width="3" stroke-linecap="round" opacity=".5"/></g></svg></div>
+        <div class="t"><b>Gema</b><small>Elemen grafis & motion</small></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

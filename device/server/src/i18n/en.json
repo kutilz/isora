@@ -1,0 +1,131 @@
+{
+  "common": {
+    "app_name": "AuralAI",
+    "save": "Save",
+    "cancel": "Cancel",
+    "back": "Back",
+    "next": "Next",
+    "skip": "Skip",
+    "close": "Close",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "online": "Connected",
+    "offline": "Disconnected",
+    "yes": "Yes",
+    "no": "No",
+    "skip_to_content": "Skip to main content"
+  },
+  "a11y": {
+    "title": "Accessibility",
+    "high_contrast": "High contrast",
+    "large_type": "Large text",
+    "reduce_motion": "Reduce motion"
+  },
+  "nav": {
+    "companion": "Home",
+    "admin": "Advanced mode",
+    "guide": "User guide",
+    "setup": "Initial setup"
+  },
+  "modes": {
+    "explorer": "Explorer",
+    "context":  "Description",
+    "qris":     "QRIS",
+    "explorer_sub": "Announces nearby objects",
+    "context_sub":  "Describes surroundings",
+    "qris_sub":     "Scans payment QR codes"
+  },
+  "status": {
+    "device_online":  "Device connected",
+    "device_offline": "Device disconnected",
+    "battery":        "Battery",
+    "battery_unset":  "(not calibrated)",
+    "wifi":           "WiFi",
+    "wifi_no":        "No WiFi",
+    "temperature":    "Temperature",
+    "cloud_ai":       "Cloud AI",
+    "last_caption":   "Last audio announcement"
+  },
+  "volume": {
+    "title":        "Audio volume",
+    "play_sample":  "Play test sound",
+    "mute":         "Mute",
+    "louder":       "Louder",
+    "softer":       "Softer",
+    "audio_mode":   "Listening preference",
+    "audio_mode_chime":  "Chime only (advanced)",
+    "audio_mode_speech": "Speech only (beginner)",
+    "audio_mode_both":   "Chime + speech (default)"
+  },
+  "activity": {
+    "title":   "Today's activity",
+    "empty":   "No activity yet.",
+    "export":  "Download today's logs (CSV)",
+    "filter_all":      "All",
+    "filter_explorer": "Explorer",
+    "filter_context":  "Description",
+    "filter_qris":     "QRIS",
+    "filter_system":   "System"
+  },
+  "footer": {
+    "report":   "Report an issue",
+    "call":     "Ping user",
+    "shutdown": "Shutdown device",
+    "version":  "Version"
+  },
+  "setup": {
+    "title": "Initial setup",
+    "intro": "Four steps, around five minutes. Kept simple.",
+    "step1": {
+      "title": "Power on the device",
+      "body":  "Press the Power button on the right arm of the glasses until the green LED turns on."
+    },
+    "step2": {
+      "title":  "Connect WiFi",
+      "ssid":   "Network name (SSID)",
+      "pass":   "Password"
+    },
+    "step3": {
+      "title":      "AI service API key",
+      "provider":   "Provider",
+      "key":        "API key",
+      "key_help":   "Saved encrypted on the device. Only the operator has access."
+    },
+    "step4": {
+      "title":   "Test & handover",
+      "finish":  "Finish & return home"
+    }
+  },
+  "guide": {
+    "hero_title":   "AuralAI — glasses that narrate your world",
+    "hero_sub":     "A compact module mounted on the temple of your glasses that recognizes objects, describes scenes, and scans QRIS codes — all in Indonesian.",
+    "demo_audio":   "Try audio demo",
+    "see_hardware": "View hardware",
+    "how_title":    "How to use it?",
+    "hw_title":     "Buttons on your glasses",
+    "audio_title":  "Audio announcements you will hear",
+    "pref_title":   "Choose listening preference",
+    "pref_save":    "Save to my device",
+    "pref_share":   "Copy link for caregiver",
+    "start_setup":  "Start setup"
+  },
+  "admin": {
+    "ribbon": "ADMIN MODE — Changes directly affect the user experience",
+    "view_as": "View as",
+    "view_companion": "Caregiver",
+    "view_admin": "Admin",
+    "view_setup": "Setup",
+    "view_logs": "Logs",
+    "view_benchmark": "Benchmark",
+    "view_ai": "AI Settings",
+    "debug_overlay": "Show debug metrics",
+    "dev_sidebar": "Dev Control Panel",
+    "latency": "Latency",
+    "log_tail": "Latest logs",
+    "test_ai": "Test AI connection",
+    "probe_i2c": "Probe battery I2C",
+    "restart": "Restart service",
+    "reboot": "Hard reboot",
+    "copy_config": "Copy config.json"
+  }
+}

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>I-Sora — Beacon Reveal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --sky-900:#0B0E2A;--cahaya:#F4A23B;--cahaya-300:#FFD08A;
+    --ff:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--ff);background:#05060f;color:#fff;-webkit-font-smoothing:antialiased;
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:30px}
+
+  /* ============ STAGE (record this) ============ */
+  .stage{position:relative;width:min(760px,92vw);aspect-ratio:16/9;border-radius:20px;overflow:hidden;
+    background:radial-gradient(130% 120% at 50% 46%,#11163a 0%,#070a20 55%,#04050e 100%);
+    display:grid;place-items:center;cursor:pointer;
+    box-shadow:0 40px 90px -50px #000, inset 0 0 0 1px rgba(255,255,255,.05)}
+  .vignette{position:absolute;inset:0;background:radial-gradient(120% 120% at 50% 50%,transparent 55%,rgba(0,0,0,.55));pointer-events:none;z-index:6}
+  .stars{position:absolute;inset:0;pointer-events:none}
+  .stars i{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;opacity:.08}
+  .stage.playing .stars i{animation:tw 4s ease-in-out infinite}
+  @keyframes tw{0%,100%{opacity:.06}50%{opacity:.4}}
+
+  .glow{position:absolute;width:62%;height:120%;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:50%;z-index:1;
+    background:radial-gradient(closest-side,rgba(244,162,59,0),transparent)}
+  .stage.playing .glow{animation:glowin .9s ease-out 2.5s forwards, glowamb 4.5s ease-in-out 4s infinite}
+  @keyframes glowin{to{background:radial-gradient(closest-side,rgba(244,162,59,.20),transparent)}}
+  @keyframes glowamb{0%,100%{opacity:.7}50%{opacity:1}}
+
+  .flash{position:absolute;inset:0;z-index:2;opacity:0;
+    background:radial-gradient(closest-side at 50% 50%,rgba(255,224,170,.5),transparent 60%)}
+  .stage.playing .flash{animation:flash 1s ease-out 2.55s}
+  @keyframes flash{0%{opacity:0}30%{opacity:.55}100%{opacity:0}}
+
+  /* ============ LOCKUP ============ */
+  .lockup{position:relative;z-index:4;text-align:center}
+  .wm{display:inline-flex;align-items:center;font-weight:800;line-height:1;letter-spacing:-.05em;
+    font-size:clamp(46px,11vw,104px);white-space:nowrap;color:#fff}
+
+  /* I — short stem in phase 1, grows to capital I */
+  .pI{display:inline-block;transform-origin:bottom;transform:scaleY(.52)}
+  .stage.playing .pI{animation:grow .85s cubic-bezier(.2,.7,.2,1) 2.5s forwards}
+  @keyframes grow{from{transform:scaleY(.52)}to{transform:scaleY(1)}}
+
+  /* connector slot holds the traveling beacon dot */
+  .slot{position:relative;display:inline-block;width:.42em;height:1.1em;vertical-align:-.04em}
+  .dotpos{position:absolute;left:50%;top:50%;transform:translate(-.32em,-.6em)}
+  .stage.playing .dotpos{animation:travel .85s cubic-bezier(.3,.2,.2,1) 2.5s forwards}
+  @keyframes travel{from{transform:translate(-.32em,-.6em)}to{transform:translate(0,0)}}
+
+  .dot{position:absolute;left:50%;top:50%;width:.17em;height:.17em;border-radius:50%;background:var(--cahaya);
+    box-shadow:0 0 .4em rgba(244,162,59,.75);transform:translate(-50%,-50%)}
+  .stage.playing .dot{animation:breathe 2.2s ease-in-out infinite}
+  @keyframes breathe{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.16)}}
+
+  /* pulsing rings (Penuntun) — bounded one-shots */
+  .ring{position:absolute;left:50%;top:50%;width:.4em;height:.4em;border:1.5px solid var(--cahaya);border-radius:50%;
+    transform:translate(-50%,-50%) scale(.4);opacity:0}
+  .stage.playing .r1{animation:ping 1.1s ease-out .55s}
+  .stage.playing .r2{animation:ping 1.1s ease-out 1.1s}
+  .stage.playing .r3{animation:ping 1.1s ease-out 1.65s}
+  .stage.playing .rF{animation:pingbig 1.25s cubic-bezier(.2,.55,.3,1) 2.6s}
+  @keyframes ping{0%{opacity:.7;transform:translate(-50%,-50%) scale(.4)}80%{opacity:0}100%{opacity:0;transform:translate(-50%,-50%) scale(3)}}
+  @keyframes pingbig{0%{opacity:.8;transform:translate(-50%,-50%) scale(.4)}80%{opacity:0}100%{opacity:0;transform:translate(-50%,-50%) scale(5.5)}}
+
+  /* Sora — reveals from the light */
+  .pSora{display:inline-block;opacity:0;transform:translateX(.35em)}
+  .stage.playing .pSora{animation:soraIn .7s cubic-bezier(.2,.7,.2,1) 2.78s forwards}
+  @keyframes soraIn{from{opacity:0;transform:translateX(.35em)}to{opacity:1;transform:none}}
+
+  .divider{width:200px;height:2px;margin:22px auto 16px;background:linear-gradient(90deg,transparent,var(--cahaya),transparent);
+    transform-origin:center;transform:scaleX(0)}
+  .stage.playing .divider{animation:drawline .7s ease-out 3.6s forwards}
+  @keyframes drawline{to{transform:scaleX(1)}}
+
+  .tag{font-size:clamp(15px,2.6vw,24px);font-weight:500;color:var(--cahaya-300);opacity:0;transform:translateY(12px)}
+  .stage.playing .tag{animation:fadeup .8s ease-out 3.78s forwards}
+  @keyframes fadeup{to{opacity:1;transform:none}}
+
+  /* ============ CONTROLS (not recorded) ============ */
+  .controls{display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:center}
+  .btn{font-family:var(--ff);font-weight:700;font-size:14px;color:var(--sky-900);background:var(--cahaya);
+    border:0;border-radius:999px;padding:11px 22px;cursor:pointer;transition:transform .15s,box-shadow .15s}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 10px 24px -10px rgba(244,162,59,.7)}
+  .btn:active{transform:translateY(0)}
+  .hint{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#5b6394;text-align:center;max-width:48ch}
+
+  :focus-visible{outline:3px solid var(--cahaya);outline-offset:3px}
+
+  @media (prefers-reduced-motion:reduce){
+    .stars i{animation:none!important;opacity:.18!important}
+    .glow{background:radial-gradient(closest-side,rgba(244,162,59,.2),transparent)!important;animation:none!important}
+    .flash,.ring{display:none!important}
+    .pI{transform:scaleY(1)!important;animation:none!important}
+    .dotpos{transform:translate(0,0)!important;animation:none!important}
+    .dot{animation:none!important}
+    .pSora{opacity:1!important;transform:none!important;animation:none!important}
+    .divider{transform:scaleX(1)!important;animation:none!important}
+    .tag{opacity:1!important;transform:none!important;animation:none!important}
+  }
+</style>
+</head>
+<body>
+
+  <div class="stage" id="stage" role="img" aria-label="Animasi: logo beacon berubah menjadi wordmark I-Sora — Melihat dengan Suara">
+    <div class="stars" id="stars" aria-hidden="true"></div>
+    <div class="glow" aria-hidden="true"></div>
+    <div class="flash" aria-hidden="true"></div>
+
+    <div class="lockup">
+      <div class="wm" aria-hidden="true">
+        <span class="pI">I</span><span class="slot"><span class="dotpos"><span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span><span class="ring rF"></span><span class="dot"></span></span></span><span class="pSora">Sora</span>
+      </div>
+      <div class="divider" aria-hidden="true"></div>
+      <div class="tag">Melihat dengan Suara</div>
+    </div>
+
+    <div class="vignette" aria-hidden="true"></div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="play" type="button">▶ Putar ulang</button>
+    <p class="hint">Klik area gelap / tombol untuk memutar ulang · rekam layar area di atas untuk intro video</p>
+  </div>
+
+<script>
+  (function(){
+    var s=document.getElementById('stars'),f=document.createDocumentFragment();
+    for(var i=0;i<48;i++){var d=document.createElement('i');
+      d.style.left=Math.random()*100+'%';d.style.top=Math.random()*100+'%';
+      d.style.animationDelay=(Math.random()*4)+'s';d.style.transform='scale('+(0.5+Math.random()*1.4)+')';f.appendChild(d);}
+    s.appendChild(f);
+  })();
+  var stage=document.getElementById('stage');
+  function play(){stage.classList.remove('playing');void stage.offsetWidth;stage.classList.add('playing');}
+  document.getElementById('play').addEventListener('click',function(e){e.stopPropagation();play();});
+  stage.addEventListener('click',play);
+  window.addEventListener('load',function(){setTimeout(play,350);});
+</script>
+</body>
+</html>

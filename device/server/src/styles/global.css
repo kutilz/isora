@@ -1,0 +1,78 @@
+/* Global stylesheet — layout primitives shared across all pages.
+   Token vars (--bg, --ink, --accent, --t-base, --hit, …) come from
+   `/tokens.css` linked from each HTML entry's <head>. Keeping tokens.css
+   external means design tweaks don't trigger a rebuild — drop a new
+   tokens.css on the device and reload. */
+
+/* Page shell — every page-level layout uses this baseline. */
+.page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--s-5);
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header used by companion + admin. */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-4) var(--s-5);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  min-height: 72px;
+}
+
+.app-header__logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-weight: 700;
+  font-size: var(--t-lg);
+  letter-spacing: -0.01em;
+}
+
+.app-header__spacer { flex: 1; }
+
+/* Grid layouts used across pages */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-5); }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-4); }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s-4); }
+
+@media (max-width: 900px) {
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+}
+
+/* Section heading utility */
+.section-title {
+  font-size: var(--t-xl);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: var(--s-10) 0 var(--s-4);
+}
+.section-sub {
+  font-size: var(--t-md);
+  color: var(--ink-2);
+  margin: 0 0 var(--s-6);
+  max-width: 64ch;
+}
+
+/* Banner — used by admin "ribbon" and companion status banner */
+.ribbon {
+  background: #7A1B16;
+  color: #fff;
+  text-align: center;
+  font-size: 13px;
+  padding: 6px var(--s-4);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Card list utility */
+.stack > * + * { margin-top: var(--s-4); }

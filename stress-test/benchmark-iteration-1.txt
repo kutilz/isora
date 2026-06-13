@@ -1,0 +1,499 @@
+start running...
+
+-- [I] [Maix Comm Protocol] listening on uart port: /dev/serial0
+
+============================================================
+  MaixCAM Comprehensive Benchmark & Thermal Stress Test
+  Started: 2026-04-17 12:01:20
+============================================================
+
+============================================================
+  SECTION 0 – SYSTEM INFO
+============================================================
+  OS / Sysname                        Linux
+  Hostname                            maixcam-b7de
+  Kernel Release                      5.10.4-tag-
+  Kernel Version                      #19 PREEMPT Wed Mar 19 15:08:48 CST 2025
+  Architecture                        riscv64
+  Uptime                              0h 1m 12s
+  Load Average                        3.37 1.07 0.38 1/91 638
+
+  CPU Cores Detected: 1
+    Core 0                            rv64imafdvcsu
+  NPU Freq                            700 MHz
+
+  RAM Total                           127 MB
+  RAM Used                            118 MB
+  RAM Free                            9 MB
+  RAM Available                       78 MB
+  Buffers+Cache                       69 MB
+
+  Disk /root Total                    29.08 GB
+  Disk /root Used                     2.77 GB
+  Disk /root Free                     26.31 GB
+
+  Python Version                      3.11.6 (main, Oct 18 2024, 06:26:13) [GCC 10.2.0]
+  MaixPy Available                    YES
+
+============================================================
+  SECTION 1 – THERMAL BASELINE (idle)
+============================================================
+  Found 1 thermal zone(s)
+
+  Baseline  [thermal_zone0] soc_thermal_0 53.9 °C
+
+============================================================
+  SECTION 2 – CAMERA CAPTURE BENCHMARK
+============================================================
+
+  Testing QVGA   320x240 ...
+[SAMPLE_COMM_SNS_ParseIni]-2191: Parse /mnt/data/sensor_cfg.ini
+[parse_source_devnum]-1784: devNum =  1
+[parse_sensor_name]-1865: sensor =  GCORE_GC4653_MIPI_4M_30FPS_10BIT
+[parse_sensor_busid]-1894: bus_id =  4
+[parse_sensor_i2caddr]-1905: sns_i2c_addr =  29
+[parse_sensor_mipidev]-1916: mipi_dev =  0
+[parse_sensor_laneid]-1927: Lane_id =  4, 3, 2, -1, -1
+[parse_sensor_pnswap]-1938: pn_swap =  0, 0, 0, 0, 0
+[parse_sensor_mclken]-1960: mclk_en =  1
+[parse_sensor_mclk]-1971: mclk =  1
+[SAMPLE_COMM_SNS_ParseIni]-2191: Parse /mnt/data/sensor_cfg.ini
+[parse_source_devnum]-1784: devNum =  1
+[parse_sensor_name]-1865: sensor =  GCORE_GC4653_MIPI_4M_30FPS_10BIT
+[parse_sensor_busid]-1894: bus_id =  4
+[parse_sensor_i2caddr]-1905: sns_i2c_addr =  29
+[parse_sensor_mipidev]-1916: mipi_dev =  0
+[parse_sensor_laneid]-1927: Lane_id =  4, 3, 2, -1, -1
+[parse_sensor_pnswap]-1938: pn_swap =  0, 0, 0, 0, 0
+[parse_sensor_mclken]-1960: mclk_en =  1
+[parse_sensor_mclk]-1971: mclk =  1
+try release sys ok
+[_mmf_init]-1144: maix multi-media version:67a90e2-musl_riscv64
+maix multi-media init ok
+try release vio ok
+try release venc ok
+ISP Vipipe(0) Allocate pa(0x8a52c000) va(0x0x3fc8ac0000) size(291424)
+stSnsrMode.u16Width 1280 stSnsrMode.u16Height 720 60.000000 wdrMode 0 pstSnsObj 0x3fcb51a058
+[SAMPLE_COMM_VI_StartMIPI]-494: sensor 0 stDevAttr.devno 0
+awbInit ver 6.9@2021500
+0 R:1400 B:3100 CT:2850
+1 R:1500 B:2500 CT:3900
+2 R:2300 B:1600 CT:6500
+Golden 1024 1024 1024
+WB Quadratic:0
+isWdr:0
+ViPipe:0,===GC4653 720P 60fps 10bit LINEAR Init OK!===
+********************************************************************************
+cvi_bin_isp message
+gerritId:      97347          commitId:      fc6ce647       
+md5:           d6db2297ddfd44e8252c1f3f888f47b2
+sensorNum      1              
+sensorName0    4653           
+
+PQBIN message
+gerritId:      
+              commitId:      fc6ce647       
+md5:           d6db2297ddfd44e8252c1f3f888f47b2
+sensorNum      1              
+sensorName0    4653           
+
+author:        lxowalle       desc:          gc4653 30fps   
+createTime:    2024-03-26 13:41:34version:                      
+tool Version:       v3.0.5.48           mode:      
+********************************************************************************
+[SAMPLE_COMM_ISP_Thread]-95: ISP Dev 0 running!
+0 R:1298 B:3773 CT:2688
+1 R:1629 B:2599 CT:3890
+2 R:2430 B:1675 CT:7300
+Golden 1629 1024 2599
+wdrLEOnly:1
+    Frames captured                   100
+    Total time                        1676.1 ms
+    Average per frame                 16.76 ms
+    Measured FPS                      59.7 fps
+maix multi-media driver released.
+ISP Vipipe(0) Free pa(0x8a52c000) va(0x0x3fc8ac0000)
+
+  Testing VGA    640x480 ...
+-- [I] Find MMF_SENSOR_NAME=gcore_gc4653
+-- [I] Find MMF_SENSOR_FPS=60
+[SAMPLE_COMM_SNS_ParseIni]-2191: Parse /mnt/data/sensor_cfg.ini
+[parse_source_devnum]-1784: devNum =  1
+[parse_sensor_name]-1865: sensor =  GCORE_GC4653_MIPI_4M_30FPS_10BIT
+[parse_sensor_busid]-1894: bus_id =  4
+[parse_sensor_i2caddr]-1905: sns_i2c_addr =  29
+[parse_sensor_mipidev]-1916: mipi_dev =  0
+[parse_sensor_laneid]-1927: Lane_id =  4, 3, 2, -1, -1
+[parse_sensor_pnswap]-1938: pn_swap =  0, 0, 0, 0, 0
+[parse_sensor_mclken]-1960: mclk_en =  1
+[parse_sensor_mclk]-1971: mclk =  1
+[SAMPLE_COMM_SNS_ParseIni]-2191: Parse /mnt/data/sensor_cfg.ini
+[parse_source_devnum]-1784: devNum =  1
+[parse_sensor_name]-1865: sensor =  GCORE_GC4653_MIPI_4M_30FPS_10BIT
+[parse_sensor_busid]-1894: bus_id =  4
+[parse_sensor_i2caddr]-1905: sns_i2c_addr =  29
+[parse_sensor_mipidev]-1916: mipi_dev =  0
+[parse_sensor_laneid]-1927: Lane_id =  4, 3, 2, -1, -1
+[parse_sensor_pnswap]-1938: pn_swap =  0, 0, 0, 0, 0
+[parse_sensor_mclken]-1960: mclk_en =  1
+[parse_sensor_mclk]-1971: mclk =  1
+try release sys ok
+[_mmf_init]-1144: maix multi-media version:67a90e2-musl_riscv64
+maix multi-media init ok
+try release vio ok
+try release venc ok
+ISP Vipipe(0) Allocate pa(0x8a52c000) va(0x0x3fc8ac0000) size(291424)
+stSnsrMode.u16Width 1280 stSnsrMode.u16Height 720 60.000000 wdrMode 0 pstSnsObj 0x3fcb51a058
+[SAMPLE_COMM_VI_StartMIPI]-494: sensor 0 stDevAttr.devno 0
+20260417 12:01:23.316 0635 E isp AE_GetStatisticsConfig:4202 pstAeStatisticsCfg is NULL.
+20260417 12:01:23.317 0635 E isp AE_SetStatisticsConfig:4188 pstAeStatisticsCfg is NULL.
+awbInit ver 6.9@2021500
+0 R:1400 B:3100 CT:2850
+1 R:1500 B:2500 CT:3900
+2 R:2300 B:1600 CT:6500
+Golden 1024 1024 1024
+WB Quadratic:0
+isWdr:0
+ViPipe:0,===GC4653 720P 60fps 10bit LINEAR Init OK!===
+********************************************************************************
+cvi_bin_isp message
+gerritId:      97347          commitId:      fc6ce647       
+md5:           d6db2297ddfd44e8252c1f3f888f47b2
+sensorNum      1              
+sensorName0    4653           
+
+PQBIN message
+gerritId:      
+              commitId:      fc6ce647       
+md5:           d6db2297ddfd44e8252c1f3f888f47b2
+sensorNum      1              
+sensorName0    4653           
+
+author:        lxowalle       desc:          gc4653 30fps   
+createTime:    2024-03-26 13:41:34version:                      
+tool Version:       v3.0.5.48           mode:      
+********************************************************************************
+[SAMPLE_COMM_ISP_Thread]-95: ISP Dev 0 running!
+0 R:1298 B:3773 CT:2688
+1 R:1629 B:2599 CT:3890
+2 R:2430 B:1675 CT:7300
+Golden 1629 1024 2599
+    Frames captured                   100
+    Total time                        1677.3 ms
+    Average per frame                 16.77 ms
+    Measured FPS                      59.6 fps
+maix multi-media driver released.
+ISP Vipipe(0) Free pa(0x8a52c000) va(0x0x3fc8ac0000)
+
+  Testing HD    1280x720 ...
+-- [W] Note that we do not recommend using large resolution RGB888 images, which can take up a lot of memory!
+
+-- [I] Find MMF_SENSOR_NAME=gcore_gc4653
+-- [I] Find MMF_SENSOR_FPS=60
+[SAMPLE_COMM_SNS_ParseIni]-2191: Parse /mnt/data/sensor_cfg.ini
+[parse_source_devnum]-1784: devNum =  1
+[parse_sensor_name]-1865: sensor =  GCORE_GC4653_MIPI_4M_30FPS_10BIT
+[parse_sensor_busid]-1894: bus_id =  4
+[parse_sensor_i2caddr]-1905: sns_i2c_addr =  29
+[parse_sensor_mipidev]-1916: mipi_dev =  0
+[parse_sensor_laneid]-1927: Lane_id =  4, 3, 2, -1, -1
+[parse_sensor_pnswap]-1938: pn_swap =  0, 0, 0, 0, 0
+[parse_sensor_mclken]-1960: mclk_en =  1
+[parse_sensor_mclk]-1971: mclk =  1
+[SAMPLE_COMM_SNS_ParseIni]-2191: Parse /mnt/data/sensor_cfg.ini
+[parse_source_devnum]-1784: devNum =  1
+[parse_sensor_name]-1865: sensor =  GCORE_GC4653_MIPI_4M_30FPS_10BIT
+[parse_sensor_busid]-1894: bus_id =  4
+[parse_sensor_i2caddr]-1905: sns_i2c_addr =  29
+[parse_sensor_mipidev]-1916: mipi_dev =  0
+[parse_sensor_laneid]-1927: Lane_id =  4, 3, 2, -1, -1
+[parse_sensor_pnswap]-1938: pn_swap =  0, 0, 0, 0, 0
+[parse_sensor_mclken]-1960: mclk_en =  1
+[parse_sensor_mclk]-1971: mclk =  1
+try release sys ok
+[_mmf_init]-1144: maix multi-media version:67a90e2-musl_riscv64
+maix multi-media init ok
+try release vio ok
+try release venc ok
+ISP Vipipe(0) Allocate pa(0x8a52c000) va(0x0x3fc8ac0000) size(291424)
+stSnsrMode.u16Width 1280 stSnsrMode.u16Height 720 60.000000 wdrMode 0 pstSnsObj 0x3fcb51a058
+[SAMPLE_COMM_VI_StartMIPI]-494: sensor 0 stDevAttr.devno 0
+20260417 12:01:25.838 0635 E isp AE_GetStatisticsConfig:4202 pstAeStatisticsCfg is NULL.
+20260417 12:01:25.838 0635 E isp AE_SetStatisticsConfig:4188 pstAeStatisticsCfg is NULL.
+awbInit ver 6.9@2021500
+0 R:1400 B:3100 CT:2850
+1 R:1500 B:2500 CT:3900
+2 R:2300 B:1600 CT:6500
+Golden 1024 1024 1024
+WB Quadratic:0
+isWdr:0
+ViPipe:0,===GC4653 720P 60fps 10bit LINEAR Init OK!===
+********************************************************************************
+cvi_bin_isp message
+gerritId:      97347          commitId:      fc6ce647       
+md5:           d6db2297ddfd44e8252c1f3f888f47b2
+sensorNum      1              
+sensorName0    4653           
+
+PQBIN message
+gerritId:      
+              commitId:      fc6ce647       
+md5:           d6db2297ddfd44e8252c1f3f888f47b2
+sensorNum      1              
+sensorName0    4653           
+
+author:        lxowalle       desc:          gc4653 30fps   
+createTime:    2024-03-26 13:41:34version:                      
+tool Version:       v3.0.5.48           mode:      
+********************************************************************************
+[SAMPLE_COMM_ISP_Thread]-95: ISP Dev 0 running!
+0 R:1298 B:3773 CT:2688
+1 R:1629 B:2599 CT:3890
+2 R:2430 B:1675 CT:7300
+Golden 1629 1024 2599
+    Frames captured                   100
+    Total time                        1677.4 ms
+    Average per frame                 16.77 ms
+    Measured FPS                      59.6 fps
+maix multi-media driver released.
+ISP Vipipe(0) Free pa(0x8a52c000) va(0x0x3fc8ac0000)
+
+  Camera Benchmark Summary:
+    QVGA   320x240                    59.7 fps
+    VGA    640x480                    59.6 fps
+    HD    1280x720                    59.6 fps
+
+============================================================
+  SECTION 3 – IMAGE PROCESSING BENCHMARK
+============================================================
+
+  draw_rect       (320x240, 200 iters)
+      Total: 49.6 ms  |  Per-op: 0.248 ms  |  Throughput: 4029.4 ops/s
+  draw_string     (320x240, 200 iters)
+      Total: 94.5 ms  |  Per-op: 0.473 ms  |  Throughput: 2115.7 ops/s
+  resize 320→160  (320x240, 200 iters)
+      Total: 182.3 ms  |  Per-op: 0.911 ms  |  Throughput: 1097.3 ops/s
+  crop 320→160    (320x240, 200 iters)
+      Total: 91.5 ms  |  Per-op: 0.457 ms  |  Throughput: 2186.5 ops/s
+  to_format RGB→BGR (320x240,200 iters)
+      Total: 548.5 ms  |  Per-op: 2.742 ms  |  Throughput: 364.6 ops/s
+[SAMPLE_COMM_SNS_ParseIni]-2191: Parse /mnt/data/sensor_cfg.ini
+[parse_source_devnum]-1784: devNum =  1
+[parse_sensor_name]-1865: sensor =  GCORE_GC4653_MIPI_4M_30FPS_10BIT
+[parse_sensor_busid]-1894: bus_id =  4
+[parse_sensor_i2caddr]-1905: sns_i2c_addr =  29
+[parse_sensor_mipidev]-1916: mipi_dev =  0
+[parse_sensor_laneid]-1927: Lane_id =  4, 3, 2, -1, -1
+[parse_sensor_pnswap]-1938: pn_swap =  0, 0, 0, 0, 0
+[parse_sensor_mclken]-1960: mclk_en =  1
+[parse_sensor_mclk]-1971: mclk =  1
+try release sys ok
+[_mmf_init]-1144: maix multi-media version:67a90e2-musl_riscv64
+maix multi-media init ok
+try release vio ok
+try release venc ok
+  to_format RGB→JPEG(320x240,200 iters)
+      Total: 2418.6 ms  |  Per-op: 12.093 ms  |  Throughput: 82.7 ops/s
+  copy            (320x240, 200 iters)
+      Total: 191.2 ms  |  Per-op: 0.956 ms  |  Throughput: 1046.0 ops/s
+  draw_circle x5  (320x240, 200 iters)
+      Total: 132.9 ms  |  Per-op: 0.665 ms  |  Throughput: 1504.5 ops/s
+  rotate 90°      (320x240, 200 iters)
+      Total: 5036.5 ms  |  Per-op: 25.182 ms  |  Throughput: 39.7 ops/s
+  draw_line x20   (320x240, 200 iters)
+      Total: 644.8 ms  |  Per-op: 3.224 ms  |  Throughput: 310.2 ops/s
+  to_bytes        (640x480, 200 iters)
+      Total: 1220.2 ms  |  Per-op: 6.101 ms  |  Throughput: 163.9 ops/s
+
+============================================================
+  SECTION 4 – CPU MATH STRESS TEST
+============================================================
+
+  Running integer arithmetic (5M ops)...
+    Integer arith                     23120.9 ms  |  0.22 Mops/s
+
+  Running float + sqrt (2M ops)...
+    Float+sqrt                        8630.4 ms  |  0.23 Mops/s
+
+  Running sin/cos trig (500K ops)...
+    Trig sin+cos                      3396.4 ms  |  147.21 Kops/s
+
+  Running string ops (100K ops)...
+    String ops                        821.1 ms  |  121.79 Kops/s
+
+  Running list sort/reverse (1K-element list, 1K rounds)...
+    List sort+rev                     76.5 ms  |  13067.2 rounds/s
+
+  Running recursive Fibonacci(30)...
+    Fib(30)                           832040  computed in 3067.6 ms
+
+  Running SHA-256 hash (5000 x 2KB blocks)...
+    SHA-256                           1276.7 ms  |  7.89 MB/s
+
+  Running memory alloc/free (5000 x 4KB blocks)...
+    Mem alloc/free                    62.3 ms  |  80271.9 alloc/s
+
+  Post-CPU-stress  [thermal_zone0] soc_thermal_0 56.0 °C
+
+============================================================
+  SECTION 5 – YOLO INFERENCE BENCHMARK (NPU/AI)
+============================================================
+  Using model                         YOLO11n  (/root/models/yolo11n.mud)
+
+-- [I] load cvimodel from: /root/models/yolo11n_320x224_int8.cvimodel
+-- [I] model info:
+	type: yolo11
+	input type: rgb
+	mean:0.000000 0.000000 0.000000 
+	scale:0.003922 0.003922 0.003922 
+	labels num: 80
+	input size: 320x224
+
+  Model input size                    320x224
+-- [I] Find MMF_SENSOR_NAME=gcore_gc4653
+-- [I] Find MMF_SENSOR_FPS=60
+[SAMPLE_COMM_SNS_ParseIni]-2191: Parse /mnt/data/sensor_cfg.ini
+[parse_source_devnum]-1784: devNum =  1
+[parse_sensor_name]-1865: sensor =  GCORE_GC4653_MIPI_4M_30FPS_10BIT
+[parse_sensor_busid]-1894: bus_id =  4
+[parse_sensor_i2caddr]-1905: sns_i2c_addr =  29
+[parse_sensor_mipidev]-1916: mipi_dev =  0
+[parse_sensor_laneid]-1927: Lane_id =  4, 3, 2, -1, -1
+[parse_sensor_pnswap]-1938: pn_swap =  0, 0, 0, 0, 0
+[parse_sensor_mclken]-1960: mclk_en =  1
+[parse_sensor_mclk]-1971: mclk =  1
+ISP Vipipe(0) Allocate pa(0x8b27a000) va(0x0x3fc85d9000) size(291424)
+stSnsrMode.u16Width 1280 stSnsrMode.u16Height 720 60.000000 wdrMode 0 pstSnsObj 0x3fcb51a058
+[SAMPLE_COMM_VI_StartMIPI]-494: sensor 0 stDevAttr.devno 0
+20260417 12:02:19.787 0635 E isp AE_GetStatisticsConfig:4202 pstAeStatisticsCfg is NULL.
+20260417 12:02:19.788 0635 E isp AE_SetStatisticsConfig:4188 pstAeStatisticsCfg is NULL.
+awbInit ver 6.9@2021500
+0 R:1400 B:3100 CT:2850
+1 R:1500 B:2500 CT:3900
+2 R:2300 B:1600 CT:6500
+Golden 1024 1024 1024
+WB Quadratic:0
+isWdr:0
+ViPipe:0,===GC4653 720P 60fps 10bit LINEAR Init OK!===
+********************************************************************************
+cvi_bin_isp message
+gerritId:      97347          commitId:      fc6ce647       
+md5:           d6db2297ddfd44e8252c1f3f888f47b2
+sensorNum      1              
+sensorName0    4653           
+
+PQBIN message
+gerritId:      
+              commitId:      fc6ce647       
+md5:           d6db2297ddfd44e8252c1f3f888f47b2
+sensorNum      1              
+sensorName0    4653           
+
+author:        lxowalle       desc:          gc4653 30fps   
+createTime:    2024-03-26 13:41:34version:                      
+tool Version:       v3.0.5.48           mode:      
+********************************************************************************
+[SAMPLE_COMM_ISP_Thread]-95: ISP Dev 0 running!
+0 R:1298 B:3773 CT:2688
+1 R:1629 B:2599 CT:3890
+2 R:2430 B:1675 CT:7300
+Golden 1629 1024 2599
+  Warming up (20 frames)...
+  Benchmarking inference (100 frames)...
+
+  Frames run                          100
+  Total time                          1675.8 ms
+  Average inference time              16.76 ms / frame
+  End-to-end FPS                      59.7 fps
+  Objects in last frame               1
+  ERROR during YOLO benchmark         __getitem__(): incompatible function arguments. The following argument types are supported:
+    1. (self: maix._maix.nn.Objects, idx: int) -> maix._maix.nn.Object
+
+Invoked with: <maix._maix.nn.Objects object at 0x3fcda7e870>, slice(None, 5, None)
+Traceback (most recent call last):
+  File "/tmp/maixpy_run/main.py", line 706, in section_yolo_benchmark
+    for o in objs[:5]:  # show up to 5 detections
+             ~~~~^^^^
+TypeError: __getitem__(): incompatible function arguments. The following argument types are supported:
+    1. (self: maix._maix.nn.Objects, idx: int) -> maix._maix.nn.Object
+
+Invoked with: <maix._maix.nn.Objects object at 0x3fcda7e870>, slice(None, 5, None)
+
+============================================================
+  SECTION 6 – SUSTAINED THERMAL STRESS TEST
+============================================================
+  Duration: 60 seconds of combined CPU + Camera + ImgOps load
+  Thermal readings logged every 10 seconds
+
+-- [I] Find MMF_SENSOR_NAME=gcore_gc4653
+-- [I] Find MMF_SENSOR_FPS=60
+[SAMPLE_COMM_SNS_ParseIni]-2191: Parse /mnt/data/sensor_cfg.ini
+[parse_source_devnum]-1784: devNum =  1
+[parse_sensor_name]-1865: sensor =  GCORE_GC4653_MIPI_4M_30FPS_10BIT
+[parse_sensor_busid]-1894: bus_id =  4
+[parse_sensor_i2caddr]-1905: sns_i2c_addr =  29
+[parse_sensor_mipidev]-1916: mipi_dev =  0
+[parse_sensor_laneid]-1927: Lane_id =  4, 3, 2, -1, -1
+[parse_sensor_pnswap]-1938: pn_swap =  0, 0, 0, 0, 0
+[parse_sensor_mclken]-1960: mclk_en =  1
+[parse_sensor_mclk]-1971: mclk =  1
+  Starting stress loop...
+
+    t=10s  frames=301  fps=30.0  mem_free=4MB
+      [thermal_zone0] soc_thermal_0   58.8 °C
+
+    t=20s  frames=602  fps=30.1  mem_free=4MB
+      [thermal_zone0] soc_thermal_0   59.1 °C
+
+    t=30s  frames=903  fps=30.1  mem_free=5MB
+      [thermal_zone0] soc_thermal_0   59.8 °C
+
+    t=40s  frames=1204  fps=30.1  mem_free=5MB
+      [thermal_zone0] soc_thermal_0   60.2 °C
+
+    t=50s  frames=1504  fps=30.1  mem_free=5MB
+      [thermal_zone0] soc_thermal_0   60.5 °C
+
+    t=60s  frames=1806  fps=30.1  mem_free=5MB
+      [thermal_zone0] soc_thermal_0   60.9 °C
+
+
+------------------------------------------------------------
+  Stress Test Complete!
+  Total frames processed              1806
+  Total time                          60.0 s
+  Average FPS (full loop)             30.1 fps
+
+  Peak temperatures during stress:
+    thermal_zone0                     60.9 °C  (PEAK)
+
+============================================================
+  SECTION 7 – FINAL REPORT
+============================================================
+
+  ── CAMERA CAPTURE THROUGHPUT ──
+    QVGA   320x240                    59.7 fps
+    VGA    640x480                    59.6 fps
+    HD    1280x720                    59.6 fps
+
+  ── CPU PERFORMANCE ──
+    Integer arith                     0.22 Mops/s
+    Float+sqrt                        0.23 Mops/s
+    Trig (sin+cos)                    147.21 Kops/s
+    SHA-256                           7.89 MB/s
+    Mem alloc/free                    80271.9 ops/s
+    Fib(30) latency                   3067.6 ms
+
+  ── THERMAL SUMMARY ──
+    Final idle  [thermal_zone0] soc_thermal_0 60.9 °C
+
+============================================================
+  Benchmark complete. Check peaks in Section 6 for thermal limits.
+============================================================
+
+  Finished: 2026-04-17 12:03:22
+
+maix multi-media driver released.
+ISP Vipipe(0) Free pa(0x8b27a000) va(0x0x3fc85d9000)
+
+program exited

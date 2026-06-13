@@ -1,0 +1,28 @@
+# On-device Python dependencies (run ON the MaixCAM, not the PC).
+#
+# Install once per device (survives reboot; lives on the SD card):
+#     pip3 install -r /root/aural-ai/requirements_device.txt
+# or individually:
+#     pip3 install gtts
+#
+# WHY THIS MATTERS: the device is audio-only (screen removed). Without gTTS,
+# every DYNAMIC phrase — scene descriptions, QRIS read-outs, the spoken Wi-Fi
+# URL, the "AuralAI siap" cue — silently falls back to nothing. Only the 118
+# pre-recorded object chimes in /root/audio/*.wav would play. Installing gTTS
+# lights up the whole speech pipeline (utils/tts.py → AudioManager).
+
+# Cloud TTS (Indonesian). Needs internet at synthesis time; results are cached
+# under /root/audio/tts_cache so a given phrase is only synthesized once.
+gtts>=2.5
+
+# mDNS / .local publishing for http://<device_name>.local:8080.
+# NOTE: already present on the stock MaixCAM image (zeroconf 0.39.4) — listed
+# here for completeness / reflash reproducibility.
+zeroconf>=0.39
+
+# OPTIONAL. Cloud pairing E2E (utils/crypto_box) is PURE PYTHON (no native deps)
+# so it runs even on riscv64 MaixCAM where `cryptography` has no wheel/Rust.
+# Installing `cryptography` is NOT required for E2E; it only upgrades secure_keys
+# at-rest encryption from the HMAC fallback to AES-GCM. Skip on boards (riscv64)
+# where it can't build.
+# cryptography>=41.0

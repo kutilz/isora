@@ -1,0 +1,79 @@
+# ─── Environment & Secrets ────────────────────────────────────────────────────
+.env
+*.env
+*.env.local
+.env.local
+/root/.env
+secrets.py
+
+# Mock device test state (throwaway device secret + private key — never commit)
+tools/.mock_device.json
+
+# ─── Model Files (besar, download manual dari MaixHub) ────────────────────────
+models/*.mud
+models/*.onnx
+models/*.tflite
+models/*.pt
+!models/.gitkeep
+
+# ─── Generated Audio WAV ──────────────────────────────────────────────────────
+audio/*.wav
+!audio/.gitkeep
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
+/root/logs/
+
+# ─── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# ─── Virtual Environments ─────────────────────────────────────────────────────
+venv/
+env/
+.venv/
+.env/
+
+# ─── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── IDE ──────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ─── Captures (foto dari MaixCAM / companion) ────────────────────────────────
+captures/
+companion/captures/
+*.jpg
+*.jpeg
+*.png
+
+maix-docs/
+maix_docs/
+.gstack/
+.clone/
+
+# ─── Agent / tooling state (never commit) ─────────────────────────────────────
+.claude/
+.antigravitycli/
+.understand-anything/
+
+# ─── Node / Next.js / Vercel (web/) ───────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-error.log*
+*.tsbuildinfo
+.next/
+.vercel
+out/

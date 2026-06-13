@@ -1,0 +1,12 @@
+{
+  "running": false,
+  "elapsed_s": 28824,
+  "fps": 50.8,
+  "temp_c": 51.7,
+  "ram_free_mb": 151,
+  "throttle_events": 2,
+  "frames_total": 1463620,
+  "start_time": "2026-05-08T20:00:00",
+  "target_hours": 8.0,
+  "error": null
+}

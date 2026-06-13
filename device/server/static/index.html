@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AuralAI Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">
+          <span class="logo-icon" aria-hidden="true">◎</span>
+          <span class="logo-text">AuralAI <span class="logo-sub">Dev Dashboard</span></span>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="device-info">
+          <span class="device-name" id="deviceName">maixcam.local:8080</span>
+        </div>
+        <div class="status-badge" id="statusBadge" aria-live="polite" aria-label="Status koneksi">
+          <span class="status-dot" id="statusDot" aria-hidden="true"></span>
+          <span id="statusText">Connecting...</span>
+        </div>
+        <!-- WCAG 2.1 AA Badge -->
+        <div class="wcag-badge" role="complementary" aria-label="Informasi aksesibilitas">
+          <span class="wcag-badge-label">WCAG 2.1 AA</span>
+          <button class="wcag-info-btn" aria-label="Detail standar aksesibilitas" onclick="this.setAttribute('aria-expanded', this.getAttribute('aria-expanded')==='true'?'false':'true')">i</button>
+          <div class="wcag-tooltip" role="tooltip">
+            <div class="wcag-tooltip-title">WCAG 2.1 Level AA Compliant</div>
+            <ul class="wcag-tooltip-list">
+              <li>Kontras warna ≥ 4.5:1</li>
+              <li>Navigasi keyboard penuh</li>
+              <li>Focus indicator terlihat</li>
+              <li>Screen reader compatible</li>
+              <li>ARIA landmarks & live regions</li>
+              <li>Modal focus management</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- HEALTH BAR -->
+    <div class="health-bar" id="healthBar" role="region" aria-label="Status perangkat">
+      <div class="health-label">DEVICE:</div>
+      <div class="health-items">
+        <div class="health-item">
+          <span class="health-key">CPU</span>
+          <span class="health-val health-temp" id="hTemp">--°C</span>
+        </div>
+        <div class="health-sep">|</div>
+        <div class="health-item">
+          <span class="health-key">RAM</span>
+          <div class="health-mini-bar"><div class="health-mini-fill" id="hRamFill"></div></div>
+          <span class="health-val" id="hRam">-- MB</span>
+        </div>
+        <div class="health-sep">|</div>
+        <div class="health-item">
+          <span class="health-key">Disk</span>
+          <div class="health-mini-bar"><div class="health-mini-fill" id="hDiskFill"></div></div>
+          <span class="health-val" id="hDisk">-- MB</span>
+        </div>
+        <div class="health-sep">|</div>
+        <div class="health-item">
+          <span class="health-key">Load</span>
+          <span class="health-val" id="hLoad">--</span>
+        </div>
+        <div class="health-sep">|</div>
+        <div class="health-item">
+          <span class="health-key">Freq</span>
+          <span class="health-val" id="hFreq">-- MHz</span>
+        </div>
+        <div class="health-sep">|</div>
+        <div class="health-item">
+          <span class="health-key">Up</span>
+          <span class="health-val" id="hUptime">--</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN GRID -->
+    <main class="main-grid">
+
+      <!-- LEFT: Camera Panel -->
+      <section class="panel camera-panel" aria-labelledby="cameraPanelTitle">
+        <div class="panel-header">
+          <span class="panel-title" id="cameraPanelTitle">Camera Preview</span>
+          <div class="camera-meta">
+            <span class="badge" id="fpsCounter">-- fps</span>
+            <span class="badge badge-dim" id="resLabel">320×224</span>
+          </div>
+        </div>
+        <div class="camera-frame" id="cameraFrame">
+          <img id="cameraImg" src="" alt="Camera Feed" style="display:none;" />
+          <canvas id="cameraCanvas" width="320" height="224" aria-label="Camera preview dengan overlay deteksi objek" role="img"></canvas>
+          <div class="camera-overlay" id="overlayDetections"></div>
+          <div class="camera-scanline"></div>
+        </div>
+        <div class="camera-footer">
+          <div class="refresh-info">
+            <span class="dot-pulse" id="refreshPulse"></span>
+            <span id="refreshLabel">Refreshing every 500ms</span>
+          </div>
+          <label class="toggle-wrap">
+            <input type="checkbox" id="overlayToggle" checked />
+            <span>Show Boxes</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- RIGHT: Info Panel -->
+      <section class="panel info-panel" aria-labelledby="detectionPanelTitle">
+
+        <!-- Mode Switcher -->
+        <div class="mode-switcher" role="group" aria-label="Pilih mode operasi">
+          <span class="mode-label" aria-hidden="true">MODE:</span>
+          <button class="mode-btn active" id="btnExplorer" onclick="setMode('explorer')" aria-pressed="true">Explorer</button>
+          <button class="mode-btn" id="btnContext" onclick="setMode('context')" aria-pressed="false">Context</button>
+          <button class="mode-btn" id="btnQris" onclick="setMode('qris')" aria-pressed="false">Scan QRIS</button>
+        </div>
+
+        <!-- Detection List -->
+        <div class="info-section">
+          <div class="section-title">
+            <span id="detectionPanelTitle">Detections</span>
+            <span class="badge" id="detectionCount" aria-live="polite" aria-label="Jumlah deteksi">0</span>
+          </div>
+          <div class="detection-list" id="detectionList" role="log" aria-live="polite" aria-label="Daftar objek terdeteksi">
+            <div class="detection-empty">Waiting for detections...</div>
+          </div>
+        </div>
+
+        <!-- Audio Simulator -->
+        <div class="info-section">
+          <div class="section-title">
+            <span>Audio Sim</span>
+            <span class="badge badge-green" id="audioStatus" aria-live="polite" aria-label="Status audio">Ready</span>
+          </div>
+          <div class="audio-display" id="audioDisplay">
+            <span class="audio-icon" aria-hidden="true">🔊</span>
+            <span id="audioText" aria-live="polite" aria-label="Teks audio terakhir">—</span>
+          </div>
+          <div class="audio-queue" id="audioQueue"></div>
+        </div>
+
+        <!-- AI Focus Status -->
+        <div class="info-section" id="focusSection" style="display:none;">
+          <div class="section-title">
+            <span>AI Focus Active</span>
+            <span class="badge badge-orange" id="focusTimer">5s</span>
+          </div>
+          <div class="focus-bar">
+            <div class="focus-progress" id="focusProgress"></div>
+          </div>
+        </div>
+
+      </section>
+    </main>
+
+    <!-- CONTROLS BAR -->
+    <div class="controls-bar" role="toolbar" aria-label="Kontrol perangkat">
+      <div class="controls-label" aria-hidden="true">CONTROLS:</div>
+      <div class="controls-group">
+        <button class="ctrl-btn ctrl-focus" onclick="cmdAIFocus()" id="btnAiFocus" aria-label="Aktifkan AI Focus selama 5 detik">
+          <span class="ctrl-icon" aria-hidden="true">⚡</span> AI Focus 5s
+        </button>
+        <button class="ctrl-btn ctrl-capture" onclick="cmdCapture()" aria-label="Ambil foto dari kamera">
+          <span class="ctrl-icon" aria-hidden="true">📷</span> Capture
+        </button>
+        <button class="ctrl-btn ctrl-qris" onclick="cmdQris()" aria-label="Pindai kode QRIS">
+          <span class="ctrl-icon" aria-hidden="true">⬛</span> Scan QRIS
+        </button>
+        <button class="ctrl-btn ctrl-describe" onclick="cmdDescribe()" aria-label="Deskripsikan scene menggunakan AI">
+          <span class="ctrl-icon" aria-hidden="true">💬</span> Describe Scene
+        </button>
+        <button class="ctrl-btn ctrl-bench" onclick="cmdBenchmark()" aria-label="Buka panel benchmark">
+          <span class="ctrl-icon" aria-hidden="true">⏱</span> Benchmark
+        </button>
+        <button class="ctrl-btn ctrl-ai-settings" onclick="openAISettings()" aria-label="Buka pengaturan AI">
+          <span class="ctrl-icon" aria-hidden="true">⚙</span> AI Settings
+        </button>
+      </div>
+    </div>
+
+    <!-- LATENCY MONITOR -->
+    <div class="latency-bar" role="region" aria-label="Monitor latensi pipeline">
+      <div class="latency-label" aria-hidden="true">LATENCY:</div>
+      <div class="latency-items">
+        <div class="lat-item">
+          <span class="lat-key">Camera</span>
+          <span class="lat-val" id="latCamera">--ms</span>
+        </div>
+        <div class="lat-sep">|</div>
+        <div class="lat-item">
+          <span class="lat-key">Inference</span>
+          <span class="lat-val" id="latInference">--ms</span>
+        </div>
+        <div class="lat-sep">|</div>
+        <div class="lat-item">
+          <span class="lat-key">Postproc</span>
+          <span class="lat-val" id="latPostproc">--ms</span>
+        </div>
+        <div class="lat-sep">|</div>
+        <div class="lat-item lat-total">
+          <span class="lat-key">Total</span>
+          <span class="lat-val" id="latTotal">--ms</span>
+        </div>
+        <div class="lat-sep">|</div>
+        <div class="lat-item">
+          <span class="lat-key">FPS Est.</span>
+          <span class="lat-val" id="latFps">--</span>
+        </div>
+      </div>
+      <div class="latency-bar-graph">
+        <div class="bar-segment bar-camera" id="barCamera"></div>
+        <div class="bar-segment bar-inference" id="barInference"></div>
+        <div class="bar-segment bar-postproc" id="barPostproc"></div>
+      </div>
+    </div>
+
+    <!-- LOG PANEL -->
+    <div class="log-panel" role="region" aria-labelledby="logPanelTitle">
+      <div class="log-header">
+        <span class="log-title" id="logPanelTitle">LOG</span>
+        <div class="log-controls">
+          <label class="toggle-wrap">
+            <input type="checkbox" id="autoScrollToggle" checked />
+            <span>Auto-scroll</span>
+          </label>
+          <button class="log-clear-btn" onclick="clearLogs()" aria-label="Hapus semua log">Clear</button>
+        </div>
+      </div>
+      <div class="log-body" id="logBody" role="log" aria-live="polite" aria-label="Log aktivitas perangkat"></div>
+    </div>
+
+
+  </div><!-- end .app -->
+
+  <!-- ═══════════════════════════════════════════════════════════
+       BENCHMARK MODAL
+       ═══════════════════════════════════════════════════════════ -->
+  <div class="bench-overlay" id="benchOverlay" onclick="closeBenchModal(event)">
+    <div class="bench-modal" id="benchModal" role="dialog" aria-modal="true" aria-labelledby="benchModalTitle">
+
+      <!-- Modal Header -->
+      <div class="bench-header">
+        <div class="bench-header-left">
+          <span class="bench-logo" aria-hidden="true">◈</span>
+          <div>
+            <div class="bench-title" id="benchModalTitle">AuralAI Benchmark Suite</div>
+            <div class="bench-subtitle">MaixCAM SG2002 / RISC-V C906 + NPU 1TOPS</div>
+          </div>
+        </div>
+        <button class="bench-close" onclick="closeBenchModal()" aria-label="Tutup panel benchmark">✕</button>
+      </div>
+
+      <!-- Tab Navigation -->
+      <div class="bench-tabs" role="tablist" aria-label="Pilih jenis benchmark">
+        <button class="bench-tab active" id="tabQuick" role="tab" aria-selected="true"  aria-controls="panelQuick"   onclick="switchBenchTab('quick')">
+          <span class="bench-tab-icon" aria-hidden="true">⚡</span> Quick Bench
+        </button>
+        <button class="bench-tab"        id="tabQris"  role="tab" aria-selected="false" aria-controls="panelQris"    onclick="switchBenchTab('qris')">
+          <span class="bench-tab-icon" aria-hidden="true">⬛</span> QRIS Bench
+        </button>
+        <button class="bench-tab"        id="tabLongterm" role="tab" aria-selected="false" aria-controls="panelLongterm" onclick="switchBenchTab('longterm')">
+          <span class="bench-tab-icon" aria-hidden="true">🗓</span> Long-term (5 Hari)
+        </button>
+      </div>
+
+      <!-- ─── TAB: QUICK BENCH ──────────────────────────────── -->
+      <div class="bench-panel" id="panelQuick" role="tabpanel" aria-labelledby="tabQuick">
+
+        <div class="bench-toolbar">
+          <button class="bench-btn bench-btn-primary" id="btnRunAll" onclick="benchRunAll()">
+            ▶ Run Full Benchmark
+          </button>
+          <div class="bench-section-sel">
+            <span class="bench-lbl">Section:</span>
+            <select class="bench-select" id="sectionSelect">
+              <option value="all">Semua (0-7)</option>
+              <option value="0">§0 System Info</option>
+              <option value="1">§1 Memory Bandwidth</option>
+              <option value="2">§2 JPEG Codec</option>
+              <option value="3">§3 NPU Inference</option>
+              <option value="4">§4 Full Pipeline</option>
+              <option value="5">§5 Concurrent Stress</option>
+              <option value="6">§6 Thermal Endurance</option>
+            </select>
+            <button class="bench-btn" onclick="benchRunSection()">▶ Run</button>
+          </div>
+          <button class="bench-btn" onclick="clearBenchOutput()">Clear</button>
+        </div>
+
+        <!-- Section Status Cards -->
+        <div class="bench-sections" id="benchSections">
+          <div class="bench-sec-card" id="sec0"><span class="sec-num">§0</span><span class="sec-name">System Info</span><span class="sec-status pending" id="s0st">—</span></div>
+          <div class="bench-sec-card" id="sec1"><span class="sec-num">§1</span><span class="sec-name">Memory BW</span><span class="sec-status pending" id="s1st">—</span></div>
+          <div class="bench-sec-card" id="sec2"><span class="sec-num">§2</span><span class="sec-name">JPEG Codec</span><span class="sec-status pending" id="s2st">—</span></div>
+          <div class="bench-sec-card" id="sec3"><span class="sec-num">§3</span><span class="sec-name">NPU Infer</span><span class="sec-status pending" id="s3st">—</span></div>
+          <div class="bench-sec-card" id="sec4"><span class="sec-num">§4</span><span class="sec-name">Full Pipeline</span><span class="sec-status pending" id="s4st">—</span></div>
+          <div class="bench-sec-card" id="sec5"><span class="sec-num">§5</span><span class="sec-name">Concurrent</span><span class="sec-status pending" id="s5st">—</span></div>
+          <div class="bench-sec-card" id="sec6"><span class="sec-num">§6</span><span class="sec-name">Thermal 90s</span><span class="sec-status pending" id="s6st">—</span></div>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="bench-progress-wrap" id="benchProgressWrap" style="display:none;">
+          <div class="bench-progress-bar">
+            <div class="bench-progress-fill" id="benchProgressFill"></div>
+          </div>
+          <span class="bench-progress-label" id="benchProgressLabel">Menjalankan...</span>
+        </div>
+
+        <!-- Output terminal -->
+        <div class="bench-output" id="benchOutput">
+          <div class="bench-output-hint">Tekan <strong>▶ Run Full Benchmark</strong> untuk memulai...</div>
+        </div>
+
+        <!-- Summary cards (shown after run) -->
+        <div class="bench-summary" id="benchSummary" style="display:none;">
+          <div class="bench-sum-card">
+            <div class="bench-sum-label">NPU Ceiling FPS</div>
+            <div class="bench-sum-val" id="sumNpuFps">—</div>
+          </div>
+          <div class="bench-sum-card">
+            <div class="bench-sum-label">Pipeline FPS</div>
+            <div class="bench-sum-val" id="sumPipeFps">—</div>
+          </div>
+          <div class="bench-sum-card">
+            <div class="bench-sum-label">Memory BW</div>
+            <div class="bench-sum-val" id="sumMemBw">—</div>
+          </div>
+          <div class="bench-sum-card">
+            <div class="bench-sum-label">JPEG Encode</div>
+            <div class="bench-sum-val" id="sumJpegMs">—</div>
+          </div>
+          <div class="bench-sum-card">
+            <div class="bench-sum-label">Concurrency Drop</div>
+            <div class="bench-sum-val" id="sumConcDrop">—</div>
+          </div>
+          <div class="bench-sum-card">
+            <div class="bench-sum-label">Peak Temp</div>
+            <div class="bench-sum-val" id="sumPeakTemp">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── TAB: QRIS BENCH ───────────────────────────────── -->
+      <div class="bench-panel" id="panelQris" role="tabpanel" aria-labelledby="tabQris" style="display:none;">
+
+        <div class="bench-toolbar">
+          <div class="bench-filter-group">
+            <span class="bench-lbl">Kondisi:</span>
+            <label class="bench-chip"><input type="checkbox" checked id="cNormal"> Normal</label>
+            <label class="bench-chip"><input type="checkbox" checked id="cDim">    Redup</label>
+            <label class="bench-chip"><input type="checkbox" checked id="cShake">  Shake</label>
+            <label class="bench-chip"><input type="checkbox" checked id="cTilt">   Miring±15°</label>
+          </div>
+        </div>
+        <div class="bench-toolbar">
+          <div class="bench-filter-group">
+            <span class="bench-lbl">QRIS:</span>
+            <label class="bench-chip"><input type="checkbox" checked id="qA"> QRIS_A</label>
+            <label class="bench-chip"><input type="checkbox" checked id="qB"> QRIS_B</label>
+            <label class="bench-chip"><input type="checkbox" checked id="qC"> QRIS_C</label>
+          </div>
+          <div style="flex:1"></div>
+          <span class="bench-lbl">Trial/kondisi:</span>
+          <input class="bench-num-input" type="number" id="qrisTrials" value="10" min="5" max="50">
+          <button class="bench-btn bench-btn-primary" id="btnRunQris" onclick="qrisRunBenchmark()">▶ Start</button>
+          <button class="bench-btn" onclick="clearQrisOutput()">Clear</button>
+        </div>
+
+        <!-- QRIS Trial Table -->
+        <div class="qris-table-wrap">
+          <table class="qris-table" id="qrisTable">
+            <thead>
+              <tr>
+                <th scope="col">#</th><th scope="col">QRIS</th><th scope="col">Kondisi</th>
+                <th scope="col">Hasil</th><th scope="col">Waktu</th><th scope="col">Guidance</th>
+              </tr>
+            </thead>
+            <tbody id="qrisTableBody">
+              <tr><td colspan="6" class="qris-table-empty">Tekan Start untuk memulai benchmark...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- QRIS Summary Stats -->
+        <div class="qris-stats" id="qrisStats" style="display:none;">
+          <div class="qris-stat-group">
+            <div class="qris-stat-title">Time-to-Detect</div>
+            <div class="qris-stat-row"><span>Mean</span><span id="qs-mean">—</span></div>
+            <div class="qris-stat-row"><span>Std Dev</span><span id="qs-std">—</span></div>
+            <div class="qris-stat-row"><span>p50</span><span id="qs-p50">—</span></div>
+            <div class="qris-stat-row"><span>p95</span><span id="qs-p95">—</span></div>
+          </div>
+          <div class="qris-stat-group">
+            <div class="qris-stat-title">Success Rate per Kondisi</div>
+            <div class="qris-stat-row"><span>Normal</span><span id="qs-r-normal">—</span></div>
+            <div class="qris-stat-row"><span>Redup</span><span id="qs-r-dim">—</span></div>
+            <div class="qris-stat-row"><span>Shake</span><span id="qs-r-shake">—</span></div>
+            <div class="qris-stat-row"><span>Miring±15°</span><span id="qs-r-tilt">—</span></div>
+          </div>
+          <div class="qris-stat-group">
+            <div class="qris-stat-title">Lainnya</div>
+            <div class="qris-stat-row"><span>Guidance Accuracy</span><span id="qs-guide">—</span></div>
+            <div class="qris-stat-row"><span>False Positive Rate</span><span id="qs-fp">—</span></div>
+            <div class="qris-stat-row"><span>Total Trial</span><span id="qs-total">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── TAB: OVERNIGHT STRESS ───────────────────────── -->
+      <div class="bench-panel" id="panelLongterm" role="tabpanel" aria-labelledby="tabLongterm" style="display:none;">
+
+        <!-- Info header -->
+        <div class="lt-header">
+          <div class="lt-schedule-info">
+            <span class="lt-label">Pipeline:</span>
+            <span class="lt-val">Camera → YOLO11 → Annotate → JPEG (full loop)</span>
+          </div>
+          <div class="lt-schedule-info">
+            <span class="lt-label">Status file:</span>
+            <span class="lt-val">/tmp/overnight_status.json</span>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="stress-controls">
+          <div class="stress-duration-row">
+            <span class="bench-lbl">Durasi:</span>
+            <input class="bench-num-input" type="number" id="stressDuration" value="3" min="0.5" max="24" step="0.5">
+            <span class="bench-lbl">jam</span>
+          </div>
+          <button class="bench-btn bench-btn-primary" id="btnStressStart" onclick="stressStart()">
+            ▶ Start Stress Test
+          </button>
+          <button class="bench-btn bench-btn-danger" id="btnStressStop" onclick="stressStop()" disabled>
+            ■ Stop
+          </button>
+        </div>
+
+        <!-- Live progress -->
+        <div class="stress-progress-card" id="stressProgressCard">
+          <div class="stress-progress-header">
+            <div class="stress-status-row">
+              <span class="stress-dot" id="stressDot"></span>
+              <span class="stress-status-text" id="stressStatusText">Idle</span>
+              <span class="stress-elapsed" id="stressElapsed">—</span>
+            </div>
+            <div class="stress-progress-bar-wrap">
+              <div class="stress-progress-bar">
+                <div class="stress-progress-fill" id="stressProgressFill" style="width:0%"></div>
+              </div>
+              <span class="stress-progress-pct" id="stressProgressPct">0%</span>
+            </div>
+          </div>
+
+          <!-- Live stat grid -->
+          <div class="stress-stat-grid">
+            <div class="stress-stat">
+              <div class="stress-stat-key">FPS</div>
+              <div class="stress-stat-val" id="st-fps">—</div>
+            </div>
+            <div class="stress-stat">
+              <div class="stress-stat-key">Frames</div>
+              <div class="stress-stat-val" id="st-frames">—</div>
+            </div>
+            <div class="stress-stat">
+              <div class="stress-stat-key">Temp</div>
+              <div class="stress-stat-val" id="st-temp">—</div>
+            </div>
+            <div class="stress-stat">
+              <div class="stress-stat-key">RAM Free</div>
+              <div class="stress-stat-val" id="st-ram">—</div>
+            </div>
+            <div class="stress-stat">
+              <div class="stress-stat-key">Throttle</div>
+              <div class="stress-stat-val" id="st-throttle">—</div>
+            </div>
+            <div class="stress-stat">
+              <div class="stress-stat-key">Started</div>
+              <div class="stress-stat-val stress-stat-small" id="st-started">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error display -->
+        <div class="stress-error" id="stressError" role="alert" aria-live="assertive" style="display:none;"></div>
+
+        <!-- Session history (localStorage) -->
+        <div class="stress-history" id="stressHistory">
+          <div class="stress-history-title">Riwayat Sesi</div>
+          <div class="stress-history-list" id="stressHistoryList">
+            <div style="color:var(--text3);font-size:11px;text-align:center;padding:12px;">Belum ada sesi</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div><!-- end .bench-modal -->
+  </div><!-- end .bench-overlay -->
+
+  <!-- ═══════════════════════════════════════════════════════════
+       AI SETTINGS MODAL
+       ═══════════════════════════════════════════════════════════ -->
+  <div class="bench-overlay" id="aiSettingsOverlay" onclick="closeAISettings(event)">
+    <div class="bench-modal" id="aiSettingsModal" role="dialog" aria-modal="true" aria-labelledby="aiSettingsTitle" style="max-width:560px;">
+
+      <!-- Header -->
+      <div class="bench-header">
+        <div class="bench-header-left">
+          <span class="bench-logo" aria-hidden="true">⚙</span>
+          <div>
+            <div class="bench-title" id="aiSettingsTitle">AI Vision Settings</div>
+            <div class="bench-subtitle">Provider, model, API keys, dan prompt</div>
+          </div>
+        </div>
+        <button class="bench-close" onclick="closeAISettings()" aria-label="Tutup pengaturan AI">✕</button>
+      </div>
+
+      <!-- Top status strip: autosave + lock -->
+      <div class="ai-top-strip" role="region" aria-label="Status setelan">
+        <label class="ai-toggle" title="Auto-save setiap perubahan disimpan ke device. Matikan untuk save manual.">
+          <input type="checkbox" id="autosaveSwitch" onchange="toggleAutosave()" checked />
+          <span>Autosave</span>
+        </label>
+        <span class="ai-lock-badge" id="aiKeysLockBadge" onclick="aiSettingsLockToggle()" title="Klik untuk lock/unlock procedure">🔓</span>
+      </div>
+
+      <!-- Tab navigation -->
+      <div class="bench-tabs" role="tablist" aria-label="Pilih kategori pengaturan" style="border-top:1px solid var(--border);">
+        <button class="bench-tab active" id="aiTabAI" role="tab" aria-selected="true" aria-controls="aiPanelAI" onclick="switchAITab('ai')">
+          <span class="bench-tab-icon" aria-hidden="true">🤖</span> AI Vision
+        </button>
+        <button class="bench-tab" id="aiTabHardware" role="tab" aria-selected="false" aria-controls="aiPanelHardware" onclick="switchAITab('hardware')">
+          <span class="bench-tab-icon" aria-hidden="true">⚙</span> Hardware
+        </button>
+        <button class="bench-tab" id="aiTabPresets" role="tab" aria-selected="false" aria-controls="aiPanelPresets" onclick="switchAITab('presets')">
+          <span class="bench-tab-icon" aria-hidden="true">⚡</span> Presets
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div style="padding:16px 20px;overflow-y:auto;max-height:65vh;">
+
+      <!-- ── TAB: AI Vision ─────────────────────── -->
+      <div id="aiPanelAI" role="tabpanel" aria-labelledby="aiTabAI">
+        <!-- Provider selector -->
+        <div class="ai-set-row">
+          <label class="ai-set-label" id="aiProviderLabel">Provider Aktif</label>
+          <div class="ai-set-provider-group" id="aiProviderGroup" role="group" aria-labelledby="aiProviderLabel">
+            <button class="ai-prov-btn" id="provBtn_openai" onclick="selectProvider('openai')" aria-pressed="true">OpenAI</button>
+            <button class="ai-prov-btn" id="provBtn_gemini" onclick="selectProvider('gemini')" aria-pressed="false">Gemini</button>
+            <button class="ai-prov-btn" id="provBtn_claude" onclick="selectProvider('claude')" aria-pressed="false">Claude</button>
+          </div>
+        </div>
+
+        <!-- Timeout -->
+        <div class="ai-set-row">
+          <label class="ai-set-label">Timeout (detik)</label>
+          <input class="ai-set-input ai-set-input-sm" type="number" id="aiTimeout" min="5" max="60" value="15" />
+        </div>
+
+        <!-- ── OpenAI ── -->
+        <div class="ai-provider-section" id="aiSec_openai">
+          <div class="ai-sec-title">OpenAI</div>
+          <div class="ai-set-row">
+            <label class="ai-set-label">API Key</label>
+            <input class="ai-set-input" type="password" id="openaiKey"
+                   placeholder="sk-… (kosong = tidak diubah)" autocomplete="off" />
+            <span class="ai-key-hint" id="openaiKeyHint"></span>
+          </div>
+          <div class="ai-set-row">
+            <label class="ai-set-label">Status</label>
+            <span class="ai-key-status" id="openaiKeyStatus">—</span>
+            <button class="bench-btn ai-encrypt-btn" onclick="aiSettingsEncryptKey('openai')" title="Enkripsi key di atas dan simpan ke device">🔒 Enkripsi &amp; Simpan</button>
+          </div>
+          <div class="ai-set-row">
+            <label class="ai-set-label">Model</label>
+            <select class="ai-set-select" id="openaiModel">
+              <option value="gpt-4o-mini">gpt-4o-mini</option>
+              <option value="gpt-4o">gpt-4o</option>
+              <option value="gpt-4-turbo">gpt-4-turbo</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ── Gemini ── -->
+        <div class="ai-provider-section" id="aiSec_gemini" style="display:none;">
+          <div class="ai-sec-title">Google Gemini</div>
+          <div class="ai-set-row">
+            <label class="ai-set-label">API Key</label>
+            <input class="ai-set-input" type="password" id="geminiKey"
+                   placeholder="AIza… (kosong = tidak diubah)" autocomplete="off" />
+            <span class="ai-key-hint" id="geminiKeyHint"></span>
+          </div>
+          <div class="ai-set-row">
+            <label class="ai-set-label">Status</label>
+            <span class="ai-key-status" id="geminiKeyStatus">—</span>
+            <button class="bench-btn ai-encrypt-btn" onclick="aiSettingsEncryptKey('gemini')" title="Enkripsi key di atas dan simpan ke device">🔒 Enkripsi &amp; Simpan</button>
+          </div>
+          <div class="ai-set-row">
+            <label class="ai-set-label">Model</label>
+            <select class="ai-set-select" id="geminiModel">
+              <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+              <option value="gemini-1.5-pro">gemini-1.5-pro</option>
+              <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ── Claude ── -->
+        <div class="ai-provider-section" id="aiSec_claude" style="display:none;">
+          <div class="ai-sec-title">Anthropic Claude</div>
+          <div class="ai-set-row">
+            <label class="ai-set-label">API Key</label>
+            <input class="ai-set-input" type="password" id="claudeKey"
+                   placeholder="sk-ant-… (kosong = tidak diubah)" autocomplete="off" />
+            <span class="ai-key-hint" id="claudeKeyHint"></span>
+          </div>
+          <div class="ai-set-row">
+            <label class="ai-set-label">Status</label>
+            <span class="ai-key-status" id="claudeKeyStatus">—</span>
+            <button class="bench-btn ai-encrypt-btn" onclick="aiSettingsEncryptKey('claude')" title="Enkripsi key di atas dan simpan ke device">🔒 Enkripsi &amp; Simpan</button>
+          </div>
+          <div class="ai-set-row">
+            <label class="ai-set-label">Model</label>
+            <select class="ai-set-select" id="claudeModel">
+              <option value="claude-haiku-4-5-20251001">claude-haiku-4-5 (cepat)</option>
+              <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
+              <option value="claude-opus-4-7">claude-opus-4-7</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ── Prompts ── -->
+        <div class="ai-sec-title" style="margin-top:16px;">Prompt</div>
+        <div class="ai-set-row ai-set-row-col">
+          <label class="ai-set-label">Deskripsi Scene (Context Mode)</label>
+          <textarea class="ai-set-textarea" id="promptScene" rows="3"></textarea>
+        </div>
+        <div class="ai-set-row ai-set-row-col">
+          <label class="ai-set-label">Scan QRIS</label>
+          <textarea class="ai-set-textarea" id="promptQris" rows="3"></textarea>
+        </div>
+
+      </div><!-- end #aiPanelAI -->
+
+      <!-- ── TAB: Hardware ──────────────────────── -->
+      <div id="aiPanelHardware" role="tabpanel" aria-labelledby="aiTabHardware" style="display:none;">
+        <div class="ai-sec-title">Deteksi</div>
+
+        <div class="ai-set-row">
+          <label class="ai-set-label" for="hwConfThreshold">Confidence Threshold</label>
+          <input class="ai-set-input ai-set-input-sm" type="number" id="hwConfThreshold"
+                 min="0.1" max="0.9" step="0.05" value="0.5"
+                 aria-describedby="hwConfHint" />
+          <span id="hwConfHint" style="color:var(--text3);font-size:11px;">0.1 – 0.9</span>
+        </div>
+        <div class="ai-set-row" style="margin-bottom:4px;">
+          <label class="ai-set-label" for="hwConfSlider"><span class="sr-only">Slider confidence threshold</span></label>
+          <input type="range" id="hwConfSlider" min="0.1" max="0.9" step="0.05" value="0.5"
+                 aria-label="Slider confidence threshold" aria-describedby="hwConfHint"
+                 style="flex:1;accent-color:var(--accent);"
+                 oninput="document.getElementById('hwConfThreshold').value=parseFloat(this.value).toFixed(2)" />
+        </div>
+        <div class="ai-set-row" style="color:var(--text3);font-size:10px;margin-bottom:16px;">
+          <label class="ai-set-label"></label>
+          <span>Turunkan ke 0.35 di keramaian agar lebih sensitif; naikkan ke 0.7 di tempat sepi untuk kurangi false positive.</span>
+        </div>
+
+        <div class="ai-sec-title">Audio</div>
+        <div class="ai-set-row">
+          <label class="ai-set-label" for="hwVolume">Volume Speaker</label>
+          <input class="ai-set-input ai-set-input-sm" type="number" id="hwVolume"
+                 min="0" max="100" step="5" value="80"
+                 aria-describedby="hwVolumeHint" />
+          <span id="hwVolumeHint" style="color:var(--text3);font-size:11px;">0 – 100</span>
+        </div>
+        <div class="ai-set-row">
+          <label class="ai-set-label" for="hwVolumeSlider"><span class="sr-only">Slider volume speaker</span></label>
+          <input type="range" id="hwVolumeSlider" min="0" max="100" step="5" value="80"
+                 aria-label="Slider volume speaker" aria-describedby="hwVolumeHint"
+                 style="flex:1;accent-color:var(--accent);"
+                 oninput="document.getElementById('hwVolume').value=this.value" />
+        </div>
+      </div><!-- end #aiPanelHardware -->
+
+      <!-- ── TAB: Presets ──────────────────────── -->
+      <div id="aiPanelPresets" role="tabpanel" aria-labelledby="aiTabPresets" style="display:none;">
+        <p style="color:var(--text3);font-size:12px;margin:4px 0 14px;">
+          Pilih preset untuk tuning cepat. Klik "Apply" — nilai akan diterapkan ke config secara langsung.
+        </p>
+
+        <div class="ai-sec-title">Explorer (YOLO)</div>
+        <div class="ai-set-row">
+          <label class="ai-set-label" for="preset_explorer">Preset</label>
+          <select class="ai-set-select" id="preset_explorer">
+            <option value="">— pilih preset —</option>
+          </select>
+          <button class="bench-btn" onclick="applyPreset('explorer')">Apply</button>
+        </div>
+
+        <div class="ai-sec-title" style="margin-top:14px;">Scene Description</div>
+        <div class="ai-set-row">
+          <label class="ai-set-label" for="preset_scene">Preset</label>
+          <select class="ai-set-select" id="preset_scene">
+            <option value="">— pilih preset —</option>
+          </select>
+          <button class="bench-btn" onclick="applyPreset('scene')">Apply</button>
+        </div>
+
+        <div class="ai-sec-title" style="margin-top:14px;">QRIS</div>
+        <div class="ai-set-row">
+          <label class="ai-set-label" for="qrisModeSel">Mode</label>
+          <select class="ai-set-select" id="qrisModeSel">
+            <option value="online">Online (AI Vision)</option>
+            <option value="offline">Offline (decoder lokal)</option>
+            <option value="hybrid" selected>Hybrid (rekomendasi)</option>
+          </select>
+        </div>
+        <div class="ai-set-row">
+          <label class="ai-set-label" for="preset_qris">Preset</label>
+          <select class="ai-set-select" id="preset_qris">
+            <option value="">— pilih preset —</option>
+          </select>
+          <button class="bench-btn" onclick="applyPreset('qris')">Apply</button>
+        </div>
+      </div><!-- end #aiPanelPresets -->
+
+        <!-- Footer buttons -->
+        <div class="ai-set-footer">
+          <button class="bench-btn" id="btnAITest" onclick="aiSettingsTest()" aria-label="Test koneksi ke AI provider yang dipilih">
+            <span aria-hidden="true">🔌</span> Test Koneksi
+          </button>
+          <span class="ai-test-result" id="aiTestResult" role="status" aria-live="polite"></span>
+          <div style="flex:1"></div>
+          <button class="bench-btn" onclick="closeAISettings()" aria-label="Batal dan tutup pengaturan">Batal</button>
+          <button class="bench-btn bench-btn-primary" id="btnAISave" onclick="aiSettingsSave()" aria-label="Simpan pengaturan AI">
+            <span aria-hidden="true">💾</span> Simpan Settings
+          </button>
+        </div>
+
+      </div><!-- end body -->
+    </div><!-- end .bench-modal -->
+  </div><!-- end .bench-overlay -->
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

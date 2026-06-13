@@ -1,0 +1,24 @@
+# AuralAI SDK — PC/Laptop dependencies
+# Install dengan: pip install -r requirements_pc.txt
+
+# Audio generation (generate_audio.py)
+gtts>=2.5.0
+
+# Deploy script (deploy.py)
+paramiko>=3.4.0
+
+# Companion server + desktop runner (MVP teruji)
+flask>=3.0.0
+openai>=1.40.0
+python-dotenv>=1.0.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+
+# Optional: YOLO lokal di companion/run_desktop.py (mode Auto)
+# ultralytics>=8.0.0
+
+# Optional: telemetry di desktop runner
+# psutil>=5.9.0
+
+# Optional: untuk development dan testing
+requests>=2.31.0

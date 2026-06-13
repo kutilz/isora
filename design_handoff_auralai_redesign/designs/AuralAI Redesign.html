@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AuralAI — Redesign Companion + Hardware</title>
+  <link rel="stylesheet" href="tokens.css" />
+  <style>
+    /* Subtle override of the canvas chrome so it sits inside our brand */
+    body { background: #2A2724; }
+    /* Inside-artboard scope: make sure host tokens cascade everywhere */
+    .dc-artboard-body { background: var(--bg, #F7F6F1); }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- React + Babel pinned -->
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <!-- App scripts -->
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="icons.jsx"></script>
+  <script type="text/babel" src="companion-dashboard.jsx"></script>
+  <script type="text/babel" src="setup-wizard.jsx"></script>
+  <script type="text/babel" src="hardware-diagram.jsx"></script>
+  <script type="text/babel" src="audio-spec.jsx"></script>
+  <script type="text/babel" src="storyboard.jsx"></script>
+
+  <script type="text/babel" data-presets="env,react">
+    const { useState, useEffect } = React;
+
+    /* Cover artboard — index of what's inside */
+    function Cover() {
+      return (
+        <div style={{
+          width: "100%", minHeight: "100%",
+          background: "linear-gradient(160deg, #00635D 0%, #003C39 100%)",
+          color: "#fff",
+          padding: "64px 56px",
+          display: "grid", alignContent: "space-between", gap: 48,
+        }}>
+          <header>
+            <div style={{ display: "flex", alignItems: "center", gap: 14,
+                           fontSize: 14, opacity: .8, fontWeight: 600,
+                           textTransform: "uppercase", letterSpacing: ".12em" }}>
+              <span style={{ width: 36, height: 2, background: "#fff" }} /> Design proposal
+            </div>
+            <h1 style={{ fontSize: 64, lineHeight: 1.05, margin: "16px 0 8px",
+                          fontWeight: 700, letterSpacing: "-.02em" }}>
+              AuralAI<br/>
+              <span style={{ opacity: .7 }}>Redesign · Companion + Hardware</span>
+            </h1>
+            <p style={{ fontSize: 20, opacity: .85, maxWidth: 720, lineHeight: 1.5 }}>
+              Dashboard untuk pendamping (guru SLB, keluarga) yang sederhana, ramah HP, dan
+              memenuhi WCAG 2.1 AA. Hardware kacamata diperbaiki dengan tactile button
+              system + chime audio hierarchy.
+            </p>
+          </header>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24 }}>
+            {[
+              ["01", "Dashboard pendamping", "Versi desktop & HP. Fokus pada 7 tugas inti, bukan metrik teknis."],
+              ["02", "Setup wizard",           "First-time: WiFi → API key → uji. Empat langkah, ~5 menit."],
+              ["03", "Hardware kacamata",      "Modul di tangkai kanan + 4 tombol tactile + roda volume."],
+              ["04", "Audio chime system",     "P0..P3 priority + chime <300ms + getar + suara bicara."],
+              ["05", "Skenario nyata",         "Koridor sekolah, kantin, bayar di warung."],
+            ].map(([n, t, d]) => (
+              <div key={n} style={{
+                padding: 24,
+                background: "rgba(255,255,255,.08)",
+                borderRadius: 14,
+                border: "1px solid rgba(255,255,255,.12)",
+              }}>
+                <div style={{ fontSize: 12, opacity: .6, fontWeight: 700,
+                               letterSpacing: ".1em" }}>{n}</div>
+                <div style={{ fontSize: 19, fontWeight: 700, margin: "6px 0 8px" }}>{t}</div>
+                <div style={{ fontSize: 13, opacity: .8, lineHeight: 1.55 }}>{d}</div>
+              </div>
+            ))}
+          </div>
+
+          <footer style={{ display: "flex", gap: 24, fontSize: 13, opacity: .65 }}>
+            <span>WCAG 2.1 AA · kontras ≥ 4.5:1 · hit target ≥ 48px</span>
+            <span>·</span>
+            <span>ID-first copy · keyboard navigable · screen-reader landmarks</span>
+          </footer>
+        </div>
+      );
+    }
+
+    /* Compose all artboards inside one canvas */
+    function App() {
+      return (
+        <DesignCanvas title="AuralAI · Companion + Hardware redesign">
+
+          <DCSection id="overview" title="Overview">
+            <DCArtboard id="cover" label="Cover · ringkasan proposal" width={1280} height={780}>
+              <Cover />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="companion" title="1 · Dashboard pendamping">
+            <DCArtboard id="dash-desktop" label="Desktop (1280×900) — laptop guru" width={1280} height={1500}>
+              <CompanionDashboard width={1280} />
+            </DCArtboard>
+            <DCArtboard id="dash-mobile" label="Mobile (390×844) — HP guru" width={390} height={1900}>
+              <CompanionDashboard width={390} />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="setup" title="2 · Setup wizard (first-time)">
+            <DCArtboard id="wizard" label="Wizard 4 langkah" width={1100} height={1100}>
+              <SetupWizard />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="hardware" title="3 · Hardware redesign">
+            <DCArtboard id="hw" label="Modul, tombol, mounting" width={1280} height={1800}>
+              <HardwareDiagram />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="audio" title="4 · Audio chime system">
+            <DCArtboard id="audio" label="Priority + chime library + haptic + speech" width={1280} height={1800}>
+              <AudioSpec />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="story" title="5 · Skenario nyata">
+            <DCArtboard id="story" label="Tiga skenario pemakaian harian" width={1280} height={1700}>
+              <Storyboard />
+            </DCArtboard>
+          </DCSection>
+
+        </DesignCanvas>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>

@@ -1,0 +1,260 @@
+/* AuralAI Companion — Design tokens
+   Aksesibilitas-first: kontras tinggi, type besar, semantik warna jelas.
+   Semua kombinasi text-on-bg di sini telah dicek ≥ 4.5:1 (WCAG AA).
+*/
+
+:root {
+  /* ── Surfaces ──────────────────────────────────────────────────── */
+  --bg:           #F7F6F1;
+  --surface:      #FFFFFF;
+  --surface-2:    #EFEDE6;
+  --surface-3:    #E3E0D7;
+
+  /* ── Ink (text) ────────────────────────────────────────────────── */
+  --ink:          #141414;
+  --ink-2:        #3D3D3D;
+  --ink-3:        #5F5F5F;
+  --ink-inverse:  #FFFFFF;
+
+  /* ── Borders ───────────────────────────────────────────────────── */
+  --border:       #C8C5BB;
+  --border-strong:#7A776E;
+
+  /* ── Brand accent (teal — tenang, teknologi, netral) ───────────── */
+  --accent:       #00635D;
+  --accent-hover: #004A45;
+  --accent-soft:  #C9E5E3;
+  --accent-ink:   #002D2A;
+
+  /* ── Semantic ──────────────────────────────────────────────────── */
+  --ok:           #1F6B3A;
+  --ok-soft:      #D5EBD9;
+  --warn:         #8A5A00;
+  --warn-soft:    #FCE9C2;
+  --danger:       #B3261E;
+  --danger-soft:  #FADDDB;
+  --info:         #1B4D8E;
+  --info-soft:    #D9E5F5;
+
+  /* ── Focus ring (3px solid, always visible) ────────────────────── */
+  --focus:        #1B4D8E;
+
+  /* ── Type ──────────────────────────────────────────────────────── */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Type scale — minimum body 16px, headings generous */
+  --t-xs:    13px;
+  --t-sm:    15px;
+  --t-base:  17px;   /* body */
+  --t-md:    19px;
+  --t-lg:    22px;
+  --t-xl:    28px;
+  --t-2xl:   36px;
+  --t-3xl:   48px;
+
+  /* ── Spacing (4pt) ─────────────────────────────────────────────── */
+  --s-1: 4px;  --s-2: 8px;   --s-3: 12px;  --s-4: 16px;
+  --s-5: 20px; --s-6: 24px;  --s-8: 32px;  --s-10: 40px;
+  --s-12: 48px; --s-16: 64px;
+
+  /* ── Radius ────────────────────────────────────────────────────── */
+  --r-sm: 6px;  --r-md: 10px;  --r-lg: 14px;  --r-xl: 20px;  --r-pill: 999px;
+
+  /* ── Shadow ────────────────────────────────────────────────────── */
+  --shadow-sm: 0 1px 2px rgba(20,20,20,.06), 0 0 0 1px rgba(20,20,20,.04);
+  --shadow-md: 0 6px 20px -8px rgba(20,20,20,.15), 0 0 0 1px rgba(20,20,20,.04);
+  --shadow-lg: 0 20px 40px -16px rgba(20,20,20,.20), 0 0 0 1px rgba(20,20,20,.04);
+
+  /* ── Hit-target minimum (WCAG 2.1 AAA = 44px) ──────────────────── */
+  --hit: 48px;
+}
+
+/* High-contrast mode override (toggleable from companion app shell) */
+[data-contrast="high"] {
+  --bg:        #FFFFFF;
+  --surface:   #FFFFFF;
+  --surface-2: #F2F2F2;
+  --surface-3: #E5E5E5;
+  --ink:       #000000;
+  --ink-2:     #000000;
+  --ink-3:     #1F1F1F;
+  --border:        #000000;
+  --border-strong: #000000;
+  --accent:        #003F3A;
+  --accent-hover:  #002825;
+  --accent-soft:   #B8DCDA;
+  --ok:        #094D24;
+  --warn:      #5C3D00;
+  --danger:    #7A1B16;
+  --focus:     #003C99;
+  --shadow-sm: 0 0 0 2px #000;
+  --shadow-md: 0 0 0 2px #000;
+  --shadow-lg: 0 0 0 2px #000;
+}
+
+/* Larger type toggle */
+[data-type="large"] {
+  --t-xs:    15px;
+  --t-sm:    17px;
+  --t-base:  20px;
+  --t-md:    23px;
+  --t-lg:    27px;
+  --t-xl:    34px;
+  --t-2xl:   44px;
+  --t-3xl:   58px;
+}
+
+/* ── Base reset ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font-sans);
+  font-size: var(--t-base);
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Focus ring — visible on every interactive element */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+[data-motion="reduce"] *, [data-motion="reduce"] *::before, [data-motion="reduce"] *::after {
+  animation-duration: 0.001ms !important;
+  transition-duration: 0.001ms !important;
+}
+
+/* Screen-reader-only utility */
+.sr-only {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skip link */
+.skip-link {
+  position: absolute;
+  left: -10000px; top: 8px;
+  background: var(--ink);
+  color: var(--ink-inverse);
+  padding: 12px 18px;
+  border-radius: var(--r-md);
+  font-weight: 600;
+  z-index: 9999;
+}
+.skip-link:focus { left: 8px; }
+
+/* ── Reusable atoms ─────────────────────────────────────────────── */
+.btn {
+  font: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  min-height: var(--hit);
+  padding: 0 var(--s-5);
+  border-radius: var(--r-md);
+  border: 2px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--t-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .12s, border-color .12s, transform .05s;
+}
+.btn:hover { background: var(--surface-2); }
+.btn:active { transform: translateY(1px); }
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--ink-inverse);
+}
+.btn--primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn--danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--ink-inverse);
+}
+.btn--ghost {
+  background: transparent;
+  border-color: transparent;
+}
+.btn--ghost:hover { background: var(--surface-2); }
+.btn--icon { padding: 0; width: var(--hit); }
+.btn--lg { min-height: 64px; font-size: var(--t-md); padding: 0 var(--s-8); }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+}
+.card--solid {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  border: 1px solid var(--border);
+}
+.badge--ok      { background: var(--ok-soft);      color: var(--ok);      border-color: transparent; }
+.badge--warn    { background: var(--warn-soft);    color: var(--warn);    border-color: transparent; }
+.badge--danger  { background: var(--danger-soft);  color: var(--danger);  border-color: transparent; }
+.badge--info    { background: var(--info-soft);    color: var(--info);    border-color: transparent; }
+.badge--accent  { background: var(--accent-soft);  color: var(--accent-ink); border-color: transparent; }
+
+.dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--ink-3);
+  display: inline-block;
+  flex-shrink: 0;
+}
+.dot--ok     { background: var(--ok); }
+.dot--warn   { background: var(--warn); }
+.dot--danger { background: var(--danger); box-shadow: 0 0 0 3px var(--danger-soft); }
+
+.kbd {
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--ink-2);
+}
+
+/* visual-icon component (no emoji, vector-only) */
+.vi {
+  width: 1em; height: 1em;
+  display: inline-block;
+  vertical-align: -0.125em;
+  fill: currentColor;
+}

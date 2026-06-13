@@ -1,0 +1,25 @@
+{
+  "running": false,
+  "section": 3,
+  "lines": [
+    {"tag": "div",     "text": "════════════════════════════════════════════════════════════════"},
+    {"tag": "section", "text": "§3  NPU INFERENCE BENCHMARK"},
+    {"tag": "div",     "text": "════════════════════════════════════════════════════════════════"},
+    {"tag": "kv",      "text": "  Model                              /root/models/yolo11n.mud"},
+    {"tag": "kv",      "text": "  Input                              320×224  FMT_RGB888"},
+    {"tag": "kv",      "text": "  NPU inference per frame            16.74 ms"},
+    {"tag": "kv",      "text": "  NPU ceiling FPS                    59.7 fps"},
+    {"tag": "kv",      "text": "  Sustained 200 frames FPS           59.1 fps"},
+    {"tag": "kv",      "text": "  Peak temp after load               46.4 °C"},
+    {"tag": "ok",      "text": "  ✓ NPU: 59.7 fps ceiling, 59.1 fps sustained"},
+    {"tag": "div",     "text": "════════════════════════════════════════════════════════════════"},
+    {"tag": "ok",      "text": "  ✓ BENCHMARK COMPLETE"},
+    {"tag": "results", "text": "{\"s3_npu_fps\": 59.7, \"s3_pipe_fps\": 59.1, \"s3_peak_temp\": 46.4}"},
+    {"tag": "div",     "text": "════════════════════════════════════════════════════════════════"}
+  ],
+  "results": {
+    "s3_npu_fps":   59.7,
+    "s3_pipe_fps":  59.1,
+    "s3_peak_temp": 46.4
+  }
+}

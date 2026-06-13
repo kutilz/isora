@@ -1,0 +1,131 @@
+{
+  "common": {
+    "app_name": "AuralAI",
+    "save": "Simpan",
+    "cancel": "Batal",
+    "back": "Kembali",
+    "next": "Lanjut",
+    "skip": "Lewati",
+    "close": "Tutup",
+    "loading": "Memuat...",
+    "error": "Ada masalah",
+    "online": "Terhubung",
+    "offline": "Terputus",
+    "yes": "Ya",
+    "no": "Tidak",
+    "skip_to_content": "Lewati ke konten utama"
+  },
+  "a11y": {
+    "title": "Aksesibilitas",
+    "high_contrast": "Kontras tinggi",
+    "large_type": "Teks besar",
+    "reduce_motion": "Kurangi animasi"
+  },
+  "nav": {
+    "companion": "Beranda",
+    "admin": "Mode lanjutan",
+    "guide": "Panduan",
+    "setup": "Pengaturan awal"
+  },
+  "modes": {
+    "explorer": "Jelajah",
+    "context":  "Deskripsi",
+    "qris":     "QRIS",
+    "explorer_sub": "Mengumumkan benda di sekitar",
+    "context_sub":  "Menjelaskan pemandangan",
+    "qris_sub":     "Memindai kode pembayaran"
+  },
+  "status": {
+    "device_online":  "Perangkat terhubung",
+    "device_offline": "Perangkat terputus",
+    "battery":        "Baterai",
+    "battery_unset":  "(belum dikalibrasi)",
+    "wifi":           "WiFi",
+    "wifi_no":        "Tidak ada WiFi",
+    "temperature":    "Suhu",
+    "cloud_ai":       "AI cloud",
+    "last_caption":   "Suara terakhir"
+  },
+  "volume": {
+    "title":        "Volume suara",
+    "play_sample":  "Mainkan suara percobaan",
+    "mute":         "Senyap",
+    "louder":       "Lebih keras",
+    "softer":       "Lebih pelan",
+    "audio_mode":   "Cara mendengar",
+    "audio_mode_chime":  "Hanya chime (mahir)",
+    "audio_mode_speech": "Hanya bicara (pemula)",
+    "audio_mode_both":   "Chime + bicara (default)"
+  },
+  "activity": {
+    "title":   "Aktivitas hari ini",
+    "empty":   "Belum ada aktivitas.",
+    "export":  "Unduh log hari ini (CSV)",
+    "filter_all":      "Semua",
+    "filter_explorer": "Jelajah",
+    "filter_context":  "Deskripsi",
+    "filter_qris":     "QRIS",
+    "filter_system":   "Sistem"
+  },
+  "footer": {
+    "report":   "Lapor masalah",
+    "call":     "Panggil pengguna",
+    "shutdown": "Matikan perangkat",
+    "version":  "Versi"
+  },
+  "setup": {
+    "title": "Pengaturan awal",
+    "intro": "Empat langkah, sekitar lima menit. Tidak perlu rumit.",
+    "step1": {
+      "title": "Hidupkan perangkat",
+      "body":  "Tekan tombol Power di tangkai kanan kacamata sampai LED hijau menyala."
+    },
+    "step2": {
+      "title":  "Sambungkan WiFi",
+      "ssid":   "Nama jaringan (SSID)",
+      "pass":   "Password"
+    },
+    "step3": {
+      "title":      "API key layanan AI",
+      "provider":   "Penyedia",
+      "key":        "API key",
+      "key_help":   "Disimpan terenkripsi di perangkat. Hanya operator yang punya akses."
+    },
+    "step4": {
+      "title":   "Uji & serahkan",
+      "finish":  "Selesai & kembali ke beranda"
+    }
+  },
+  "guide": {
+    "hero_title":   "AuralAI — kacamata yang menceritakan sekitarmu",
+    "hero_sub":     "Modul kecil di tangkai kacamata yang mengenali objek, menjelaskan pemandangan, dan membaca kode QRIS — semuanya berbahasa Indonesia.",
+    "demo_audio":   "Coba demo audio",
+    "see_hardware": "Lihat hardware",
+    "how_title":    "Bagaimana cara pakainya?",
+    "hw_title":     "Tombol di kacamatamu",
+    "audio_title":  "Suara yang kamu akan dengar",
+    "pref_title":   "Pilih cara mendengar",
+    "pref_save":    "Simpan ke perangkat saya",
+    "pref_share":   "Salin link untuk pendamping",
+    "start_setup":  "Mulai setup"
+  },
+  "admin": {
+    "ribbon": "MODE ADMIN — Perubahan langsung mempengaruhi pengalaman pengguna",
+    "view_as": "Lihat sebagai",
+    "view_companion": "Pendamping",
+    "view_admin": "Admin",
+    "view_setup": "Setup",
+    "view_logs": "Log",
+    "view_benchmark": "Benchmark",
+    "view_ai": "Pengaturan AI",
+    "debug_overlay": "Tampilkan angka teknis",
+    "dev_sidebar": "Panel teknis",
+    "latency": "Latensi",
+    "log_tail": "Log terbaru",
+    "test_ai": "Tes koneksi AI",
+    "probe_i2c": "Probe I2C baterai",
+    "restart": "Restart service",
+    "reboot": "Hard reboot",
+    "copy_config": "Salin config.json"
+  }
+}
