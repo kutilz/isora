@@ -114,7 +114,7 @@ def draw_bottom(img, text, color=None):
 
 def draw_menu_overlay(img):
     cv_fill(img, 0, 0, CAM_W, 28, C_DKGRAY)
-    cv_text(img, CAM_W // 2 - 36, 6, "AURALAI", C_CYAN, scale=1.5)
+    cv_text(img, CAM_W // 2 - 31, 6, "I-SORA", C_CYAN, scale=1.5)
     cv_text(img, CAM_W - 95, 9, "Desktop Mode", C_GREEN, scale=1)
     entries = [
         (30,  78,  C_BLUE,   "1. Deteksi Objek",   "Otomatis & terus-menerus"),

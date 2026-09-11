@@ -145,21 +145,21 @@ def _spell_ip(ip: str) -> str:
 
 
 def _spoken_host(base_url: str) -> str:
-    """'https://auralai.app' → 'auralai titik app' (intelligible by ear)."""
+    """'https://isora.app' → 'isora titik app' (intelligible by ear)."""
     host = (base_url or "").split("//")[-1].split("/")[0]
     host = host.split(":")[0]  # drop port
     return host.replace(".", " titik ").replace("-", " strip ")
 
 
-def pairing_phrase(code: str, base_url: str = "https://auralai.app") -> str:
+def pairing_phrase(code: str, base_url: str = "https://isora-smartglasses.vercel.app") -> str:
     """
     Spoken sentence telling a helper how to pair via the web hub using a code.
     Returned as a single string so it caches as exactly one TTS wav.
     """
-    site = _spoken_host(base_url) or "auralai titik app"
+    site = _spoken_host(base_url) or "isora strip smartglasses titik vercel titik app"
     spelled = _spell(code)
     return " ".join([
-        "AuralAI siap.",
+        "Isora siap.",
         f"Untuk menghubungkan, buka {site} di ponsel,",
         f"lalu masukkan kode: {spelled}.",
         "Tekan tombol sebentar untuk mengulang kode, atau tekan agak lama bila sudah selesai.",
@@ -175,7 +175,7 @@ def onboarding_phrase(port: int = 8080) -> str:
     ip = current_ip()
     host_spoken = name.replace("-", " strip ")
     parts = [
-        "AuralAI siap digunakan.",
+        "Isora siap digunakan.",
         "Untuk membuka panel kontrol, sambungkan ponsel ke jaringan WiFi yang sama,",
     ]
     if ip:

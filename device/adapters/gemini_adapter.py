@@ -66,11 +66,16 @@ class GeminiAdapter(AIAdapter):
         except Exception as e:
             raise AdapterError(str(e)) from e
 
+    # Token budgets are generous because current Gemini "flash" models spend
+    # part of maxOutputTokens on internal thinking; a tight cap (e.g. 150) gets
+    # consumed by thinking and truncates the visible answer mid-sentence. The
+    # prompt still constrains the answer to 1–2 sentences, so real output stays
+    # short — the high cap only guarantees room for thinking + the full reply.
     def describe_scene(self, jpeg_bytes: bytes, prompt: str) -> str:
-        return self._call(jpeg_bytes, prompt, max_tokens=150)
+        return self._call(jpeg_bytes, prompt, max_tokens=1024)
 
     def scan_qris(self, jpeg_bytes: bytes, prompt: str) -> str:
-        return self._call(jpeg_bytes, prompt, max_tokens=80)
+        return self._call(jpeg_bytes, prompt, max_tokens=512)
 
     def test_connection(self) -> dict:
         try:

@@ -29,22 +29,24 @@ function CompanionApp() {
             <Icon name="glasses" size={20} />
           </span>
           <span>
-            <div style={{ fontWeight: 700 }}>AuralAI</div>
+            <div style={{ fontWeight: 700 }}>I-Sora</div>
             <div style={{ fontSize: "var(--t-xs)", color: "var(--ink-3)" }}>
               {t("nav.companion")}
             </div>
           </span>
         </div>
         <span class="app-header__spacer" />
+        {/* Caregiver-facing links only — the technical area stays a small
+            footer link so a non-technical user is never routed into it. */}
         <nav aria-label="Menu utama" style={{ display: "flex", gap: 4 }}>
-          <a href="/setup" class="btn btn--ghost" style={{ minHeight: 40 }}>
-            {t("nav.setup")}
+          <a href="/buttons" class="btn btn--ghost" style={{ minHeight: 40 }}>
+            {t("nav.buttons")}
           </a>
           <a href="/guide" class="btn btn--ghost" style={{ minHeight: 40 }}>
             {t("nav.guide")}
           </a>
-          <a href="/admin" class="btn btn--ghost" style={{ minHeight: 40 }}>
-            {t("nav.admin")}
+          <a href="/setup" class="btn btn--ghost" style={{ minHeight: 40 }}>
+            {t("nav.setup")}
           </a>
         </nav>
       </header>
@@ -71,7 +73,7 @@ function CompanionApp() {
             padding: "var(--s-4) 0 var(--s-6)",
           }}
         >
-          AuralAI · Sesuai WCAG 2.1 AA ·{" "}
+          I-Sora · Sesuai WCAG 2.1 AA ·{" "}
           <a href="/admin" style={{ color: "var(--ink-3)" }}>
             {t("nav.admin")}
           </a>

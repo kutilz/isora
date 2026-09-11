@@ -898,7 +898,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>AuralAI</title>
+  <title>I-Sora</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { -webkit-tap-highlight-color: transparent; }
@@ -937,12 +937,12 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <div id="overlay" class="fixed inset-0 bg-gray-950/95 z-50 flex items-center justify-center p-6 backdrop-blur-sm">
   <div class="bg-gray-900 border border-gray-800 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
     <div class="text-5xl mb-5">&#128374;</div>
-    <h1 class="text-3xl font-black text-blue-400 mb-1 tracking-wide">AURALAI</h1>
+    <h1 class="text-3xl font-black text-blue-400 mb-1 tracking-wide">I-SORA</h1>
     <p class="text-gray-500 text-sm mb-1">Asisten visual tunanetra</p>
     <p class="text-gray-600 text-xs mb-8">Ketuk tombol untuk mengaktifkan audio &amp; monitoring</p>
     <button onclick="startApp()"
       class="w-full bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold py-4 rounded-2xl text-lg shadow-lg shadow-blue-900/40 transition btn-tap">
-      &#9654;&nbsp; Mulai AuralAI
+      &#9654;&nbsp; Mulai I-Sora
     </button>
   </div>
 </div>
@@ -962,7 +962,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   <!-- ─── Header bar ─── -->
   <div class="flex items-center justify-between mb-4 gap-2 flex-wrap">
     <div>
-      <h1 class="text-2xl font-black text-blue-400 tracking-widest">AURALAI</h1>
+      <h1 class="text-2xl font-black text-blue-400 tracking-widest">I-SORA</h1>
       <p class="text-gray-600 text-[10px] tracking-widest uppercase">Observer Panel</p>
     </div>
     <div class="flex items-center gap-2 flex-wrap justify-end">
@@ -1943,7 +1943,7 @@ function clearDebug() {
 function startApp() {
   isTtsEnabled = true;
   document.getElementById("overlay").classList.add("hidden");
-  rawSpeak("Sistem AuralAI aktif.");
+  rawSpeak("Sistem Isora aktif.");
   setInterval(pollStatus,      400);
   setInterval(pollSpeechQueue, 800);
   setInterval(pollDebugLog,   1500);

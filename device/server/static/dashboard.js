@@ -1080,7 +1080,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Start polling
   setStatus('connecting', 'Connecting...');
-  log('info', 'AuralAI Dev Dashboard — menghubungkan ke MaixCAM...');
+  log('info', 'I-Sora Dev Dashboard — menghubungkan ke MaixCAM...');
   log('info', `Snapshot setiap ${SNAPSHOT_INTERVAL}ms  |  Status setiap ${STATUS_INTERVAL}ms`);
 
   pollStatus();

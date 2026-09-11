@@ -43,7 +43,39 @@ def get_or_synthesize(
     with _lock:
         if os.path.exists(path):  # re-check after acquiring lock
             return path
-        return _synthesize(text, path, lang, timeout_s)
+        result = _synthesize(text, path, lang, timeout_s)
+        if result:
+            _prune_cache(cache_dir)
+        return result
+
+
+# Scene descriptions are near-unique, so this cache mostly accumulates one-off
+# entries rather than hitting. Each entry is a small .wav (gTTS mp3) plus a much
+# larger .pcm sibling written by AudioManager._ensure_pcm. On a 128 MB device
+# with limited flash that grows unbounded, so cap it: keep the most recently
+# synthesized MAX_ENTRIES utterances (enough for "repeat last result" and any
+# real repeats), deleting the oldest wav+pcm pairs beyond that.
+_MAX_ENTRIES = 120
+
+
+def _prune_cache(cache_dir: str, max_entries: int = _MAX_ENTRIES) -> None:
+    try:
+        wavs = [
+            os.path.join(cache_dir, f)
+            for f in os.listdir(cache_dir)
+            if f.endswith(".wav")
+        ]
+        if len(wavs) <= max_entries:
+            return
+        wavs.sort(key=lambda p: os.path.getmtime(p))  # oldest first
+        for wav in wavs[: len(wavs) - max_entries]:
+            for victim in (wav, os.path.splitext(wav)[0] + ".pcm"):
+                try:
+                    os.remove(victim)
+                except OSError:
+                    pass
+    except OSError:
+        pass
 
 
 def _synthesize(text: str, out_path: str, lang: str, timeout_s: float) -> Optional[str]:

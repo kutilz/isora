@@ -20,6 +20,10 @@ export interface DeviceStatus {
   setup_completed: boolean;
   cam_w: number;
   cam_h: number;
+  /** Mode Ambil Data — when true every assistive feature is disabled. */
+  data_collection_mode?: boolean;
+  capturing?: boolean;
+  capture_count?: number;
 }
 
 export interface HistoryItem {

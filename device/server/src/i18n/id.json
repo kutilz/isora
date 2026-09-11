@@ -1,6 +1,6 @@
 {
   "common": {
-    "app_name": "AuralAI",
+    "app_name": "I-Sora",
     "save": "Simpan",
     "cancel": "Batal",
     "back": "Kembali",
@@ -25,7 +25,16 @@
     "companion": "Beranda",
     "admin": "Mode lanjutan",
     "guide": "Panduan",
-    "setup": "Pengaturan awal"
+    "setup": "Pengaturan awal",
+    "buttons": "Kendali tombol"
+  },
+  "collect": {
+    "banner_title": "Mode Ambil Data aktif",
+    "recording": "sedang merekam",
+    "standby": "siaga",
+    "photos": "foto",
+    "banner_body": "Semua fitur asistif (deteksi objek, deskripsi, QRIS) nonaktif — perangkat hanya mengumpulkan foto, dan tetap begitu walau dimatikan-nyalakan.",
+    "banner_action": "Buka halaman Ambil Data"
   },
   "modes": {
     "explorer": "Jelajah",
@@ -97,7 +106,7 @@
     }
   },
   "guide": {
-    "hero_title":   "AuralAI — kacamata yang menceritakan sekitarmu",
+    "hero_title":   "I-Sora — kacamata yang menceritakan sekitarmu",
     "hero_sub":     "Modul kecil di tangkai kacamata yang mengenali objek, menjelaskan pemandangan, dan membaca kode QRIS — semuanya berbahasa Indonesia.",
     "demo_audio":   "Coba demo audio",
     "see_hardware": "Lihat hardware",
@@ -115,6 +124,8 @@
     "view_companion": "Pendamping",
     "view_admin": "Admin",
     "view_setup": "Setup",
+    "view_buttons": "Simulasi tombol",
+    "view_collect": "Ambil Data (dataset)",
     "view_logs": "Log",
     "view_benchmark": "Benchmark",
     "view_ai": "Pengaturan AI",

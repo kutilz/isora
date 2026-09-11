@@ -10,11 +10,15 @@ import { ensureToken } from "../lib/api";
 import { t } from "../lib/i18n";
 import "../styles/global.css";
 
-type View = "companion" | "setup" | "logs" | "benchmark" | "ai" | "legacy";
+type View =
+  | "companion" | "setup" | "buttons" | "collect"
+  | "logs" | "benchmark" | "ai" | "legacy";
 
 const VIEWS: { id: View; labelKey: string; href?: string }[] = [
   { id: "companion", labelKey: "admin.view_companion" },
   { id: "setup",     labelKey: "admin.view_setup",     href: "/setup" },
+  { id: "buttons",   labelKey: "admin.view_buttons",   href: "/buttons" },
+  { id: "collect",   labelKey: "admin.view_collect",   href: "/collect" },
   { id: "logs",      labelKey: "admin.view_logs",      href: "/admin/legacy#logs" },
   { id: "benchmark", labelKey: "admin.view_benchmark", href: "/admin/legacy#benchmark" },
   { id: "ai",        labelKey: "admin.view_ai",        href: "/admin/legacy#ai-settings" },
@@ -54,7 +58,7 @@ function AdminApp() {
             <Icon name="glasses" size={20} />
           </span>
           <span>
-            <div style={{ fontWeight: 700 }}>AuralAI</div>
+            <div style={{ fontWeight: 700 }}>I-Sora</div>
             <div style={{ fontSize: "var(--t-xs)", color: "var(--ink-3)" }}>
               Admin
             </div>

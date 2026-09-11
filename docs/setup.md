@@ -1,4 +1,4 @@
-# AuralAI SDK — Setup Guide
+# I-Sora — Setup Guide
 
 ## Prerequisites
 
@@ -13,8 +13,8 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/<username>/AuralAI-SDK.git
-cd AuralAI-SDK
+git clone https://github.com/kutilz/isora.git
+cd isora
 
 # Install PC-side dependencies
 pip install -r requirements_pc.txt
@@ -106,7 +106,7 @@ load_dotenv("/root/.env")
 
 ---
 
-## 6. Run AuralAI SDK
+## 6. Run I-Sora
 
 ### Via MaixVision
 1. Open `device/main.py` in MaixVision
@@ -136,7 +136,7 @@ http://192.168.1.XXX:8080
 
 ## 7b. Cloud Pairing (recommended for first-time setup)
 
-Instead of typing a `*.local` address, let the device pair through the **AuralAI
+Instead of typing a `*.local` address, let the device pair through the **I-Sora
 web hub**. Once the device is on WiFi it speaks a short **pairing code**; open the
 hub, sign in, and enter the code to configure the AI provider/key and audio
 preferences remotely (pushed back to the device, API keys end-to-end encrypted).
@@ -144,7 +144,7 @@ preferences remotely (pushed back to the device, API keys end-to-end encrypted).
 - Deploy / run the hub: see [`web/README.md`](../web/README.md) and the
   *Cloud Pairing & Web Hub* section in the [main README](../README.md).
 - Point the device at your hub via `cloud_base_url` in
-  [`device/config.py`](../device/config.py) (defaults to `https://auralai.app`;
+  [`device/config.py`](../device/config.py) (defaults to `https://isora-smartglasses.vercel.app`;
   use your PC's LAN IP, e.g. `http://192.168.1.50:3000`, for local testing).
 - Test the whole relay **without hardware**:
   ```bash
@@ -163,7 +163,7 @@ This architecture splits **lightweight inference (YOLO on MaixCAM)** and **heavy
 ### 8a. PC (Laptop) Setup
 
 ```bash
-cd aural-ai-sdk
+cd isora
 pip install -r requirements_pc.txt
 cp companion/.env.example companion/.env    # On Windows: copy companion\.env.example companion\.env
 # Edit companion/.env and fill in your OPENAI_API_KEY

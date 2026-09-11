@@ -149,6 +149,12 @@ class CloudClient:
                 "data_collection_mode": status.get("data_collection_mode"),
                 "capturing": status.get("capturing"),
                 "capture_count": status.get("capture_count"),
+                # LAN entry point so the hub can deep-link /buttons and /collect
+                # (only reachable from the same WiFi as the device).
+                "local_url": (
+                    f"http://{status.get('mdns_host')}:{cfg.get('web_port', 8080)}"
+                    if status.get("mdns_host") else None
+                ),
             }
         except Exception:
             status = {"online": True}

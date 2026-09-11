@@ -16,30 +16,28 @@ import os
 import re
 import sys
 import time
+import shutil
 import argparse
+import subprocess
 
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "audio")
 WORDLIST_DEFAULT = os.path.join(OUTPUT_DIR, "AuralAI_Audio_Wordlist.md")
+
+# Default time-compression for nav speech — fast screen-reader cadence (T5a / D1).
+# atempo is applied at GENERATION time only; the 1-core device never re-tempos.
+NAV_SPEECH_RATE = 1.6
 
 # Baris: namafile.wav … → "teks untuk TTS"
 _WORDLIST_LINE = re.compile(r"^(\S+\.wav)\s+→\s*\"(.*)\"\s*$")
 
 # ─── Label & Posisi ───────────────────────────────────────────────────────────
 
-OBJECTS = {
-    "person":     "orang",
-    "motorcycle": "motor",
-    "car":        "mobil",
-    "bicycle":    "sepeda",
-    "bus":        "bus",
-    "truck":      "truk",
-    "dog":        "anjing",
-    "cat":        "kucing",
-    "chair":      "kursi",
-    "bottle":     "botol",
-    "handbag":    "tas",
-    "backpack":   "ransel",
-}
+# Single source of truth lives in device/config.py (T6). Import it so the
+# generator's object set can never drift from the device's RELEVANT_LABELS.
+_DEVICE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "device"))
+if _DEVICE_DIR not in sys.path:
+    sys.path.insert(0, _DEVICE_DIR)
+from config import NAV_OBJECTS as OBJECTS  # noqa: E402  (canonical COCO→id map)
 
 POSITIONS = {
     "left":         "di sebelah kiri",
@@ -57,7 +55,7 @@ SYSTEM_EVENTS = {
     # Onboarding / status cues for the screen-less device. Keys match the
     # AudioManager._find_wav safe-name of the spoken text, so these play
     # offline (no gTTS call) at boot and on button-acknowledge.
-    "auralai_siap_digunakan":       "AuralAI siap digunakan.",
+    "isora_siap_digunakan":         "Isora siap digunakan.",
     "baik_sudah_paham":             "Baik, sudah paham.",
     # Keys must match orchestrator.switch_mode's queue_system(f"mode_{new_mode}"),
     # i.e. mode_explorer / mode_context / mode_qris (NOT *_aktif) so _find_wav
@@ -67,6 +65,11 @@ SYSTEM_EVENTS = {
     "mode_qris":                    "mode scan bayar aktif",
     "sedang_menganalisis":          "sedang menganalisis",
     "masih_memproses":              "masih memproses",
+    # Cause-aware wait/failure cues. "koneksi_lambat" replaces "masih_memproses"
+    # once a call drags past ai_slow_warn_s (likely a slow network). These MUST
+    # be pre-generated so the "no internet" message itself never needs internet.
+    "koneksi_lambat":               "koneksi internet lambat",
+    "tidak_ada_koneksi":            "tidak ada koneksi internet",
     "memindai_kode_pembayaran":     "memindai kode pembayaran",
     "selesai":                      "selesai",
     "koneksi_gagal":                "koneksi gagal",
@@ -92,6 +95,10 @@ CHIMES = {
     "chime_error":   [(440, 120), (330, 150)],           # descending — failed
     "chime_ready":   [(523, 90), (659, 90), (784, 130)], # C-E-G — boot ready
     "chime_mode":    [(880, 70)],                        # neutral blip — mode switch
+    # Last-resort obstacle earcon: played when even the generic per-direction
+    # phrase is unavailable offline, so a detection is NEVER silent (Decision 4A).
+    # Two short low pulses = "something there", distinct from the success/error tones.
+    "chime_obstacle": [(500, 90), (0, 40), (500, 90)],
 }
 
 
@@ -146,16 +153,81 @@ def synth_chimes(output_dir, dry_run=False):
         print("Selanjutnya: upload folder audio/ ke MaixCAM di /root/audio/")
 
 
+# ─── atempo speed-up (T5a) ────────────────────────────────────────────────────
+
+def atempo_chain(rate):
+    """Return ffmpeg `-filter:a` atempo args for `rate`x time-compression.
+
+    ffmpeg's `atempo` filter only accepts 0.5..2.0 per instance, so rates above
+    2.0 are chained (the product of the factors equals `rate`). A rate of 1.0 is
+    a no-op → empty list (skip atempo entirely). Pure: no ffmpeg call here.
+
+        atempo_chain(1.0) -> []
+        atempo_chain(1.6) -> ["atempo=1.6"]
+        atempo_chain(2.5) -> ["atempo=2.0", "atempo=1.25"]
+        atempo_chain(4.0) -> ["atempo=2.0", "atempo=2.0"]
+    """
+    if rate <= 0:
+        raise ValueError(f"atempo rate must be > 0, got {rate}")
+    if abs(rate - 1.0) < 1e-9:
+        return []
+    factors = []
+    remaining = float(rate)
+    while remaining > 2.0 + 1e-9:
+        factors.append(2.0)
+        remaining /= 2.0
+    factors.append(remaining)
+    return [f"atempo={_fmt_rate(f)}" for f in factors]
+
+
+def _fmt_rate(f):
+    """Format an atempo factor: trims float noise, always keeps >=1 decimal.
+
+    2.0 -> "2.0", 1.25 -> "1.25", 1.5999999 -> "1.6".
+    """
+    s = f"{round(f, 6):.6f}".rstrip("0")
+    if s.endswith("."):
+        s += "0"
+    return s
+
+
+def nav_tier_filenames(tiers, objects=None, positions=None):
+    """Planned WAV filenames for distance-tier nav variants (offline coverage).
+
+    The policy lane (Decision 5) qualifies a phrase with a coarse distance tier
+    (near/far). Those need their own pre-rendered WAVs, named
+    `obj_<label>_<pos>_<tier>.wav`. Returns the full enumerated set so the
+    coverage invariant (device/tests/test_phrase_coverage.py) can gate on it.
+    """
+    objects = objects if objects is not None else OBJECTS
+    positions = positions if positions is not None else POSITIONS
+    names = []
+    for obj_key in objects:
+        for pos_key in positions:
+            for tier in tiers:
+                names.append(f"obj_{obj_key}_{pos_key}_{tier}.wav")
+    return names
+
+
 def build_audio_list():
     """Buat list semua (filename, text) yang perlu di-generate."""
     items = []
 
-    # Object detection audio
+    # Object detection audio. The plain `obj_<label>_<pos>.wav` doubles as the
+    # FAR-tier phrase (runtime falls back to it when no `_far` file exists), so
+    # we only render an extra NEAR variant that appends "dekat" for the urgency
+    # cue the assessment asked for ("orang di depan dekat").
     for obj_key, obj_id in OBJECTS.items():
         for pos_key, pos_id in POSITIONS.items():
-            filename = f"obj_{obj_key}_{pos_key}.wav"
-            text = f"{obj_id} {pos_id}"
-            items.append((filename, text))
+            items.append((f"obj_{obj_key}_{pos_key}.wav", f"{obj_id} {pos_id}"))
+            items.append((f"obj_{obj_key}_{pos_key}_near.wav",
+                          f"{obj_id} {pos_id} dekat"))
+
+    # Generic per-direction fallback ("ada objek di depan"): spoken when a
+    # specific label's WAV is missing while OFFLINE, so a blind user never gets
+    # silence on a real detection (Decision 4A). One per position, label-agnostic.
+    for pos_key, pos_id in POSITIONS.items():
+        items.append((f"objek_{pos_key}.wav", f"ada objek {pos_id}"))
 
     # System events
     for event_key, event_text in SYSTEM_EVENTS.items():
@@ -165,10 +237,51 @@ def build_audio_list():
     return items
 
 
+def _is_nav_phrase(filename):
+    """Object/nav phrases get time-compressed; system cues stay normal speed."""
+    return filename.startswith("obj_")
+
+
+def _apply_atempo(path, rate):
+    """Time-compress the WAV at `path` in place by `rate` via ffmpeg atempo.
+
+    On ANY failure (no ffmpeg, atempo error, empty output) the original
+    normal-speed WAV is left untouched — never silence (Decision: atempo failure
+    → fall back to normal-speed PCM). Returns True if sped up, False if fell back.
+    """
+    chain = atempo_chain(rate)
+    if not chain:
+        return False  # rate == 1.0 → nothing to do
+
+    if shutil.which("ffmpeg") is None:
+        print(f"        atempo SKIP (ffmpeg not found) — kept normal speed: {os.path.basename(path)}")
+        return False
+
+    tmp_path = path + ".atempo.wav"
+    cmd = ["ffmpeg", "-y", "-i", path, "-filter:a", ",".join(chain), tmp_path]
+    try:
+        proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if proc.returncode != 0 or not os.path.exists(tmp_path) or os.path.getsize(tmp_path) == 0:
+            print(f"        atempo FAIL — kept normal speed: {os.path.basename(path)}")
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+            return False
+        os.replace(tmp_path, path)
+        return True
+    except Exception as e:  # noqa: BLE001 — never let a render error become silence
+        print(f"        atempo FAIL ({e}) — kept normal speed: {os.path.basename(path)}")
+        if os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
+        return False
+
+
 def parse_wordlist_markdown(md_path):
     """
     Baca audio/AuralAI_Audio_Wordlist.md — baris pola:
-    system_ready.wav                → "AuralAI siap digunakan"
+    system_ready.wav                → "Isora siap digunakan"
     """
     items = []
     seen = set()
@@ -186,7 +299,8 @@ def parse_wordlist_markdown(md_path):
     return items
 
 
-def generate_all(items, output_dir, lang="id", dry_run=False, delay=0.5):
+def generate_all(items, output_dir, lang="id", dry_run=False, delay=0.5,
+                 nav_speech_rate=NAV_SPEECH_RATE):
     try:
         from gtts import gTTS
     except ImportError:
@@ -196,7 +310,7 @@ def generate_all(items, output_dir, lang="id", dry_run=False, delay=0.5):
     os.makedirs(output_dir, exist_ok=True)
 
     print(f"Akan generate {len(items)} file WAV ke: {output_dir}")
-    print(f"Lang: {lang} | Dry run: {dry_run}\n")
+    print(f"Lang: {lang} | Dry run: {dry_run} | Nav speed: {nav_speech_rate}x\n")
 
     existing = 0
     generated = 0
@@ -217,6 +331,10 @@ def generate_all(items, output_dir, lang="id", dry_run=False, delay=0.5):
         try:
             tts = gTTS(text=text, lang=lang, slow=False)
             tts.save(out_path)
+            # Nav phrases get screen-reader cadence at generation time. atempo
+            # failure falls back to the normal-speed WAV — never silence.
+            if _is_nav_phrase(filename) and nav_speech_rate and nav_speech_rate != 1.0:
+                _apply_atempo(out_path, nav_speech_rate)
             print(f"  [{i+1:3d}/{len(items)}] OK    {filename} -> \"{text}\"")
             generated += 1
             time.sleep(delay)  # Jeda untuk hindari rate limit
@@ -237,10 +355,17 @@ def generate_all(items, output_dir, lang="id", dry_run=False, delay=0.5):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="AuralAI Audio Generator (gTTS)")
+    parser = argparse.ArgumentParser(description="I-Sora Audio Generator (gTTS)")
     parser.add_argument("--output", default=OUTPUT_DIR, help="Output directory")
     parser.add_argument("--lang", default="id", help="Language code (default: id)")
     parser.add_argument("--delay", type=float, default=0.5, help="Delay antar request (default: 0.5s)")
+    parser.add_argument(
+        "--speed",
+        type=float,
+        default=NAV_SPEECH_RATE,
+        metavar="RATE",
+        help=f"Nav-speech atempo rate at generation time (default: {NAV_SPEECH_RATE}x; 1.0 = normal)",
+    )
     parser.add_argument("--dry-run", action="store_true", help="List saja tanpa generate")
     parser.add_argument(
         "--from-wordlist",
@@ -286,4 +411,5 @@ if __name__ == "__main__":
         lang=args.lang,
         dry_run=args.dry_run,
         delay=args.delay,
+        nav_speech_rate=args.speed,
     )

@@ -147,8 +147,9 @@ class OnboardingAnnouncer:
                     break
         elif am is not None:
             am.queue_cue("chime_ready.wav")
-            am.queue("AuralAI siap digunakan.", priority=NORMAL,
-                     label="boot_ready", cooldown=0)
+            am.queue("Isora siap digunakan.", priority=NORMAL,
+                     label="boot_ready", cooldown=0,
+                     wav_name="auralai_siap_digunakan.wav")
 
     # ─── readiness helpers ────────────────────────────────────────────────────
 

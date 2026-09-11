@@ -1,6 +1,6 @@
 {
   "common": {
-    "app_name": "AuralAI",
+    "app_name": "I-Sora",
     "save": "Save",
     "cancel": "Cancel",
     "back": "Back",
@@ -25,7 +25,16 @@
     "companion": "Home",
     "admin": "Advanced mode",
     "guide": "User guide",
-    "setup": "Initial setup"
+    "setup": "Initial setup",
+    "buttons": "Remote buttons"
+  },
+  "collect": {
+    "banner_title": "Data Collection mode is ON",
+    "recording": "recording",
+    "standby": "standby",
+    "photos": "photos",
+    "banner_body": "All assistive features (object detection, descriptions, QRIS) are disabled — the device only collects photos, even across restarts.",
+    "banner_action": "Open Data Collection page"
   },
   "modes": {
     "explorer": "Explorer",
@@ -97,7 +106,7 @@
     }
   },
   "guide": {
-    "hero_title":   "AuralAI — glasses that narrate your world",
+    "hero_title":   "I-Sora — glasses that narrate your world",
     "hero_sub":     "A compact module mounted on the temple of your glasses that recognizes objects, describes scenes, and scans QRIS codes — all in Indonesian.",
     "demo_audio":   "Try audio demo",
     "see_hardware": "View hardware",
@@ -115,6 +124,8 @@
     "view_companion": "Caregiver",
     "view_admin": "Admin",
     "view_setup": "Setup",
+    "view_buttons": "Button simulator",
+    "view_collect": "Data collection",
     "view_logs": "Logs",
     "view_benchmark": "Benchmark",
     "view_ai": "AI Settings",

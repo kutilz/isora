@@ -1,5 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
 import { StatusBanner } from "./StatusBanner";
+import { CollectBanner } from "./CollectBanner";
 import { LiveView } from "./LiveView";
 import { ModeSwitcher, type Mode } from "./ModeSwitcher";
 import { VolumeControl } from "./VolumeControl";
@@ -72,6 +73,7 @@ export function CompanionDashboard({
   return (
     <div style={{ position: "relative" }}>
       <StatusBanner online={online} status={status} />
+      <CollectBanner status={status} />
       {debugOverlay && <DebugPanel status={status} online={online} />}
 
       <div

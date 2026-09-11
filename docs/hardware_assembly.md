@@ -1,6 +1,6 @@
-# AuralAI — Panduan Rakit Hardware
+# I-Sora — Panduan Rakit Hardware
 
-Panduan merakit satu unit AuralAI: **MaixCAM + speaker mini + tombol + power**.
+Panduan merakit satu unit I-Sora: **MaixCAM + speaker mini + tombol + power**.
 Perangkat ini untuk **pengguna tunanetra**, jadi **layar sudah dilepas** — semua
 interaksi lewat **suara (speaker)** dan **dua tombol** (AKSI + MODE).
 
@@ -27,7 +27,7 @@ interaksi lewat **suara (speaker)** dan **dua tombol** (AKSI + MODE).
 1. Colok **USB-C** dari adaptor 5V (atau power bank) ke port USB-C MaixCAM.
 2. Perangkat langsung menyala — tidak ada tombol power terpisah yang wajib.
 3. Setelah autostart aktif ([dokumen terpisah](#7-langkah-berikutnya)), MaixCAM
-   otomatis menjalankan AuralAI saat dapat daya.
+   otomatis menjalankan I-Sora saat dapat daya.
 
 > Arus: pakai adaptor minimal **1A**. Saat kamera + NPU + WiFi aktif, konsumsi
 > bisa naik; adaptor lemah bikin perangkat reboot sendiri.
@@ -58,32 +58,49 @@ Perangkat pakai **2 tombol**: **AKSI** (capture sesuai permintaan) dan **MODE**
 (ganti mode / alamat web). Driver GPIO mengaktifkan **pull-up internal**, jadi
 **tombol mana pun cukup disambung active-low ke GND — tanpa resistor eksternal**.
 
-> ⚠️ **JANGAN pakai A26.** Pada varian board WiFi, **A26 = WiFi EN**, sehingga
-> tombol di A26 bisa mematikan/menyalakan WiFi tanpa sengaja. (Versi lama panduan
-> ini menyarankan A26 — sudah tidak dipakai.)
+> ⚠️ **Pad yang TIDAK BOLEH dipakai tombol** (terverifikasi di unit nyata, 2026-07-01):
+>
+> - **A14** — itu **LED onboard** MaixCAM; kernel meng-klaimnya sebagai output
+>   (`led-user`), jadi tombol di A14 tidak akan pernah terbaca. (Versi lama
+>   panduan ini menyarankan A14 — salah.)
+> - **P18–P23** — itu bus **SDIO1 milik modul WiFi internal AIC8800**
+>   (`mmc1` = `wifi-sd`). Tombol di sini tidak terbaca, dan tiap ditekan malah
+>   men-short jalur data WiFi ke ground → WiFi bisa drop.
+> - **A26** — pada varian board WiFi, **A26 = WiFi EN**; tombol di A26 bisa
+>   mematikan/menyalakan WiFi tanpa sengaja.
 
-**Pilihan pad (sesuai skematik):**
+**Pilihan pad (terverifikasi jalan):**
 
 | Fungsi | Pad default | Catatan |
 |---|---|---|
-| **MODE** | **A14** | Utama; tidak punya peringatan fungsi khusus |
-| **AKSI** | **A15** | Aman selama I²C5 tidak dipakai |
-| Alternatif | A22 / A23 / A24 / A25 | Boleh dipakai bila SPI4 tidak dipakai |
+| **MODE** | **A28** | Sisi kanan (label `GPIOA 28 / UART2 TX`); aman selama UART2/JTAG tidak dipakai |
+| **AKSI** | **A29** | Sisi kanan (label `GPIOA 29 / UART2 RX`); aman selama UART2/JTAG tidak dipakai |
+| Alternatif | A22 / A23 / A24 / A25 | Boleh dipakai bila SPI4/eMMC tidak dipakai |
+
+> ℹ️ **A15** seharusnya juga bisa, tapi pada unit #1 pad ini terukur *stuck LOW*
+> (ketarik ke ground terus walau pull-up aktif) — kemungkinan short di
+> solderan/board. Kalau mau pakai A15, cek dulu dengan multimeter: A15 ↔ GND
+> harus **tidak** kontinyu saat tombol dilepas.
+
+Enak-nya A28 + A29: keduanya bersebelahan di sisi kanan (hanya diselingi pad
+`GPIOB 3/ADC`) dan dekat pad **GND** sisi kanan — kedua tombol bisa berbagi
+ground yang sama.
 
 **Wiring (per tombol):**
 
 ```
-  Tombol MODE  kaki 1  ─────────  Pin A14 (MaixCAM)
+  Tombol MODE  kaki 1  ─────────  Pin A28 (MaixCAM)
   Tombol MODE  kaki 2  ─────────  GND
-  Tombol AKSI  kaki 1  ─────────  Pin A15 (MaixCAM)
+  Tombol AKSI  kaki 1  ─────────  Pin A29 (MaixCAM)
   Tombol AKSI  kaki 2  ─────────  GND
 ```
 
 - Dilepas = pin HIGH (idle, ditahan pull-up internal). Ditekan = pin → GND = LOW
   (perangkat membaca "press"), lalu terdengar **chime tick** sebagai konfirmasi.
 - Konfigurasi di `/root/config.json`:
-  `"button_pin_mode": "A14"` dan `"button_pin_action": "A15"`.
+  `"button_pin_mode": "A28"` dan `"button_pin_action": "A29"`.
   Mau ganti pad? Set nilai config ke nama pad-nya. Kosongkan (`""`) untuk nonaktif.
+  Ganti pad butuh **restart app** — listener tombol hanya dibaca saat startup.
 
 **Fungsi tombol AKSI:**
 
@@ -138,7 +155,7 @@ Karena tidak ada layar, **suara adalah satu-satunya output**. Suara terbagi dua:
 
 - **Chime objek** (118 file `.wav` siap pakai di `/root/audio`) — jalan offline.
 - **Suara dinamis** (deskripsi scene, baca QRIS, **pengumuman alamat web**,
-  "AuralAI siap") — disintesis via **gTTS** dan butuh internet sekali per kalimat
+  "Isora siap") — disintesis via **gTTS** dan butuh internet sekali per kalimat
   (hasilnya di-cache di `/root/audio/tts_cache`).
 
 **Install sekali per device** (butuh internet):

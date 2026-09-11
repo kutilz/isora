@@ -56,7 +56,7 @@ export function StatusBanner({
             color: "var(--ink)",
           }}
         >
-          AuralAI
+          I-Sora
         </div>
         <div style={{ fontSize: "var(--t-sm)", color: "var(--ink-2)" }}>
           {status?.wifi_ssid

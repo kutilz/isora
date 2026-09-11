@@ -315,6 +315,9 @@ class AuralAIHandler(BaseHTTPRequestHandler):
                 self._send_json(r)
             else:
                 self._send_json({"error": "Report not available — run suite first"}, 404)
+        # ── Button simulation page (web fallback for dead hardware buttons) ────
+        elif path == "/buttons" or path == "/buttons/":
+            self._serve_file("buttons.html", "text/html")
         # ── Data Collection endpoints ──────────────────────────────────────────
         elif path == "/collect" or path == "/collect/":
             self._serve_file("collect.html", "text/html")
@@ -352,6 +355,8 @@ class AuralAIHandler(BaseHTTPRequestHandler):
 
         if path == "/command":
             self._handle_command()
+        elif path == "/button":
+            self._handle_button()
         elif path == "/config":
             self._handle_config()
         # ── Benchmark ─────────────────────────────────────────────────────────
@@ -520,8 +525,10 @@ class AuralAIHandler(BaseHTTPRequestHandler):
         if self._app_file_exists("companion.html"):
             self._serve_app_page("companion.html")
             return
-        # Build artefacts not yet present → legacy dashboard.
-        self._serve_file("index.html", "text/html")
+        # Build artefacts not yet present → button simulator (Indonesian,
+        # caregiver-safe) instead of the English developer dashboard. The dev
+        # dashboard stays reachable at /admin/legacy.
+        self._serve_file("buttons.html", "text/html")
 
     def _serve_app_page(self, filename: str, fallback_legacy: bool = False):
         """Serve a built HTML entry from static/app/. Optional legacy fallback."""
@@ -793,6 +800,43 @@ class AuralAIHandler(BaseHTTPRequestHandler):
             self.logger.error(f"Command error: {e}")
             self._send_json({"error": str(e)}, 500)
 
+    def _handle_button(self):
+        """
+        Inject a simulated MODE/ACTION button press — the web fallback for a
+        device whose physical buttons are dead. Body: {"button": "mode"|"action",
+        "long": bool}.
+
+        Stays OPEN on the LAN (not in _AUTH_REQUIRED_POSTS) for the same reason
+        as the /collect endpoints: a non-technical pendamping drives this from
+        their phone with no login, and /auth/token is localhost-only so a remote
+        browser can't fetch a token anyway. The press is queued + handled on the
+        orchestrator's SimBtn worker, so this returns immediately and can never
+        block the HTTP thread (even during a slow NPU model reload).
+        """
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            data   = json.loads(self.rfile.read(length)) if length else {}
+            which      = str(data.get("button", "")).strip().lower()
+            long_press = bool(data.get("long", False))
+            if which not in ("mode", "action"):
+                self._send_json(
+                    {"error": "button must be 'mode' or 'action'"}, 400)
+                return
+            queued = self.orch.simulate_button(which, long_press)
+            self.logger.info(
+                f"Web button: {which} ({'long' if long_press else 'short'}) "
+                f"{'queued' if queued else 'DROPPED'}",
+                module="WebServer",
+            )
+            self._send_json({
+                "ok":     queued,
+                "button": which,
+                "long":   long_press,
+                "queued": queued,
+            })
+        except Exception as e:
+            self._send_error(e)
+
     def _handle_config(self):
         try:
             length = int(self.headers.get("Content-Length", 0))
@@ -806,6 +850,27 @@ class AuralAIHandler(BaseHTTPRequestHandler):
                     "allowed": ["chime", "speech", "both"],
                 }, 400)
                 return
+            if "scene_verbosity" in data and data["scene_verbosity"] not in ("sedang", "detail"):
+                self._send_json({
+                    "error": "invalid scene_verbosity",
+                    "allowed": ["sedang", "detail"],
+                }, 400)
+                return
+            # Per-word audio cache toggle ("caching per-kata" vs "satu blok audio").
+            if "word_cache_enabled" in data:
+                data["word_cache_enabled"] = bool(data["word_cache_enabled"])
+            # Inter-word gap slider (ms). <0 overlaps words (smoother), >0 inserts
+            # silence. Clamp to a sane band so the slider can't wedge playback.
+            if "word_cache_gap_ms" in data:
+                try:
+                    gap = int(data["word_cache_gap_ms"])
+                except (TypeError, ValueError):
+                    self._send_json({
+                        "error": "invalid word_cache_gap_ms",
+                        "hint": "kirim bilangan bulat milidetik",
+                    }, 400)
+                    return
+                data["word_cache_gap_ms"] = max(-60, min(60, gap))
             if "setup_completed" in data:
                 data["setup_completed"] = bool(data["setup_completed"])
             # device_name becomes the mDNS `.local` label — keep it DNS-safe.
@@ -1244,7 +1309,7 @@ class AuralAIHandler(BaseHTTPRequestHandler):
                 "<!doctype html><html lang=\"id\"><head>"
                 "<meta charset=\"utf-8\">"
                 "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
-                "<title>Halaman tidak ditemukan — AuralAI</title>"
+                "<title>Halaman tidak ditemukan — I-Sora</title>"
                 "<style>body{font-family:system-ui,sans-serif;max-width:480px;"
                 "margin:80px auto;padding:0 20px;text-align:center;color:#1a1a2e}"
                 "h1{font-size:1.5rem;margin-bottom:.5rem}p{color:#555}"

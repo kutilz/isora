@@ -66,7 +66,8 @@ class DataCollector:
         self.quality    = DEFAULT_QUALITY
 
         # Session stats
-        self.session_start  = None
+        self.session_start  = None   # wall-clock (time.time) — used for filenames/CSV
+        self.session_start_mono = None  # monotonic — used for elapsed (clock-jump proof)
         self.capture_count  = 0
         self.session_dir    = None
         self.csv_path       = None
@@ -86,7 +87,10 @@ class DataCollector:
     @property
     def stats(self) -> dict:
         with self._lock:
-            elapsed = (time.time() - self.session_start) if self.session_start else 0
+            # Monotonic clock: immune to NTP/RTC jumps. The device boots at 1970
+            # when offline, then the clock leaps to real time once time-sync runs —
+            # wall-clock elapsed would otherwise read ~56 years (the "29697768:17" bug).
+            elapsed = (time.monotonic() - self.session_start_mono) if self.session_start_mono else 0
             free_mb, total_mb = _disk_stats(self.session_dir or CAPTURES_ROOT)
             return {
                 "running":        self._running,
@@ -134,6 +138,7 @@ class DataCollector:
                 ])
 
             self.session_start = time.time()
+            self.session_start_mono = time.monotonic()
             self.capture_count = 0
             self._gallery.clear()
             self._running = True
@@ -171,7 +176,7 @@ class DataCollector:
                 self._cam = None
             gc.collect()
 
-        elapsed = time.time() - (self.session_start or time.time())
+        elapsed = (time.monotonic() - self.session_start_mono) if self.session_start_mono else 0.0
         msg = f"Sesi selesai — {self.capture_count} foto dalam {elapsed:.0f}s"
         self._info(msg)
         return True, msg
@@ -283,7 +288,7 @@ class DataCollector:
             t_loop = time.time()
 
             # Storage guard
-            free_mb = _free_space_mb()
+            free_mb, _ = _disk_stats(self.session_dir or CAPTURES_ROOT)
             if free_mb < STORAGE_MIN_MB:
                 self._warn(f"Storage hampir penuh: {free_mb}MB free < {STORAGE_MIN_MB}MB — stop!")
                 with self._lock:

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#0a0c10" />
-  <title>AuralAI — Data Collection</title>
+  <title>I-Sora — Data Collection</title>
   <style>
     /* ══ RESET & BASE ══════════════════════════════════════════ */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -630,7 +630,8 @@
     <div class="header-left">
       <span class="logo-icon" aria-hidden="true">◉</span>
       <div>
-        <span class="logo-text">AuralAI <span class="logo-sub">Data Collection</span></span>
+        <span class="logo-text">I-Sora <span class="logo-sub">Data Collection</span></span>
+        <a href="/" style="display:block;font-size:11px;color:var(--accent);text-decoration:none;margin-top:2px;">← Beranda</a>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
@@ -892,7 +893,11 @@ async function pollStatus() {
     }
 
     if (data.running && !state.startTime) {
-      state.startTime = Date.now() - (data.elapsed_s * 1000);
+      // Clamp: ignore an absurd elapsed_s (>7 days) so a stale/clock-jumped
+      // value can never render the "29697768:17" timer. Treat as just-started.
+      const e = (typeof data.elapsed_s === 'number' && data.elapsed_s >= 0 && data.elapsed_s < 604800)
+        ? data.elapsed_s : 0;
+      state.startTime = Date.now() - (e * 1000);
     } else if (!data.running) {
       state.startTime = null;
     }
@@ -1061,6 +1066,13 @@ function applyModeUI() {
 
 async function toggleMode() {
   const enable = !state.mode;
+  // Confirm first: switching Mode Ambil Data rebuilds the AI engine + reopens the
+  // camera (~30s reload) and is the fragile path that can wedge the device. A
+  // non-technical helper usually means "pause" — steer them to Stop instead.
+  const msg = enable
+    ? 'Nyalakan Mode Ambil Data?\n\nAlat menyiapkan kamera ±30 detik — tunggu, jangan tutup halaman.'
+    : 'Matikan Mode Ambil Data?\n\n⚠ Ini bukan tombol jeda. Alat akan reload ±30 detik.\nUntuk sekadar berhenti merekam sebentar, pakai tombol STOP.\n\nTetap matikan mode?';
+  if (!confirm(msg)) return;
   state._modeBusy = true;
   state.mode = enable;             // optimistic
   applyModeUI();

@@ -44,7 +44,7 @@ export function LiveView({ status }: { status: DeviceStatus | null }) {
       >
         <img
           src={url}
-          alt="Pratinjau kamera AuralAI"
+          alt="Pratinjau kamera I-Sora"
           style={{ width: "100%", height: "100%", objectFit: "cover", display: camError ? "none" : "block" }}
           onLoad={() => setCamError(false)}
           onError={() => setCamError(true)}

@@ -24,6 +24,7 @@ Thermal throttling
   the effective camera FPS by writing to cfg at runtime.
 """
 
+import queue
 import threading
 import time
 from typing import Optional
@@ -60,6 +61,13 @@ class Orchestrator:
         self._pending_command = None
         self._running         = True
 
+        # Detection-audio mute: monotonic deadline until which explorer-mode
+        # detection alerts stay silent, so a user action's audio (mode
+        # confirmation / description / repeat) isn't drowned by the spam right
+        # after they interact. Set via note_user_interaction(); read by the
+        # explorer tick through detection_audio_suppressed().
+        self._suppress_det_until = 0.0
+
         # ── Module references (set after init) ────────────────────────────────
         self.ai_engine:    object = None
         self.audio_manager: object = None
@@ -82,6 +90,17 @@ class Orchestrator:
         action_pin = self._action_pin()
         if action_pin:
             self._start_button_listener(action_pin, self._on_action_button)
+
+        # ── Simulated buttons (web fallback for dead hardware buttons) ───────────
+        # The companion web page can inject MODE/ACTION presses when the physical
+        # buttons are broken. Presses are handled on a dedicated worker thread —
+        # exactly like the GPIO BtnListener — so the HTTP handler never blocks and
+        # presses stay serialized (no concurrent switch_mode / model-reload races).
+        # Bounded queue: a flood of taps is dropped, never piled up → no backlog.
+        self._sim_btn_q: "queue.Queue" = queue.Queue(maxsize=8)
+        threading.Thread(
+            target=self._sim_button_worker, daemon=True, name="SimBtn"
+        ).start()
 
     # ─── Thread-safe properties ───────────────────────────────────────────────
 
@@ -193,6 +212,19 @@ class Orchestrator:
         dc_running = bool(getattr(dc, "is_running", False)) if dc else False
         dc_count   = getattr(dc, "capture_count", 0) if dc else 0
 
+        # ── Context-mode latency + per-word cache state (/buttons dashboard) ───
+        try:
+            from utils.scene_metrics import scene_metrics as _sm
+            scene_metrics = _sm.snapshot()
+        except Exception:
+            scene_metrics = {"last": None, "summary": {"count": 0}, "history": []}
+        cached_words_total = 0
+        if self.audio_manager is not None:
+            try:
+                cached_words_total = self.audio_manager.cached_words_count()
+            except Exception:
+                pass
+
         with self._lock:
             return {
                 "mode":         self._mode,
@@ -205,6 +237,14 @@ class Orchestrator:
                 "latency":      dict(self._latency),
                 "audio_text":   audio_text,
                 "audio_mode":   cfg.get("audio_mode", "both"),
+                "scene_verbosity": cfg.get("scene_verbosity", "detail"),
+                # Per-word audio cache: "caching per-kata" (True) vs "satu blok
+                # audio" (False), the inter-word gap (ms; <0 = overlap), the
+                # number of warmed words, and recent describe latency.
+                "word_cache_enabled": bool(cfg.get("word_cache_enabled", True)),
+                "word_cache_gap_ms":  int(cfg.get("word_cache_gap_ms", -10)),
+                "cached_words_total": cached_words_total,
+                "scene_metrics":      scene_metrics,
                 "last_caption": last_caption,
                 "battery":      battery,
                 "wifi_signal":  wifi["signal"],
@@ -392,6 +432,9 @@ class Orchestrator:
         # Wake up the AI loop so it picks up the new mode immediately
         self._mode_event.set()
 
+        # Mute detection alerts briefly so the mode confirmation is heard, not
+        # drowned by spam (a mode switch is always a deliberate user action).
+        self.note_user_interaction()
         if self.audio_manager:
             self.audio_manager.queue_cue("chime_mode.wav")
             self.audio_manager.queue_system(f"mode_{new_mode}")
@@ -459,10 +502,81 @@ class Orchestrator:
             target=_loop, daemon=True, name=f"BtnListener-{pin}"
         ).start()
 
+    # ─── Simulated buttons (web UI) ───────────────────────────────────────────
+
+    def simulate_button(self, which: str, long_press: bool = False) -> bool:
+        """
+        Inject a MODE/ACTION button press from the web UI. Non-blocking: the
+        press is queued and processed on the SimBtn worker thread, so the HTTP
+        request returns immediately even if the press triggers a slow NPU model
+        reload. Returns False if `which` is invalid or the queue is saturated
+        (the press is then dropped rather than allowed to back up → no hang).
+        """
+        if which not in ("mode", "action"):
+            return False
+        try:
+            self._sim_btn_q.put_nowait((which, bool(long_press)))
+            return True
+        except queue.Full:
+            self.logger.warn(
+                "Simulated button dropped — worker busy (queue full)",
+                module="Orchestrator",
+            )
+            return False
+
+    def _sim_button_worker(self):
+        """
+        Serialize simulated presses onto a single thread, mirroring the physical
+        BtnListener exactly. A short get() timeout lets the thread notice
+        shutdown (_running=False) promptly so stop() never hangs.
+        """
+        while self._running:
+            try:
+                which, long_press = self._sim_btn_q.get(timeout=0.5)
+            except queue.Empty:
+                continue
+            try:
+                kind = "long" if long_press else "short"
+                self.logger.info(
+                    f"Simulated {which.upper()} button ({kind} press)",
+                    module="Orchestrator",
+                )
+                if which == "mode":
+                    self._on_button(long_press)
+                else:
+                    self._on_action_button(long_press)
+            except Exception as e:
+                self.logger.warn(
+                    f"Simulated button '{which}' failed: {e}",
+                    module="Orchestrator",
+                )
+
+    def note_user_interaction(self, window_s: Optional[float] = None):
+        """Start/refresh the detection-audio mute window after a user action,
+        so the resulting feedback is heard rather than buried under detection
+        spam. The press itself barges past the queue separately (user_barge_in)."""
+        try:
+            w = float(window_s if window_s is not None
+                      else cfg.get("detection_mute_after_interaction_s", 6.0))
+        except Exception:
+            w = 6.0
+        self._suppress_det_until = time.monotonic() + w
+
+    def detection_audio_suppressed(self) -> bool:
+        """True while detection alerts should stay silent (post-interaction)."""
+        return time.monotonic() < self._suppress_det_until
+
     def _press_cue(self):
-        """Instant tactile confirmation that a button press registered."""
+        """Acknowledge a button press the instant it lands.
+
+        Barges past any detection spam already queued (flush + instant cue) so
+        the press is never stuck waiting in line, and mutes detection audio
+        briefly so the action it triggers (mode switch / describe / repeat) is
+        actually heard. This is the fix for "device stuck spamming 'orang di
+        depan' won't accept button clicks"."""
         if self.audio_manager:
-            self.audio_manager.queue_cue("chime_press.wav")
+            self.audio_manager.user_barge_in("chime_press.wav")
+        self.note_user_interaction()
 
     def _on_button(self, long_press: bool):
         """Route a completed MODE-button press based on onboarding state."""
@@ -680,19 +794,30 @@ class Orchestrator:
         cmd  = cmd_obj.get("cmd")
         data = cmd_obj.get("data", {})
 
+        # Any web/queued command is a deliberate user action — mute detection
+        # spam so its feedback is heard, not buried.
+        self.note_user_interaction()
+
         if cmd == "focus":
             self.activate_ai_focus()
 
         elif cmd == "set_mode":
+            # Flush any detection spam already queued so the confirmation plays
+            # immediately (the button path barges in itself; this covers the
+            # web /command path where there's no press cue).
+            if self.audio_manager:
+                self.audio_manager.clear()
             self.switch_mode(data.get("mode", "explorer"))
 
         elif cmd == "qris":
             if self.ai_engine:
                 self.ai_engine.trigger_qris_scan()
+            self.note_user_interaction()   # keep the result audible after the scan
 
         elif cmd == "describe":
             if self.ai_engine:
                 self.ai_engine.trigger_scene_description()
+            self.note_user_interaction()   # keep the description audible after it returns
 
         elif cmd == "update_config":
             cfg.update(data)

@@ -27,13 +27,13 @@ export function HardwareSection() {
         >
           <AssetImage
             name="glasses_front.jpg"
-            alt="Foto kacamata tampak depan dengan modul AuralAI di tangkai kanan"
+            alt="Foto kacamata tampak depan dengan modul I-Sora di tangkai kanan"
             style={{ width: "100%", borderRadius: "var(--r-md)" }}
             fallback={<GlassesFront />}
           />
           <AssetImage
             name="glasses_side.jpg"
-            alt="Foto modul AuralAI tampak samping"
+            alt="Foto modul I-Sora tampak samping"
             style={{ width: "100%", borderRadius: "var(--r-md)" }}
             fallback={<GlassesSide />}
           />
@@ -99,7 +99,7 @@ function GlassesFront() {
       <svg
         viewBox="0 0 480 280"
         style={{ width: "100%", height: "auto", borderRadius: "var(--r-md)", background: "var(--surface)" }}
-        aria-label="Ilustrasi tampak depan kacamata dengan modul AuralAI di tangkai kanan"
+        aria-label="Ilustrasi tampak depan kacamata dengan modul I-Sora di tangkai kanan"
       >
         <ellipse cx="240" cy="170" rx="44" ry="10" fill="#EAE7DF" />
         <circle cx="170" cy="140" r="58" fill="#F4F2EB" stroke="#3D3D3D" stroke-width="6" />
@@ -116,7 +116,7 @@ function GlassesFront() {
           <circle cx="38" cy="14" r="1.5" fill="#fff" opacity="0.7" />
           <circle cx="62" cy="34" r="3" fill="#3DCB6E" />
           <text x="6" y="48" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#fff">
-            AURALAI
+            I-SORA
           </text>
         </g>
       </svg>
@@ -133,7 +133,7 @@ function GlassesSide() {
       <svg
         viewBox="0 0 360 320"
         style={{ width: "100%", height: "auto", borderRadius: "var(--r-md)", background: "var(--surface)" }}
-        aria-label="Ilustrasi modul AuralAI tampak samping"
+        aria-label="Ilustrasi modul I-Sora tampak samping"
       >
         <rect x="0" y="60" width="360" height="14" rx="7" fill="#3D3D3D" />
         <rect x="60" y="50" width="240" height="100" rx="14" fill="#00635D" stroke="#002D2A" stroke-width="2" />

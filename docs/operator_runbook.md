@@ -1,11 +1,11 @@
-# AuralAI — Operator Runbook (Draft Outline)
+# I-Sora — Operator Runbook (Draft Outline)
 
 > This document is a **rough outline** for the operator guide that you will fully develop later.
 > Each section contains bullet points that need to be expanded into complete procedures.
 
 ---
 
-## 1. What is AuralAI?
+## 1. What is I-Sora?
 
 - An on-device visual assistant for visually impaired users.
 - Hardware: Sipeed MaixCAM with built-in speaker.
@@ -21,7 +21,7 @@
 
 - [ ] Device is connected to the user's WiFi network.
 - [ ] API key has been set via the dashboard.
-- [ ] Audio test: Device plays "AuralAI ready" upon boot.
+- [ ] Audio test: Device plays "Isora ready" upon boot.
 - [ ] Explorer mode check: Objects are detected → audio alerts play.
 - [ ] Speaker volume is sufficiently loud for the user's environment.
 - [ ] Battery / power supply is securely attached.
@@ -40,14 +40,14 @@
 ## 3. How to Boot the Device
 
 - Connect power → the device boots automatically (~30 seconds).
-- Ready indicator: Audio cue "AuralAI siap digunakan" (AuralAI is ready for use) plays from the speaker.
+- Ready indicator: Audio cue "Isora siap digunakan" (I-Sora is ready for use) plays from the speaker.
 - If no audio is heard within 60 seconds → refer to the Troubleshooting section.
 
 ### Audio Status Indicators
 
 | Heard Sound                       | Meaning                            |
 | --------------------------------- | ---------------------------------- |
-| "AuralAI siap digunakan"          | Boot successful, ready for use     |
+| "Isora siap digunakan"            | Boot successful, ready for use     |
 | "Mode penjelajah aktif"           | Entered Explorer Mode              |
 | "Mode konteks aktif"              | Entered Scene Mode                 |
 | "Mode scan bayar aktif"           | Entered QRIS Mode                  |
@@ -220,4 +220,4 @@ This logbook data is collected for post-pilot IEEE research reports.
 | User reports incorrect info | Note details, switch to offline mode, contact dev. |
 
 > **Dev contact:** [Fill in developer name/contact info]  
-> **Repository:** `github.com/<username>/AuralAI-SDK`
+> **Repository:** `github.com/kutilz/isora`

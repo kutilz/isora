@@ -28,7 +28,45 @@ These files differ from AuralAI on purpose. After pulling upstream changes, re-c
 - `public/audio/isora_siap_digunakan.wav` — greeting renamed + re-recorded ("Isora …")
 - `package.json` (name `isora-web`), `.env.example`, `README.md`, `supabase/schema.sql` (header)
 
-**Device (on the MaixCAM, not in repo):** `/root/audio/auralai_menyala.{wav,pcm}` and
+**Device UI (`device/server/`)** — rebuild `src/` → `static/app/` after editing
+- `src/i18n/{id,en}.json` — `common.app_name`, `guide.hero_title`
+- `src/{admin,companion,guide,setup}.html` — `<title>` / OG meta
+- `src/pages/{admin,companion,setup}.tsx` — header wordmark, footer, spoken-line quotes
+- `src/components/companion/{StatusBanner,LiveView,ActivityFeed}.tsx` — wordmark, alt text,
+  CSV export name (`isora-history-*.csv`)
+- `src/components/guide/{Hero,HardwareSection,AudioSection}.tsx` — alt/aria text, the
+  `I-SORA` label silk-screened on the SVG module, chime table
+- `static/{index,collect}.html`, `static/dashboard.js` — dev-dashboard titles + wordmarks
+- `static/buttons.html` — `<title>`, header/footer wordmarks (the `aural_*` localStorage
+  keys in it stay AuralAI on purpose)
+
+**Device firmware (`device/`)**
+- `config.py` — `cloud_base_url` points at the **I-Sora** hub
+  (`https://isora-smartglasses.vercel.app`), not AuralAI's
+- `utils/identity.py` — spoken `pairing_phrase()` / `onboarding_phrase()` say "Isora",
+  default hub URL + spoken-host fallback
+- `core/onboarding.py` — boot cue speaks "Isora siap digunakan.", pinned to the existing
+  `auralai_siap_digunakan.wav` via `wav_name=` so already-deployed devices keep playing
+  the pre-recorded file instead of falling back to gTTS
+- `core/audio_manager.py` — docstring quoting the boot cue ("Isora menyala")
+- `requirements_device.txt` — comment quoting the "Isora siap" cue
+- `server/web_server.py` — 404 page `<title>`
+
+**Companion (`companion/`)**
+- `webserver.py` — browser UI `<title>`, `I-SORA` wordmarks, "Mulai I-Sora" button,
+  spoken `rawSpeak("Sistem Isora aktif.")`
+- `run_desktop.py` — `I-SORA` overlay drawn on the video feed
+
+**Audio (`tools/generate_audio.py`)**
+- `SYSTEM_EVENTS["isora_siap_digunakan"] = "Isora siap digunakan."` — the key **is** the
+  generated filename and must stay the `AudioManager._find_wav` safe-name of the spoken
+  text, so rename key and text together.
+
+**Docs (`docs/`)**
+- `setup.md`, `hardware_assembly.md`, `operator_runbook.md` — product name, spoken-cue
+  quotes, repo URL (`github.com/kutilz/isora`), default hub URL
+
+**On the MaixCAM (not in repo):** `/root/audio/auralai_menyala.{wav,pcm}` and
 `auralai_siap_digunakan.{wav,pcm}` re-recorded to say "Isora …" (originals kept as
 `*.aural.bak`). Filenames unchanged because `device/main.py` + `core/audio_manager.py`
 resolve them by name.
@@ -44,10 +82,24 @@ git commit -m "Sync <feature> from AuralAI-SDK upstream"
 Or just ask Claude Code: *"sync &lt;change&gt; from AuralAI-SDK into isora"* — it applies
 the change to the shared files and preserves this overlay.
 
-## Still TODO (deferred device-code rebrand)
-The device **Python** code still says "AuralAI" in UI strings / `AURAL_*` env / hostnames.
-Crypto + QR-token protocol constants (`auralai-e2e-salt`, `auralai-pair:`) are
-**intentionally shared** so I-Sora and Aural devices stay interoperable — do not change them.
+## What stays "AuralAI" on purpose
+The user-visible rebrand is complete. Everything below is **internal** and must NOT be
+renamed — several of these are load-bearing:
+
+- **Protocol constants** — `auralai-e2e-salt`, `auralai-e2e-v1`, `auralai-pair:`
+  (`web/lib/e2e.ts` ↔ `device/utils/crypto_box.py`). Shared so I-Sora and AuralAI
+  devices stay interoperable.
+- **On-disk / on-device names** — `/root/aural-ai/`, `aural_*.log`, `systemctl aural-ai`,
+  `auralai_menyala.wav`, `auralai_siap_digunakan.wav`, `audio/AuralAI_Audio_Wordlist.md`.
+- **Hostnames** — `default_device_name()` → `aural-<id>`, so `aural-xxxx.local` in the
+  setup wizard is accurate, not a leftover.
+- **Storage keys** — `aural_token`, `auralai.lang`, `auralai.a11y.*`,
+  `auralai_stress_history`. Renaming logs users out / drops their preferences.
+- **Env vars** — `AURAL_MAIX_HOST`, `AURAL_COMPANION_*`, `AURAL_*_API_KEY`, …
+- **Code identifiers, module docstrings, log lines, console banners** — `AuralAIHandler`,
+  `auralai-ui`, `logger.info("AuralAI SDK — Starting up")`, `print("[AuralAI] …")`.
+- **`README.md`** (root) and **`docs/boot-optimization.md`** — AuralAI-era engineering
+  docs, dev-facing on purpose.
 
 ## Recommendation to shrink this overlay
 Most overlay entries are one-off string swaps. Route page titles/metadata through the

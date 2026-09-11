@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulasi Tombol — I-Sora</title>
+<link rel="stylesheet" href="/tokens.css">
+<style>
+  /* Page layout on top of the shared, WCAG-AA design tokens (tokens.css).
+     Every text/bg pair below resolves to a token combination already checked
+     ≥ 4.5:1; interactive targets are ≥ 48px and inherit the global focus ring. */
+  body { padding: 0; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: var(--s-4) var(--s-4) var(--s-12); }
+
+  header.top { display:flex; justify-content:space-between; align-items:flex-start; gap:var(--s-3); margin-bottom:var(--s-4); flex-wrap:wrap; }
+  .brand h1 { font-size:var(--t-xl); margin:0; line-height:1.1; }
+  .brand .sub { color:var(--ink-2); font-size:var(--t-sm); margin:6px 0 0; }
+  .conn { display:flex; align-items:center; gap:var(--s-2); font-size:var(--t-sm); color:var(--ink-2); white-space:nowrap; font-weight:600; }
+
+  .a11y { display:flex; gap:var(--s-2); margin-top:var(--s-3); flex-wrap:wrap; }
+  .a11y .btn { min-height:42px; padding:0 var(--s-3); font-size:var(--t-sm); }
+  .a11y .btn[aria-pressed="true"] { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+  section.card { padding:var(--s-4); margin-bottom:var(--s-4); }
+  section.card > h2 { font-size:var(--t-sm); text-transform:uppercase; letter-spacing:.5px; color:var(--ink-3); margin:0 0 var(--s-3); font-weight:700; display:flex; align-items:center; gap:var(--s-2); }
+
+  .statrow { display:flex; flex-wrap:wrap; gap:var(--s-2); }
+  .chip { flex:1 1 150px; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-md); padding:var(--s-2) var(--s-3); }
+  .chip b { display:block; color:var(--ink-3); font-size:var(--t-xs); text-transform:uppercase; letter-spacing:.4px; font-weight:700; margin-bottom:3px; }
+  .chip .v { font-size:var(--t-md); font-weight:700; }
+  .caption { margin-top:var(--s-3); background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-md); padding:var(--s-3); min-height:52px; }
+  .caption .lbl { display:block; color:var(--ink-3); font-size:var(--t-xs); text-transform:uppercase; letter-spacing:.4px; font-weight:700; margin-bottom:4px; }
+  .caption .val { font-size:var(--t-md); line-height:1.35; }
+
+  #warn { display:none; background:var(--warn-soft); border:1px solid var(--warn); color:var(--warn); border-radius:var(--r-lg); padding:var(--s-4); margin-bottom:var(--s-4); line-height:1.45; }
+  #warn b { font-weight:800; }
+
+  .btngrid { display:grid; grid-template-columns:1fr 1fr; gap:var(--s-3); }
+  .bigbtn { flex-direction:column; gap:4px; min-height:86px; padding:var(--s-3); text-align:center; }
+  .bigbtn .tag { font-size:var(--t-xs); font-weight:700; text-transform:uppercase; letter-spacing:.4px; opacity:.9; }
+  .bigbtn .lbl { font-size:var(--t-md); font-weight:800; line-height:1.15; }
+  .btn--mode   { background:var(--info);   border-color:var(--info);   color:#fff; }
+  .btn--mode:hover   { background:#163f73;          border-color:#163f73; }
+  .btn--action { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .btn--action:hover { background:var(--accent-hover); border-color:var(--accent-hover); }
+  .bigbtn:disabled, .btn:disabled { opacity:.45; cursor:not-allowed; }
+
+  .hint { color:var(--ink-2); font-size:var(--t-sm); margin:var(--s-3) 0 0; line-height:1.5; }
+  .hint .role { color:var(--ink); font-weight:700; }
+
+  /* segmented toggle (verbosity, cache-mode) */
+  .seg { display:flex; gap:var(--s-2); }
+  .seg .btn { flex:1 1 0; min-height:60px; flex-direction:column; gap:2px; line-height:1.2; }
+  .seg .btn .s2 { font-size:var(--t-xs); font-weight:600; opacity:.85; }
+  .seg .btn[aria-pressed="true"] { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .seg .btn[aria-pressed="true"] .s2 { opacity:.95; }
+
+  .sgrid { display:flex; flex-wrap:wrap; gap:var(--s-2); }
+  .sgrid .btn { flex:1 1 30%; min-width:120px; }
+  .btn--cur { box-shadow: inset 0 0 0 3px var(--accent-soft); border-color:var(--accent); }
+
+  /* word-gap slider */
+  #gapCard { display:none; }
+  .slider-head { display:flex; justify-content:space-between; align-items:baseline; gap:var(--s-2); }
+  .slider-head label { font-weight:700; font-size:var(--t-base); }
+  .slider-head output { font-family:var(--font-mono); font-weight:700; font-size:var(--t-base); color:var(--accent-ink); background:var(--accent-soft); padding:3px 12px; border-radius:var(--r-pill); white-space:nowrap; }
+  input[type=range] { width:100%; height:44px; margin:var(--s-2) 0 0; accent-color:var(--accent); cursor:pointer; }
+  .scale { display:flex; justify-content:space-between; color:var(--ink-3); font-size:var(--t-xs); margin-top:2px; }
+
+  /* latency dashboard */
+  .metric-head { display:flex; align-items:center; gap:var(--s-2); flex-wrap:wrap; }
+  .metric-time { color:var(--ink-3); font-size:var(--t-sm); margin-left:auto; }
+  .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:var(--s-2); margin:var(--s-3) 0; }
+  .stat { background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-md); padding:var(--s-2) var(--s-3); }
+  .stat b { display:block; color:var(--ink-3); font-size:var(--t-xs); text-transform:uppercase; letter-spacing:.4px; font-weight:700; margin-bottom:3px; }
+  .stat .num { font-size:var(--t-lg); font-weight:800; font-variant-numeric:tabular-nums; }
+  .metric-text { color:var(--ink-2); font-size:var(--t-sm); margin:0; font-style:italic; min-height:1.4em; }
+  .metric-summary { display:flex; flex-wrap:wrap; gap:var(--s-2); margin-top:var(--s-3); }
+  .pill { background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-pill); padding:5px 12px; font-size:var(--t-sm); }
+  .pill b { font-weight:800; font-variant-numeric:tabular-nums; }
+  .metric-history { list-style:none; padding:0; margin:var(--s-3) 0 0; font-family:var(--font-mono); font-size:var(--t-xs); }
+  .metric-history li { padding:5px 0; border-top:1px solid var(--border); color:var(--ink-2); display:flex; gap:var(--s-2); justify-content:space-between; }
+  .metric-history .empty, .metric-empty { color:var(--ink-3); font-style:italic; }
+
+  /* camera preview */
+  .prevhead { justify-content:space-between; }
+  .prevwrap { position:relative; background:#000; border-radius:var(--r-md); overflow:hidden; aspect-ratio:320/224; display:none; }
+  .prevwrap img { width:100%; height:100%; object-fit:contain; display:block; }
+
+  /* activity log */
+  #log { font-family:var(--font-mono); font-size:var(--t-xs); line-height:1.55; max-height:190px; overflow-y:auto; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-md); padding:var(--s-3); }
+  #log div { white-space:pre-wrap; word-break:break-word; }
+  #log .ok { color:var(--ok); } #log .err { color:var(--danger); } #log .dim { color:var(--ink-3); }
+  .foot { color:var(--ink-3); font-size:var(--t-xs); text-align:center; margin-top:var(--s-2); }
+
+  .flash { animation: fl .4s ease; }
+  @keyframes fl { 0%{ box-shadow:0 0 0 0 var(--accent-soft); } 100%{ box-shadow:0 0 0 12px rgba(0,0,0,0); } }
+
+  /* technical settings live behind one collapsed group so a non-technical
+     helper only sees the everyday controls */
+  details.tech { margin-bottom: var(--s-4); }
+  details.tech > summary {
+    list-style: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between; gap: var(--s-2);
+    min-height: var(--hit); padding: 0 var(--s-4);
+    border: 2px solid var(--border-strong); border-radius: var(--r-md);
+    background: var(--surface); font-weight: 700; color: var(--ink);
+  }
+  details.tech > summary::-webkit-details-marker { display: none; }
+  details.tech > summary::after { content: "▸"; color: var(--ink-3); }
+  details.tech[open] > summary { margin-bottom: var(--s-4); }
+  details.tech[open] > summary::after { content: "▾"; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Lompat ke konten</a>
+<div class="wrap">
+
+<header class="top">
+  <div class="brand">
+    <h1>Simulasi Tombol</h1>
+    <p class="sub" id="devName">I-Sora · menghubungkan…</p>
+    <p class="sub" style="margin-top:4px"><a href="/" style="color:var(--accent);font-weight:600">← Kembali ke Beranda</a></p>
+    <div class="a11y" role="group" aria-label="Aksesibilitas tampilan">
+      <button class="btn" id="btnContrast" aria-pressed="false" onclick="toggleContrast()">Kontras tinggi</button>
+      <button class="btn" id="btnLarge" aria-pressed="false" onclick="toggleLargeType()">Teks besar</button>
+    </div>
+  </div>
+  <p class="conn" role="status" aria-live="polite">
+    <span class="dot" id="dot" aria-hidden="true"></span><span id="connTxt">menyambung…</span>
+  </p>
+</header>
+
+<div id="warn" role="alert"></div>
+
+<main id="main">
+
+<!-- STATUS -->
+<section class="card" aria-labelledby="h-status">
+  <h2 id="h-status">Status perangkat</h2>
+  <div class="statrow">
+    <div class="chip"><b>Mode aktif</b><span class="v" id="stMode">—</span></div>
+    <div class="chip"><b>Tahap</b><span class="v" id="stPhase">—</span></div>
+  </div>
+  <div class="caption">
+    <span class="lbl">Suara terakhir (yang didengar pengguna)</span>
+    <span class="val" id="stCaption" aria-live="polite">—</span>
+  </div>
+</section>
+
+<!-- MODE BUTTON -->
+<section class="card" aria-labelledby="h-mode">
+  <h2 id="h-mode">Tombol MODE</h2>
+  <div class="btngrid">
+    <button class="btn bigbtn btn--mode" id="bModeShort" onclick="press('mode',false,this)">
+      <span class="tag">Tekan</span><span class="lbl" id="lModeShort">Ganti mode</span>
+    </button>
+    <button class="btn bigbtn btn--mode" id="bModeLong" onclick="press('mode',true,this)">
+      <span class="tag">Tekan lama</span><span class="lbl" id="lModeLong">Ucap alamat</span>
+    </button>
+  </div>
+  <p class="hint" id="hMode"></p>
+</section>
+
+<!-- ACTION BUTTON -->
+<section class="card" aria-labelledby="h-act">
+  <h2 id="h-act">Tombol ACTION</h2>
+  <div class="btngrid">
+    <button class="btn bigbtn btn--action" id="bActShort" onclick="press('action',false,this)">
+      <span class="tag">Tekan</span><span class="lbl" id="lActShort">Deskripsikan</span>
+    </button>
+    <button class="btn bigbtn btn--action" id="bActLong" onclick="press('action',true,this)">
+      <span class="tag">Tekan lama</span><span class="lbl" id="lActLong">Ulangi hasil</span>
+    </button>
+  </div>
+  <p class="hint" id="hAct"></p>
+</section>
+
+<!-- DESCRIPTION VERBOSITY -->
+<section class="card" aria-labelledby="h-verb">
+  <h2 id="h-verb">Panjang deskripsi (mode Context)</h2>
+  <div class="seg" role="group" aria-label="Panjang deskripsi">
+    <button class="btn" id="vSedang" aria-pressed="false" onclick="setVerbosity('sedang')">
+      Sedang<span class="s2">1 kalimat · cepat</span>
+    </button>
+    <button class="btn" id="vDetail" aria-pressed="false" onclick="setVerbosity('detail')">
+      Detail<span class="s2">lengkap</span>
+    </button>
+  </div>
+  <p class="hint"><span class="role">Sedang</span>: satu kalimat singkat — lebih cepat &amp; makin sering instan saat cache kata terisi. <span class="role">Detail</span>: deskripsi panjang lengkap.</p>
+</section>
+
+<!-- TECHNICAL GROUP — collapsed by default; everyday controls stay above -->
+<details class="tech" id="techDetails">
+<summary>Setelan teknis — mode suara, latensi &amp; kontrol QA</summary>
+
+<!-- AUDIO RENDER MODE (caching vs single block) -->
+<section class="card" aria-labelledby="h-audio">
+  <h2 id="h-audio">Mode suara deskripsi</h2>
+  <div class="seg" role="group" aria-label="Mode suara deskripsi">
+    <button class="btn" id="aCache" aria-pressed="false" onclick="setCacheMode(true)">
+      Caching per-kata<span class="s2">instan saat hangat</span>
+    </button>
+    <button class="btn" id="aBlock" aria-pressed="false" onclick="setCacheMode(false)">
+      Satu blok audio<span class="s2">paling halus</span>
+    </button>
+  </div>
+  <p class="hint"><span class="role">Caching per-kata</span>: kalimat dirangkai dari audio kata yang tersimpan — makin sering dipakai makin instan (nol jaringan), tapi bisa agak patah. <span class="role">Satu blok audio</span>: seluruh kalimat disintesis utuh — paling halus, tapi tiap kali menunggu jaringan.</p>
+</section>
+
+<!-- WORD-GAP SLIDER (caching mode only) -->
+<section class="card" id="gapCard" aria-labelledby="h-gap">
+  <h2 id="h-gap">Jarak antar kata</h2>
+  <div class="slider-head">
+    <label for="gapRange">Geser untuk haluskan suara</label>
+    <output id="gapVal" for="gapRange">—</output>
+  </div>
+  <input type="range" id="gapRange" min="-60" max="40" step="2" value="-10"
+         aria-describedby="gapHint"
+         oninput="onGapInput(this.value)" onchange="commitGap(this.value)">
+  <div class="scale" aria-hidden="true"><span>−60 ms (overlap)</span><span>0</span><span>+40 ms (jeda)</span></div>
+  <p class="hint" id="gapHint">Ke <span class="role">kiri</span> merapatkan kata (overlap) supaya tidak patah-patah; ke <span class="role">kanan</span> memberi jeda. Berlaku pada deskripsi berikutnya.</p>
+</section>
+
+<!-- LATENCY DASHBOARD -->
+<section class="card" aria-labelledby="h-lat">
+  <h2 id="h-lat">Latensi deskripsi</h2>
+  <div class="metric-head">
+    <span class="badge" id="mSource">menunggu…</span>
+    <span class="badge badge--accent" id="mVerb" hidden></span>
+    <span class="metric-time" id="mTime"></span>
+  </div>
+  <div class="stat-grid">
+    <div class="stat"><b>Vision (Gemini)</b><span class="num" id="mGemini">—</span></div>
+    <div class="stat"><b>Mulai audio</b><span class="num" id="mToAudio">—</span></div>
+    <div class="stat"><b>Durasi audio</b><span class="num" id="mAudio">—</span></div>
+    <div class="stat"><b>Kata ter-cache</b><span class="num" id="mWords">—</span></div>
+  </div>
+  <p class="metric-text" id="mText"></p>
+  <div class="metric-summary" id="mSummary"></div>
+  <ul class="metric-history" id="mHistory"><li class="empty">Belum ada deskripsi pada sesi ini.</li></ul>
+</section>
+
+<!-- QA DIRECT -->
+<section class="card" aria-labelledby="h-qa">
+  <h2 id="h-qa">Kontrol langsung (QA)</h2>
+  <div class="sgrid" style="margin-bottom:var(--s-2)">
+    <button class="btn" id="qExplorer" onclick="cmd('set_mode',{mode:'explorer'})">Explorer</button>
+    <button class="btn" id="qContext"  onclick="cmd('set_mode',{mode:'context'})">Context</button>
+    <button class="btn" id="qQris"     onclick="cmd('set_mode',{mode:'qris'})">QRIS</button>
+  </div>
+  <div class="sgrid">
+    <button class="btn" onclick="cmd('describe')">Deskripsikan</button>
+    <button class="btn" onclick="cmd('qris')">Pindai QRIS</button>
+    <button class="btn" onclick="press('action',true,this)">Ulangi suara</button>
+  </div>
+  <p class="hint">Langsung lompat ke mode tertentu untuk uji satu-satu. Butuh token (otomatis di-LAN).</p>
+</section>
+
+</details>
+
+<!-- PREVIEW -->
+<section class="card" aria-labelledby="h-prev">
+  <h2 id="h-prev" class="prevhead">
+    <span>Pratinjau kamera</span>
+    <button class="btn btn--ghost" id="prevBtn" onclick="togglePrev()" aria-expanded="false" aria-controls="prevWrap" style="min-height:40px">Tampilkan</button>
+  </h2>
+  <div class="prevwrap" id="prevWrap"><img id="prevImg" alt="Pratinjau kamera perangkat"></div>
+  <p class="hint" id="prevHint" style="display:none">Bantu arahkan kamera saat memindai QR / QRIS.</p>
+</section>
+
+<!-- LOG -->
+<section class="card" aria-labelledby="h-log">
+  <h2 id="h-log">Aktivitas</h2>
+  <div id="log" role="log" aria-live="polite" aria-label="Catatan aktivitas"></div>
+</section>
+
+<p class="foot" id="foot">I-Sora · /buttons</p>
+</main>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+let TOKEN = localStorage.getItem('aural_token') || '';
+let connected = false, prevOn = false, prevTimer = null, lastCaption = '';
+let gapEditingUntil = 0;   // suppress poll overwrites while the user drags
+
+// ── timeout-guarded fetch helpers (never hang) ───────────────────────────────
+function tfetch(url, opts, ms){
+  opts = opts || {};
+  opts.signal = AbortSignal.timeout(ms || 4000);
+  return fetch(url, opts);
+}
+async function initToken(){
+  if (TOKEN) return;
+  try{
+    const r = await tfetch('/auth/token', {}, 3000);
+    if (r.ok){ const d = await r.json(); if (d.token){ TOKEN = d.token; localStorage.setItem('aural_token', TOKEN); } }
+  }catch(_){}
+}
+
+// ── logging ──────────────────────────────────────────────────────────────────
+function logLine(msg, cls){
+  const box = $('log');
+  const t = new Date().toLocaleTimeString('id-ID',{hour12:false});
+  const d = document.createElement('div');
+  d.className = cls || '';
+  d.textContent = `[${t}] ${msg}`;
+  box.appendChild(d);
+  while (box.children.length > 80) box.removeChild(box.firstChild);
+  box.scrollTop = box.scrollHeight;
+}
+
+// ── POST /config helper (token + bootstrap retry) ────────────────────────────
+async function postConfig(body){
+  const h = {'Content-Type':'application/json'};
+  if (TOKEN) h['X-Auth-Token'] = TOKEN;
+  const payload = JSON.stringify(body);
+  let r = await tfetch('/config', {method:'POST', headers:h, body:payload}, 4000);
+  if (r.status === 401){
+    await initToken();
+    if (TOKEN){ h['X-Auth-Token'] = TOKEN; r = await tfetch('/config',{method:'POST',headers:h,body:payload},4000); }
+  }
+  return r;
+}
+
+// ── simulated hardware press → POST /button (open, no auth) ───────────────────
+async function press(which, long, el){
+  if (el){ el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+  logLine(`${which.toUpperCase()} ${long?'(tekan lama)':'(tekan)'}`);
+  try{
+    const r = await tfetch('/button', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({button:which, long:!!long})
+    }, 4000);
+    const d = await r.json().catch(()=>({}));
+    if (d.ok) logLine('   ✓ terkirim ke perangkat', 'ok');
+    else      logLine('   ✗ ' + (d.error || 'antrean penuh, ulangi'), 'err');
+  }catch(e){
+    logLine('   ✗ gagal kirim (' + (e.name||e) + ') — coba lagi', 'err');
+  }
+}
+
+// ── QA direct command → POST /command (needs token) ──────────────────────────
+async function cmd(c, extra){
+  const label = c + (extra && extra.mode ? ' '+extra.mode : '');
+  logLine('perintah: ' + label);
+  try{
+    const h = {'Content-Type':'application/json'};
+    if (TOKEN) h['X-Auth-Token'] = TOKEN;
+    let r = await tfetch('/command', {
+      method:'POST', headers:h, body: JSON.stringify(Object.assign({cmd:c}, extra||{}))
+    }, 4000);
+    if (r.status === 401){
+      await initToken();
+      if (TOKEN){ h['X-Auth-Token'] = TOKEN;
+        r = await tfetch('/command',{method:'POST',headers:h,body:JSON.stringify(Object.assign({cmd:c},extra||{}))},4000);
+      }
+    }
+    const d = await r.json().catch(()=>({}));
+    if (d.ok) logLine('   ✓ ' + label + ' diterima', 'ok');
+    else      logLine('   ✗ ' + (d.error || ('HTTP '+r.status)), 'err');
+  }catch(e){
+    logLine('   ✗ gagal (' + (e.name||e) + ')', 'err');
+  }
+}
+
+// ── description verbosity ─────────────────────────────────────────────────────
+async function setVerbosity(v){
+  logLine('panjang deskripsi: ' + v);
+  try{
+    const r = await postConfig({scene_verbosity:v});
+    const d = await r.json().catch(()=>({}));
+    if (d.ok) logLine('   ✓ deskripsi: ' + v + ' (aktif)', 'ok');
+    else      logLine('   ✗ ' + (d.error || ('HTTP '+r.status)), 'err');
+  }catch(e){ logLine('   ✗ gagal (' + (e.name||e) + ')', 'err'); }
+}
+
+// ── audio render mode: caching per-kata (true) vs satu blok audio (false) ─────
+async function setCacheMode(enabled){
+  logLine('mode suara: ' + (enabled ? 'caching per-kata' : 'satu blok audio'));
+  applyCacheMode(enabled);   // optimistic; poll reconciles
+  try{
+    const r = await postConfig({word_cache_enabled: enabled});
+    const d = await r.json().catch(()=>({}));
+    if (d.ok) logLine('   ✓ mode suara tersimpan', 'ok');
+    else      logLine('   ✗ ' + (d.error || ('HTTP '+r.status)), 'err');
+  }catch(e){ logLine('   ✗ gagal (' + (e.name||e) + ')', 'err'); }
+}
+function applyCacheMode(enabled){
+  $('aCache').setAttribute('aria-pressed', enabled ? 'true' : 'false');
+  $('aBlock').setAttribute('aria-pressed', enabled ? 'false' : 'true');
+  $('gapCard').style.display = enabled ? 'block' : 'none';
+}
+
+// ── word-gap slider ───────────────────────────────────────────────────────────
+function gapText(ms){
+  ms = parseInt(ms, 10) || 0;
+  if (ms < 0) return '−' + Math.abs(ms) + ' ms · overlap (halus)';
+  if (ms === 0) return '0 ms · rapat';
+  return '+' + ms + ' ms · jeda';
+}
+function onGapInput(v){
+  gapEditingUntil = Date.now() + 1500;
+  const txt = gapText(v);
+  $('gapVal').textContent = txt;
+  $('gapRange').setAttribute('aria-valuetext', txt);
+}
+let gapTimer = null;
+function commitGap(v){
+  onGapInput(v);
+  clearTimeout(gapTimer);
+  gapTimer = setTimeout(async ()=>{
+    const ms = parseInt(v, 10) || 0;
+    logLine('jarak antar kata: ' + ms + ' ms');
+    try{
+      const r = await postConfig({word_cache_gap_ms: ms});
+      const d = await r.json().catch(()=>({}));
+      if (d.ok) logLine('   ✓ jarak tersimpan (' + ms + ' ms)', 'ok');
+      else      logLine('   ✗ ' + (d.error || ('HTTP '+r.status)), 'err');
+    }catch(e){ logLine('   ✗ gagal (' + (e.name||e) + ')', 'err'); }
+  }, 280);
+}
+
+// ── accessibility shell toggles (mirror the companion app) ───────────────────
+function toggleContrast(){
+  const on = document.documentElement.getAttribute('data-contrast') === 'high';
+  document.documentElement.setAttribute('data-contrast', on ? 'normal' : 'high');
+  $('btnContrast').setAttribute('aria-pressed', on ? 'false' : 'true');
+  try{ localStorage.setItem('aural_contrast', on ? 'normal' : 'high'); }catch(_){}
+}
+function toggleLargeType(){
+  const on = document.documentElement.getAttribute('data-type') === 'large';
+  document.documentElement.setAttribute('data-type', on ? 'normal' : 'large');
+  $('btnLarge').setAttribute('aria-pressed', on ? 'false' : 'true');
+  try{ localStorage.setItem('aural_type', on ? 'normal' : 'large'); }catch(_){}
+}
+(function restoreA11y(){
+  try{
+    if (localStorage.getItem('aural_contrast') === 'high'){
+      document.documentElement.setAttribute('data-contrast','high');
+      $('btnContrast').setAttribute('aria-pressed','true');
+    }
+    if (localStorage.getItem('aural_type') === 'large'){
+      document.documentElement.setAttribute('data-type','large');
+      $('btnLarge').setAttribute('aria-pressed','true');
+    }
+  }catch(_){}
+})();
+
+// ── latency dashboard render ──────────────────────────────────────────────────
+function fmtMs(v){
+  if (v === null || v === undefined) return '—';
+  return v >= 1000 ? (v/1000).toFixed(1) + ' s' : Math.round(v) + ' ms';
+}
+function renderMetrics(s){
+  const sm = s.scene_metrics || {};
+  const last = sm.last, sum = sm.summary || {count:0};
+  const total = (s.cached_words_total != null) ? s.cached_words_total : '—';
+
+  const srcEl = $('mSource'), verbEl = $('mVerb');
+  if (last){
+    const cache = last.audio_source === 'cache';
+    const synth = last.audio_source === 'synth';
+    srcEl.className = 'badge ' + (cache ? 'badge--ok' : synth ? 'badge--info' : '');
+    srcEl.textContent = cache ? 'Cache per-kata (instan)'
+                       : synth ? 'Satu blok (sintesis)'
+                       : 'merender…';
+    verbEl.hidden = false;
+    verbEl.textContent = last.verbosity === 'sedang' ? 'Sedang' : 'Detail';
+    $('mTime').textContent = (last.ts || '').slice(11,19);
+    $('mGemini').textContent = fmtMs(last.gemini_ms);
+    $('mToAudio').textContent = fmtMs(last.to_audio_ms);
+    $('mAudio').textContent = fmtMs(last.audio_ms);
+    $('mWords').textContent = (last.cached_words != null && last.words != null)
+        ? `${last.cached_words}/${last.words}` : '—';
+    $('mText').textContent = last.text ? '“' + last.text + '”' : '';
+  } else {
+    srcEl.className = 'badge';
+    srcEl.textContent = 'menunggu deskripsi…';
+    verbEl.hidden = true;
+    ['mTime','mText'].forEach(id => $(id).textContent = '');
+    ['mGemini','mToAudio','mAudio','mWords'].forEach(id => $(id).textContent = '—');
+  }
+
+  // summary pills
+  const pills = [];
+  pills.push(`<span class="pill">Kata tersimpan <b>${total}</b></span>`);
+  if (sum.count){
+    pills.push(`<span class="pill">Deskripsi <b>${sum.count}</b></span>`);
+    if (sum.hit_rate != null) pills.push(`<span class="pill">Hit cache <b>${Math.round(sum.hit_rate*100)}%</b></span>`);
+    if (sum.avg_gemini_ms != null) pills.push(`<span class="pill">Rata² vision <b>${fmtMs(sum.avg_gemini_ms)}</b></span>`);
+    if (sum.avg_cache_to_audio_ms != null) pills.push(`<span class="pill">Cache→audio <b>${fmtMs(sum.avg_cache_to_audio_ms)}</b></span>`);
+    if (sum.avg_synth_to_audio_ms != null) pills.push(`<span class="pill">Blok→audio <b>${fmtMs(sum.avg_synth_to_audio_ms)}</b></span>`);
+  }
+  $('mSummary').innerHTML = pills.join('');
+
+  // history (newest first)
+  const hist = (sm.history || []).slice().reverse();
+  const hEl = $('mHistory');
+  if (!hist.length){
+    hEl.innerHTML = '<li class="empty">Belum ada deskripsi pada sesi ini.</li>';
+  } else {
+    hEl.innerHTML = hist.map(h=>{
+      const src = h.audio_source === 'cache' ? 'cache' : h.audio_source === 'synth' ? 'blok' : '…';
+      return `<li><span>${(h.ts||'').slice(11,19)} · ${src}</span>`
+           + `<span>vision ${fmtMs(h.gemini_ms)} · mulai ${fmtMs(h.to_audio_ms)}</span></li>`;
+    }).join('');
+  }
+}
+
+// ── status poll → drives chips, button labels, toggles, dashboard ─────────────
+function setConn(ok){
+  connected = ok;
+  $('dot').className = 'dot ' + (ok ? 'dot--ok' : 'dot--danger');
+  $('connTxt').textContent = ok ? 'tersambung' : 'terputus';
+}
+function modeLabel(m){ return ({explorer:'Explorer',context:'Context',qris:'QRIS'})[m] || m || '—'; }
+
+function applyState(s){
+  const onboarding = (s.setup_completed === false) && (s.url_ack === false);
+  const collecting = !!s.data_collection_mode;
+
+  $('stMode').textContent = collecting ? 'Mode Ambil Data' : modeLabel(s.mode);
+  $('stPhase').textContent = collecting ? 'ambil dataset'
+                          : onboarding ? 'setup / pairing' : 'operasi normal';
+
+  const cap = (s.last_caption && s.last_caption.text) || s.audio_text || '';
+  if (cap && cap !== lastCaption){ lastCaption = cap; }
+  $('stCaption').textContent = lastCaption || '— belum ada —';
+
+  const w = $('warn');
+  if (collecting){
+    w.style.display = 'block';
+    w.innerHTML = '<b>⚠ Mode Ambil Data AKTIF.</b> Deteksi objek, QRIS, dan deskripsi <b>dinonaktifkan</b> — perangkat hanya mengumpulkan foto. Matikan dulu lewat halaman <i>/collect</i> agar fungsi asistif jalan.';
+  } else { w.style.display = 'none'; }
+
+  if (onboarding){
+    $('lModeShort').textContent = 'Ulangi info';
+    $('lModeLong').textContent  = 'Sudah paham';
+    $('lActShort').textContent  = '(nonaktif)';
+    $('lActLong').textContent   = '(nonaktif)';
+    $('bActShort').disabled = true; $('bActLong').disabled = true;
+    $('hMode').innerHTML = '<span class="role">Tekan</span>: ulangi alamat/kode pairing · <span class="role">Tekan lama</span>: konfirmasi sudah paham.';
+    $('hAct').innerHTML  = 'Tombol ACTION nonaktif selama setup.';
+  } else {
+    $('lModeShort').textContent = 'Ganti mode';
+    $('lModeLong').textContent  = 'Ucap alamat';
+    const qris = s.mode === 'qris';
+    $('lActShort').textContent  = qris ? 'Pindai QRIS' : 'Deskripsikan';
+    $('lActLong').textContent   = 'Ulangi hasil';
+    $('bActShort').disabled = false; $('bActLong').disabled = false;
+    $('hMode').innerHTML = '<span class="role">Tekan</span>: putar mode Explorer→Context→QRIS · <span class="role">Tekan lama</span>: ucapkan ulang alamat web.';
+    $('hAct').innerHTML  = '<span class="role">Tekan</span>: ' + (qris?'pindai kode QRIS':'deskripsikan sekitar') + ' · <span class="role">Tekan lama</span>: ulangi hasil terakhir.';
+  }
+
+  ['Explorer','Context','Qris'].forEach(n=>{
+    const el = $('q'+n); if (el) el.classList.toggle('btn--cur', s.mode === n.toLowerCase());
+  });
+
+  const sv = s.scene_verbosity || 'detail';
+  $('vSedang').setAttribute('aria-pressed', sv === 'sedang' ? 'true' : 'false');
+  $('vDetail').setAttribute('aria-pressed', sv === 'detail' ? 'true' : 'false');
+
+  // audio render mode + gap slider
+  const cacheOn = (s.word_cache_enabled !== false);
+  applyCacheMode(cacheOn);
+  if (Date.now() > gapEditingUntil && typeof s.word_cache_gap_ms === 'number'){
+    $('gapRange').value = s.word_cache_gap_ms;
+    onGapInputDisplayOnly(s.word_cache_gap_ms);
+  }
+
+  renderMetrics(s);
+
+  if (s.device_name || s.mdns_host){
+    $('devName').textContent = 'I-Sora · ' + (s.device_name || s.mdns_host);
+  }
+}
+// update the slider readout without extending the editing-suppression window
+function onGapInputDisplayOnly(v){
+  const txt = gapText(v);
+  $('gapVal').textContent = txt;
+  $('gapRange').setAttribute('aria-valuetext', txt);
+}
+
+async function poll(){
+  try{
+    const r = await tfetch('/status', {}, 2500);
+    const s = await r.json();
+    if (!connected){ setConn(true); logLine('terhubung ke perangkat','ok'); }
+    applyState(s);
+  }catch(_){
+    if (connected){ setConn(false); logLine('koneksi terputus — mencoba ulang…','err'); }
+  }
+  setTimeout(poll, 1200);
+}
+
+// ── camera preview ───────────────────────────────────────────────────────────
+function togglePrev(){
+  prevOn = !prevOn;
+  $('prevWrap').style.display = prevOn ? 'block' : 'none';
+  $('prevHint').style.display = prevOn ? 'block' : 'none';
+  $('prevBtn').textContent = prevOn ? 'Sembunyikan' : 'Tampilkan';
+  $('prevBtn').setAttribute('aria-expanded', prevOn ? 'true' : 'false');
+  if (prevOn) refreshPrev(); else if (prevTimer){ clearTimeout(prevTimer); prevTimer=null; }
+}
+function refreshPrev(){
+  if (!prevOn) return;
+  const tmp = new Image();
+  tmp.onload = () => { $('prevImg').src = tmp.src; prevTimer = setTimeout(refreshPrev, 700); };
+  tmp.onerror = () => { prevTimer = setTimeout(refreshPrev, 1500); };
+  tmp.src = '/snapshot?t=' + Date.now();
+}
+
+// ── boot ─────────────────────────────────────────────────────────────────────
+logLine('Halaman simulasi tombol siap. Pakai saat tombol fisik mati.', 'dim');
+initToken().finally(poll);
+</script>
+</body>
+</html>

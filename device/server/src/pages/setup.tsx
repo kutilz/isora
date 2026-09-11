@@ -361,7 +361,7 @@ function Step1() {
       <p style={bodyStyle}>
         Tahan tombol <strong>Power</strong> di tangkai kanan selama 2 detik.
         Kacamata akan berbunyi chime singkat lalu mengucapkan{" "}
-        <em>"AuralAI siap digunakan"</em>.
+        <em>"Isora siap digunakan"</em>.
       </p>
       <div
         style={{
@@ -372,7 +372,7 @@ function Step1() {
         }}
       >
         <Checkpoint label="Lampu indikator hijau menyala" />
-        <Checkpoint label="Speaker mengucapkan 'AuralAI siap'" />
+        <Checkpoint label="Speaker mengucapkan 'Isora siap'" />
         <Checkpoint label="Layar dashboard menemukan perangkat di jaringan" />
       </div>
     </>

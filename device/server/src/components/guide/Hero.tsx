@@ -53,7 +53,7 @@ export function Hero() {
         </div>
         <AssetImage
           name="hero_glasses.jpg"
-          alt="Foto AuralAI terpasang di kacamata"
+          alt="Foto I-Sora terpasang di kacamata"
           style={{ width: "100%", borderRadius: "var(--r-lg)", display: "block" }}
           fallback={<HeroGlassesMockup />}
         />
@@ -69,7 +69,7 @@ function HeroGlassesMockup() {
       <svg
         viewBox="0 0 480 280"
         style={{ width: "100%", height: "auto" }}
-        aria-label="Ilustrasi kacamata dengan modul AuralAI di tangkai kanan"
+        aria-label="Ilustrasi kacamata dengan modul I-Sora di tangkai kanan"
       >
         <ellipse cx="240" cy="170" rx="44" ry="10" fill="#EAE7DF" />
         <circle cx="170" cy="140" r="58" fill="#F4F2EB" stroke="#3D3D3D" stroke-width="6" />
@@ -86,7 +86,7 @@ function HeroGlassesMockup() {
           <circle cx="38" cy="14" r="1.5" fill="#fff" opacity="0.7" />
           <circle cx="62" cy="34" r="3" fill="#3DCB6E" />
           <text x="6" y="48" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#fff">
-            AURALAI
+            I-SORA
           </text>
         </g>
       </svg>
