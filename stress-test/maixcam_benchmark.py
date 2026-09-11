@@ -3,7 +3,7 @@ MaixCAM Benchmark & Thermal Stress Test
 ========================================
 Target  : MaixCAM (regular) – SG2002 / RISC-V C906 + ARM A53
 Runtime : MaixPy (MaixVision)
-Author  : Albert (AuralAI / IIoT Lab – UPI)
+Author  : Albert (I-Sora / IIoT Lab – UPI)
 
 Sections
 --------

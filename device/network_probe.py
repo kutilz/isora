@@ -5,21 +5,21 @@ Di PC jalankan dulu:
   python companion/minimal_server.py
 
 Di MaixCAM:
-  export AURAL_PROBE_HOST=192.168.x.x    # IPv4 Wi-Fi/Ethernet PC (satu subnet dengan MaixCAM)
-  export AURAL_PROBE_PORT=8765
+  export ISORA_PROBE_HOST=192.168.x.x    # IPv4 Wi-Fi/Ethernet PC (satu subnet dengan MaixCAM)
+  export ISORA_PROBE_PORT=8765
   python device/network_probe.py
 
 Bisa juga pakai variabel companion yang sama:
-  export AURAL_COMPANION_HOST=192.168.x.x
-  export AURAL_COMPANION_PORT=8765
+  export ISORA_COMPANION_HOST=192.168.x.x
+  export ISORA_COMPANION_PORT=8765
   python device/network_probe.py
 
 Opsional — sambung WiFi dari script (pola MaixPy resmi, timeout 60s):
-  export AURAL_WIFI_SSID=nama_ap
-  export AURAL_WIFI_PASSWORD=...
+  export ISORA_WIFI_SSID=nama_ap
+  export ISORA_WIFI_PASSWORD=...
 
 Kalau udhcpc hanya «discover» terus: sambung lewat **Settings → WiFi** di MaixCAM
-(kadang DHCP stabil hanya dari GUI), lalu jalankan probe **tanpa** AURAL_WIFI_*.
+(kadang DHCP stabil hanya dari GUI), lalu jalankan probe **tanpa** ISORA_WIFI_*.
 """
 
 from __future__ import annotations
@@ -34,8 +34,8 @@ except ImportError:
     print("ERROR: modul requests tidak ada (MaixPy biasanya sudah menyertakan).")
     sys.exit(1)
 
-HOST = os.environ.get("AURAL_PROBE_HOST") or os.environ.get("AURAL_COMPANION_HOST", "")
-PORT = int(os.environ.get("AURAL_PROBE_PORT") or os.environ.get("AURAL_COMPANION_PORT", "8765"))
+HOST = os.environ.get("ISORA_PROBE_HOST") or os.environ.get("ISORA_COMPANION_HOST", "")
+PORT = int(os.environ.get("ISORA_PROBE_PORT") or os.environ.get("ISORA_COMPANION_PORT", "8765"))
 
 
 def _ipv4_parts(s):
@@ -66,11 +66,11 @@ def _guess_outbound_ipv4():
 
 
 def _optional_wifi_connect_from_env():
-    """Set AURAL_WIFI_SSID (+ PASSWORD): pakai wifi_connect.py (sama contoh MaixPy)."""
-    ssid = (os.environ.get("AURAL_WIFI_SSID") or "").strip()
+    """Set ISORA_WIFI_SSID (+ PASSWORD): pakai wifi_connect.py (sama contoh MaixPy)."""
+    ssid = (os.environ.get("ISORA_WIFI_SSID") or "").strip()
     if not ssid:
         return
-    pwd = os.environ.get("AURAL_WIFI_PASSWORD", "") or ""
+    pwd = os.environ.get("ISORA_WIFI_PASSWORD", "") or ""
     try:
         from wifi_connect import connect_wifi
 
@@ -81,7 +81,7 @@ def _optional_wifi_connect_from_env():
         print(f"[probe] WiFi dari script gagal: {ex}")
         print(
             "[probe] Coba: **Settings → WiFi** di MaixCAM sampai dapat IP, "
-            "lalu unset AURAL_WIFI_* dan jalankan probe lagi.\n"
+            "lalu unset ISORA_WIFI_* dan jalankan probe lagi.\n"
         )
 
 
@@ -107,7 +107,7 @@ def _print_maix_ip_and_subnet_check(pc_host: str) -> str:
         print(
             "Tanpa IP, koneksi ke PC mana pun akan errno 101 (network unreachable).\n"
             "• Sambung Wi-Fi lewat aplikasi **Settings** di MaixCAM (QR / scan SSID), atau\n"
-            "• Jalankan probe dengan env: AURAL_WIFI_SSID dan AURAL_WIFI_PASSWORD (script akan connect dulu).\n"
+            "• Jalankan probe dengan env: ISORA_WIFI_SSID dan ISORA_WIFI_PASSWORD (script akan connect dulu).\n"
             "Lihat: dokumentasi MaixPy «Network Settings» (Wifi().connect)."
         )
         print("***\n")
@@ -167,14 +167,14 @@ def _hint_unreachable(host: str, err: str) -> None:
 
 def main():
     if not HOST:
-        print("ERROR: set AURAL_PROBE_HOST atau AURAL_COMPANION_HOST ke IPv4 PC (bukan 127.0.0.1).")
-        print("  Contoh: export AURAL_PROBE_HOST=192.168.1.50")
+        print("ERROR: set ISORA_PROBE_HOST atau ISORA_COMPANION_HOST ke IPv4 PC (bukan 127.0.0.1).")
+        print("  Contoh: export ISORA_PROBE_HOST=192.168.1.50")
         sys.exit(1)
 
     _optional_wifi_connect_from_env()
 
     base = f"http://{HOST}:{PORT}"
-    print(f"AuralAI network probe → {base}\n")
+    print(f"I-Sora network probe → {base}\n")
     _effective_ip = _print_maix_ip_and_subnet_check(HOST)
 
     last_err = ""
@@ -202,7 +202,7 @@ def main():
         if not _effective_ip:
             print(
                 "(Ringkas) Pastikan WiFi MaixCAM benar-benar online: Settings → WiFi, "
-                "atau set AURAL_WIFI_SSID / AURAL_WIFI_PASSWORD lalu jalankan ulang probe.\n"
+                "atau set ISORA_WIFI_SSID / ISORA_WIFI_PASSWORD lalu jalankan ulang probe.\n"
             )
 
     print("\nSelesai. Jika semua OK, companion utama bisa dipakai dengan host/port yang sama.")

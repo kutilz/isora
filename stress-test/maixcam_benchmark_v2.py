@@ -8,7 +8,7 @@ Filosofi benchmark ini:
 - Camera fps bukan benchmark – itu hardware cap (GC4653 = 60fps, titik)
 - CPU float math bukan benchmark – RISC-V C906 memang lambat, pakai NPU
 - Yang diukur: NPU throughput, memory bandwidth, pipeline end-to-end,
-  dan concurrent load (relevan ke arsitektur 2-thread AuralAI)
+  dan concurrent load (relevan ke arsitektur 2-thread I-Sora)
 
 Sections:
   0. System Info + Thermal Baseline
@@ -16,7 +16,7 @@ Sections:
   2. JPEG Codec Throughput (I/O & CPU codec pipeline)
   3. NPU Inference Benchmark – sustained YOLO (NPU-only)
   4. Full Pipeline Benchmark – Camera → NPU → JPEG encode (end-to-end fps)
-  5. Concurrent Stress – simulasi 2-thread: AI loop + web server (AuralAI pattern)
+  5. Concurrent Stress – simulasi 2-thread: AI loop + web server (I-Sora pattern)
   6. Thermal Endurance – 90s sustained full pipeline, log suhu tiap 15s
   7. Final Report
 """
@@ -255,12 +255,12 @@ def s1_memory_bandwidth():
 
 # ─────────────────────────────────────────────────────────
 # SECTION 2 – JPEG CODEC THROUGHPUT
-# JPEG encode adalah operasi kritis di AuralAI (500ms poll)
+# JPEG encode adalah operasi kritis di I-Sora (500ms poll)
 # dan di pipeline Context Mode (kirim ke OpenAI Vision)
 # ─────────────────────────────────────────────────────────
 def s2_jpeg_codec():
     psec("SECTION 2 – JPEG CODEC THROUGHPUT")
-    pr("Relevan langsung ke AuralAI: JPEG encode untuk web dashboard")
+    pr("Relevan langsung ke I-Sora: JPEG encode untuk web dashboard")
     pr("polling dan Context Mode (upload ke OpenAI Vision API)")
 
     if not MAIX_OK:
@@ -461,12 +461,12 @@ def s3_npu_benchmark():
 
 # ─────────────────────────────────────────────────────────
 # SECTION 4 – FULL PIPELINE: Camera → NPU → JPEG encode
-# Ini throughput nyata AuralAI Explorer Mode:
+# Ini throughput nyata I-Sora Explorer Mode:
 #   frame captured → YOLO infer → annotate → JPEG encode → kirim
 # ─────────────────────────────────────────────────────────
 def s4_full_pipeline():
     psec("SECTION 4 – FULL PIPELINE: Cam → NPU → Annotate → JPEG")
-    pr("Mensimulasikan AuralAI Explorer Mode loop penuh")
+    pr("Mensimulasikan I-Sora Explorer Mode loop penuh")
 
     if not MAIX_OK:
         pr("SKIPPED – maix not available"); return {}
@@ -567,14 +567,14 @@ def s4_full_pipeline():
 
 # ─────────────────────────────────────────────────────────
 # SECTION 5 – CONCURRENT STRESS: AI loop + Web server
-# Mensimulasikan arsitektur 2-thread AuralAI:
+# Mensimulasikan arsitektur 2-thread I-Sora:
 #   Thread A: camera + YOLO (AI loop)
 #   Thread B: JPEG encode + HTTP-like response (web server)
 # Ukurannya: apakah fps AI loop turun saat web thread aktif?
 # ─────────────────────────────────────────────────────────
 def s5_concurrent_stress():
     psec("SECTION 5 – CONCURRENT STRESS: AI Thread + Web Thread")
-    pr("Simulasi arsitektur AuralAI: 2-thread model")
+    pr("Simulasi arsitektur I-Sora: 2-thread model")
     pr("Thread-A = AI loop (cam + YOLO), Thread-B = web server (JPEG poll)")
 
     if not MAIX_OK:
@@ -622,7 +622,7 @@ def s5_concurrent_stress():
 
         cam_b = camera.Camera(det_b.input_width(), det_b.input_height(), det_b.input_format())
 
-        # Shared state (mimicking AuralAI shared frame buffer)
+        # Shared state (mimicking I-Sora shared frame buffer)
         shared = {
             "frame":    None,
             "lock":     threading.Lock(),
@@ -905,7 +905,7 @@ def s7_report(s1, s2, s3, s4, s5, s6):
     else: pr("  No data")
 
     print()
-    pr("── CONCURRENCY (2-thread AuralAI pattern) ──")
+    pr("── CONCURRENCY (2-thread I-Sora pattern) ──")
     if s5:
         solo = s5.get("solo_fps")
         conc = s5.get("concurrent_fps")

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Simulasi Tombol — I-Sora</title>
+<title>Kontrol I-Sora</title>
 <link rel="stylesheet" href="/tokens.css">
 <style>
   /* Page layout on top of the shared, WCAG-AA design tokens (tokens.css).
@@ -13,7 +13,10 @@
   .wrap { max-width: 760px; margin: 0 auto; padding: var(--s-4) var(--s-4) var(--s-12); }
 
   header.top { display:flex; justify-content:space-between; align-items:flex-start; gap:var(--s-3); margin-bottom:var(--s-4); flex-wrap:wrap; }
-  .brand h1 { font-size:var(--t-xl); margin:0; line-height:1.1; }
+  .brand h1 { font-size:var(--t-xl); margin:0; line-height:1.1; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+  /* hidden brand toggle: the logo is a long-press target (I-Sora ⇄ AuralAI).
+     No visible affordance — a subtle tint only appears while it's being held. */
+  .brand h1.holding { color:var(--accent); transition:color .25s ease; }
   .brand .sub { color:var(--ink-2); font-size:var(--t-sm); margin:6px 0 0; }
   .conn { display:flex; align-items:center; gap:var(--s-2); font-size:var(--t-sm); color:var(--ink-2); white-space:nowrap; font-weight:600; }
 
@@ -28,6 +31,7 @@
   .chip { flex:1 1 150px; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-md); padding:var(--s-2) var(--s-3); }
   .chip b { display:block; color:var(--ink-3); font-size:var(--t-xs); text-transform:uppercase; letter-spacing:.4px; font-weight:700; margin-bottom:3px; }
   .chip .v { font-size:var(--t-md); font-weight:700; }
+  .chip .v--warn { color:var(--warn); } .chip .v--danger { color:var(--danger); }
   .caption { margin-top:var(--s-3); background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-md); padding:var(--s-3); min-height:52px; }
   .caption .lbl { display:block; color:var(--ink-3); font-size:var(--t-xs); text-transform:uppercase; letter-spacing:.4px; font-weight:700; margin-bottom:4px; }
   .caption .val { font-size:var(--t-md); line-height:1.35; }
@@ -56,6 +60,9 @@
   .seg .btn[aria-pressed="true"] .s2 { opacity:.95; }
 
   .sgrid { display:flex; flex-wrap:wrap; gap:var(--s-2); }
+  .vgrid { margin-bottom:var(--s-2); }
+  .vgrid .btn { flex:1 1 30%; min-width:88px; }
+  .vgrid .btn[aria-pressed="true"] { background:var(--accent); border-color:var(--accent); color:#fff; }
   .sgrid .btn { flex:1 1 30%; min-width:120px; }
   .btn--cur { box-shadow: inset 0 0 0 3px var(--accent-soft); border-color:var(--accent); }
 
@@ -84,8 +91,17 @@
 
   /* camera preview */
   .prevhead { justify-content:space-between; }
-  .prevwrap { position:relative; background:#000; border-radius:var(--r-md); overflow:hidden; aspect-ratio:320/224; display:none; }
+  .prevwrap { position:relative; background:#000; border-radius:var(--r-md); overflow:hidden; aspect-ratio:var(--prev-ar, 320/224); display:none; }
   .prevwrap img { width:100%; height:100%; object-fit:contain; display:block; }
+
+  /* camera rotation picker — 2x2 so all four turns stay equal-sized and
+     thumb-reachable on a phone, which is where a helper re-mounts the device */
+  .subhead { font-size:var(--t-sm); font-weight:700; margin:var(--s-4) 0 var(--s-2); }
+  .rotgrid { display:grid; grid-template-columns:repeat(2,1fr); gap:var(--s-2); }
+  .rotbtn { min-height:60px; flex-direction:column; gap:2px; line-height:1.2; }
+  .rotbtn .s2 { font-size:var(--t-xs); font-weight:600; opacity:.85; }
+  .rotbtn[aria-pressed="true"] { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .rotbtn[aria-pressed="true"] .s2 { opacity:.95; }
 
   /* activity log */
   #log { font-family:var(--font-mono); font-size:var(--t-xs); line-height:1.55; max-height:190px; overflow-y:auto; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-md); padding:var(--s-3); }
@@ -118,9 +134,8 @@
 
 <header class="top">
   <div class="brand">
-    <h1>Simulasi Tombol</h1>
-    <p class="sub" id="devName">I-Sora · menghubungkan…</p>
-    <p class="sub" style="margin-top:4px"><a href="/" style="color:var(--accent);font-weight:600">← Kembali ke Beranda</a></p>
+    <h1 id="brandTitle">Kontrol perangkat</h1>
+    <p class="sub" id="devName">menghubungkan…</p>
     <div class="a11y" role="group" aria-label="Aksesibilitas tampilan">
       <button class="btn" id="btnContrast" aria-pressed="false" onclick="toggleContrast()">Kontras tinggi</button>
       <button class="btn" id="btnLarge" aria-pressed="false" onclick="toggleLargeType()">Teks besar</button>
@@ -141,11 +156,43 @@
   <div class="statrow">
     <div class="chip"><b>Mode aktif</b><span class="v" id="stMode">—</span></div>
     <div class="chip"><b>Tahap</b><span class="v" id="stPhase">—</span></div>
+    <div class="chip"><b>Daya &amp; suhu</b><span class="v" id="stPower">—</span></div>
   </div>
   <div class="caption">
     <span class="lbl">Suara terakhir (yang didengar pengguna)</span>
     <span class="val" id="stCaption" aria-live="polite">—</span>
   </div>
+</section>
+
+<!-- VOLUME -->
+<section class="card" aria-labelledby="h-vol">
+  <h2 id="h-vol">Volume suara</h2>
+  <div class="btngrid" style="grid-template-columns:1fr auto 1fr; align-items:center;">
+    <button class="btn bigbtn" id="volDown" onclick="nudgeVol(-10)" aria-label="Perkecil volume">
+      <span class="lbl" aria-hidden="true">−</span>
+    </button>
+    <div class="chip" style="text-align:center; min-width:96px; flex:0 0 auto;">
+      <b>Volume</b><span class="v" id="volVal" role="status" aria-live="polite">—</span>
+    </div>
+    <button class="btn bigbtn" id="volUp" onclick="nudgeVol(10)" aria-label="Perbesar volume">
+      <span class="lbl" aria-hidden="true">+</span>
+    </button>
+  </div>
+  <p class="hint">Atur kenyaringan suara perangkat (0–100). Berlaku langsung.</p>
+  <div class="btngrid" style="margin-top:10px;">
+    <button class="btn" id="bChord" onclick="press('chord',false,this)">
+      <span class="tag">Di perangkat</span>
+      <span class="lbl">Tekan 2 tombol bersamaan</span>
+    </button>
+  </div>
+  <p class="hint" id="hChord">
+    Tahan tombol <span class="role">MODE</span> + <span class="role">ACTION</span>
+    bersamaan ±1 detik untuk masuk mode volume. Setelah itu
+    <span class="role">MODE</span> mengecilkan, <span class="role">ACTION</span>
+    membesarkan — tiap langkah dibunyikan pada volume barunya, jadi kenyaringan
+    langsung terdengar. Mode menutup sendiri setelah beberapa detik diam.
+    Lewat tombol, volume tidak bisa turun sampai bisu; itu hanya dari halaman ini.
+  </p>
 </section>
 
 <!-- MODE BUTTON -->
@@ -188,6 +235,45 @@
     </button>
   </div>
   <p class="hint"><span class="role">Sedang</span>: satu kalimat singkat — lebih cepat &amp; makin sering instan saat cache kata terisi. <span class="role">Detail</span>: deskripsi panjang lengkap.</p>
+</section>
+
+<!-- VOICE -->
+<section class="card" aria-labelledby="h-voice">
+  <h2 id="h-voice">Suara pembaca</h2>
+  <div class="seg" role="group" aria-label="Sumber suara">
+    <button class="btn" id="tpGtts" aria-pressed="false" onclick="setTtsProvider('gtts')">
+      Google<span class="s2">gratis</span>
+    </button>
+    <button class="btn" id="tpOpenai" aria-pressed="false" onclick="setTtsProvider('openai')">
+      OpenAI<span class="s2">lebih stabil</span>
+    </button>
+  </div>
+  <div id="voiceWrap" hidden>
+    <div class="sgrid vgrid" role="group" aria-label="Pilihan suara OpenAI" id="voiceSeg"></div>
+    <p class="hint">Tekan sebuah suara untuk <span class="role">mendengarkan contohnya</span> — belum tersimpan. Tekan <span class="role">Pakai suara ini</span> untuk menyimpan.</p>
+    <div class="sgrid">
+      <button class="btn" id="bVoiceSave" onclick="saveVoice()" disabled>Pakai suara ini</button>
+      <button class="btn btn--ghost" id="bVoiceTest" onclick="testVoice(null)">Coba suara aktif</button>
+    </div>
+  </div>
+  <p class="hint" id="hVoice"></p>
+</section>
+
+<!-- BOOT MODE -->
+<section class="card" aria-labelledby="h-boot">
+  <h2 id="h-boot">Mode saat perangkat dinyalakan</h2>
+  <div class="seg" role="group" aria-label="Mode saat dinyalakan">
+    <button class="btn" id="bmIdle" aria-pressed="false" onclick="setBootMode('idle')">
+      Diam<span class="s2">netral · hemat</span>
+    </button>
+    <button class="btn" id="bmExplorer" aria-pressed="false" onclick="setBootMode('explorer')">
+      Explorer<span class="s2">langsung deteksi</span>
+    </button>
+    <button class="btn" id="bmLast" aria-pressed="false" onclick="setBootMode('last')">
+      Terakhir<span class="s2">lanjutkan mode sebelumnya</span>
+    </button>
+  </div>
+  <p class="hint"><span class="role">Diam</span>: perangkat menyala, terhubung, tapi belum mengamati apa pun — kamera dilepas, jadi paling dingin dan paling hemat. Tekan tombol MODE untuk mulai. <span class="role">Explorer</span>: langsung mendeteksi begitu menyala.</p>
 </section>
 
 <!-- TECHNICAL GROUP — collapsed by default; everyday controls stay above -->
@@ -245,6 +331,7 @@
 <section class="card" aria-labelledby="h-qa">
   <h2 id="h-qa">Kontrol langsung (QA)</h2>
   <div class="sgrid" style="margin-bottom:var(--s-2)">
+    <button class="btn" id="qIdle"     onclick="cmd('set_mode',{mode:'idle'})">Diam</button>
     <button class="btn" id="qExplorer" onclick="cmd('set_mode',{mode:'explorer'})">Explorer</button>
     <button class="btn" id="qContext"  onclick="cmd('set_mode',{mode:'context'})">Context</button>
     <button class="btn" id="qQris"     onclick="cmd('set_mode',{mode:'qris'})">QRIS</button>
@@ -259,7 +346,7 @@
 
 </details>
 
-<!-- PREVIEW -->
+<!-- PREVIEW + CAMERA ROTATION -->
 <section class="card" aria-labelledby="h-prev">
   <h2 id="h-prev" class="prevhead">
     <span>Pratinjau kamera</span>
@@ -267,6 +354,23 @@
   </h2>
   <div class="prevwrap" id="prevWrap"><img id="prevImg" alt="Pratinjau kamera perangkat"></div>
   <p class="hint" id="prevHint" style="display:none">Bantu arahkan kamera saat memindai QR / QRIS.</p>
+
+  <h3 id="h-rot" class="subhead">Arah kamera</h3>
+  <div class="rotgrid" role="group" aria-labelledby="h-rot">
+    <button class="btn rotbtn" id="rot0"   aria-pressed="false" onclick="setRotation(0)">
+      Normal<span class="s2">0°</span>
+    </button>
+    <button class="btn rotbtn" id="rot90"  aria-pressed="false" onclick="setRotation(90)">
+      Putar kanan<span class="s2">90°</span>
+    </button>
+    <button class="btn rotbtn" id="rot180" aria-pressed="false" onclick="setRotation(180)">
+      Terbalik<span class="s2">180°</span>
+    </button>
+    <button class="btn rotbtn" id="rot270" aria-pressed="false" onclick="setRotation(270)">
+      Putar kiri<span class="s2">270°</span>
+    </button>
+  </div>
+  <p class="hint" id="rotHint">Pakai kalau perangkat dipasang di posisi lain dan gambarnya jadi <span class="role">terbalik</span> atau <span class="role">miring</span>. Nyalakan pratinjau dulu supaya kelihatan hasilnya. Setelan ini <span class="role">tersimpan permanen</span> — tetap dipakai setelah perangkat dimatikan.</p>
 </section>
 
 <!-- LOG -->
@@ -275,28 +379,49 @@
   <div id="log" role="log" aria-live="polite" aria-label="Catatan aktivitas"></div>
 </section>
 
-<p class="foot" id="foot">I-Sora · /buttons</p>
+<nav class="foot" id="foot" aria-label="Tampilan lain">
+  Untuk pendamping: <a href="/companion">Tampilan pendamping</a>
+  · <a href="/collect">Ambil data</a>
+  · <a href="/admin">Teknis</a>
+</nav>
 </main>
 </div>
 
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
-let TOKEN = localStorage.getItem('aural_token') || '';
+let TOKEN = localStorage.getItem('isora_token') || '';
 let connected = false, prevOn = false, prevTimer = null, lastCaption = '';
 let gapEditingUntil = 0;   // suppress poll overwrites while the user drags
+let BRAND = 'isora';       // white-label brand, synced from /status.brand
 
 // ── timeout-guarded fetch helpers (never hang) ───────────────────────────────
+// This is the blind user's PRIMARY control, so it must work on older phones.
+// AbortSignal.timeout() is unavailable on Chrome <103 / Safari <15.4 — calling
+// it there throws synchronously and breaks every request (poll, /button,
+// /config), leaving the page permanently "terputus". Fall back to a manual
+// AbortController, and if even that is missing, fetch without a timeout rather
+// than throw.
 function tfetch(url, opts, ms){
   opts = opts || {};
-  opts.signal = AbortSignal.timeout(ms || 4000);
+  ms = ms || 4000;
+  if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'){
+    opts.signal = AbortSignal.timeout(ms);
+    return fetch(url, opts);
+  }
+  if (typeof AbortController === 'function'){
+    const ac = new AbortController();
+    opts.signal = ac.signal;
+    const t = setTimeout(() => ac.abort(), ms);
+    return fetch(url, opts).finally(() => clearTimeout(t));
+  }
   return fetch(url, opts);
 }
 async function initToken(){
   if (TOKEN) return;
   try{
     const r = await tfetch('/auth/token', {}, 3000);
-    if (r.ok){ const d = await r.json(); if (d.token){ TOKEN = d.token; localStorage.setItem('aural_token', TOKEN); } }
+    if (r.ok){ const d = await r.json(); if (d.token){ TOKEN = d.token; localStorage.setItem('isora_token', TOKEN); } }
   }catch(_){}
 }
 
@@ -312,28 +437,37 @@ function logLine(msg, cls){
   box.scrollTop = box.scrollHeight;
 }
 
-// ── POST /config helper (token + bootstrap retry) ────────────────────────────
-async function postConfig(body){
+// ── authed POST helper (token + bootstrap retry) ─────────────────────────────
+async function postAuthed(path, body, timeout){
   const h = {'Content-Type':'application/json'};
   if (TOKEN) h['X-Auth-Token'] = TOKEN;
   const payload = JSON.stringify(body);
-  let r = await tfetch('/config', {method:'POST', headers:h, body:payload}, 4000);
+  const ms = timeout || 4000;
+  let r = await tfetch(path, {method:'POST', headers:h, body:payload}, ms);
   if (r.status === 401){
     await initToken();
-    if (TOKEN){ h['X-Auth-Token'] = TOKEN; r = await tfetch('/config',{method:'POST',headers:h,body:payload},4000); }
+    if (TOKEN){ h['X-Auth-Token'] = TOKEN; r = await tfetch(path,{method:'POST',headers:h,body:payload},ms); }
   }
   return r;
 }
+async function postConfig(body){ return postAuthed('/config', body); }
 
 // ── simulated hardware press → POST /button (open, no auth) ───────────────────
 async function press(which, long, el){
   if (el){ el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
-  logLine(`${which.toUpperCase()} ${long?'(tekan lama)':'(tekan)'}`);
+  logLine(which === 'chord'
+    ? 'MODE + ACTION (tahan bersamaan) — mode volume'
+    : `${which.toUpperCase()} ${long?'(tekan lama)':'(tekan)'}`);
   try{
+    // 15s, not 4s. The device holds the GIL for seconds at a time during a
+    // camera open or an NPU model load, so /button was measured at a p95 of
+    // 7.25s under a mash — well past the old 4s abort. The press had actually
+    // been accepted; only this page gave up early and told the caregiver it
+    // had failed, so they pressed again and again, making the queue worse.
     const r = await tfetch('/button', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({button:which, long:!!long})
-    }, 4000);
+    }, 15000);
     const d = await r.json().catch(()=>({}));
     if (d.ok) logLine('   ✓ terkirim ke perangkat', 'ok');
     else      logLine('   ✗ ' + (d.error || 'antrean penuh, ulangi'), 'err');
@@ -366,6 +500,81 @@ async function cmd(c, extra){
   }
 }
 
+// ── volume control ────────────────────────────────────────────────────────────
+// Reads the current level from GET /config (open, unauthenticated) on load, then
+// writes changes via POST /config. Uses discrete −/+ buttons (large tap targets,
+// screen-reader friendly) instead of a raw slider. 0 is a valid mute.
+let curVol = null;
+// Volume can now move from either end — these buttons or the device's own
+// (hold MODE + ACTION). The poll below follows the device, except right after
+// a tap here, when an in-flight poll would otherwise snap the number back.
+let volEditingUntil = 0;
+function renderVol(){
+  $('volVal').textContent = (curVol == null) ? '—' : curVol + '%';
+  const dis = (curVol == null);
+  $('volDown').disabled = dis || curVol <= 0;
+  $('volUp').disabled   = dis || curVol >= 100;
+}
+async function loadVol(){
+  try{
+    const r = await tfetch('/config', {}, 3000);
+    const c = await r.json();
+    if (typeof c.audio_volume === 'number'){ curVol = c.audio_volume; renderVol(); }
+  }catch(_){}
+}
+async function nudgeVol(delta){
+  if (curVol == null) return;
+  const next = Math.max(0, Math.min(100, curVol + delta));
+  if (next === curVol){ renderVol(); return; }
+  curVol = next; renderVol();
+  volEditingUntil = Date.now() + 2500;   // don't let a slow poll undo the tap
+  logLine('volume: ' + curVol + '%');
+  try{
+    const r = await postConfig({audio_volume: curVol});
+    const d = await r.json().catch(()=>({}));
+    if (d.ok) logLine('   ✓ volume ' + curVol + '% tersimpan', 'ok');
+    else      logLine('   ✗ ' + (d.error || ('HTTP '+r.status)), 'err');
+  }catch(e){ logLine('   ✗ gagal (' + (e.name||e) + ')', 'err'); }
+}
+
+// ── camera rotation (persisted in /root/config.json — survives a power cut) ──
+// The device rotates the FRAME ITSELF, so the preview below, the spoken
+// left/right, and the collected photos all agree. That is why this posts to the
+// device instead of just CSS-rotating the <img>: a preview-only turn would look
+// fixed while every alert stayed mirrored.
+const ROTS = [0, 90, 180, 270];
+let rotEditingUntil = 0;   // suppress poll reconcile right after a tap
+function applyRotation(deg){
+  ROTS.forEach(r => {
+    const el = $('rot' + r);
+    if (el) el.setAttribute('aria-pressed', r === deg ? 'true' : 'false');
+  });
+}
+// Keep the preview box the shape of the rotated frame — a quarter turn makes a
+// landscape sensor portrait, and a fixed 320/224 box would letterbox it.
+function applyPreviewShape(w, h){
+  if (!w || !h) return;
+  document.documentElement.style.setProperty('--prev-ar', w + '/' + h);
+}
+async function setRotation(deg){
+  rotEditingUntil = Date.now() + 2500;
+  applyRotation(deg);                       // optimistic; poll reconciles
+  logLine('arah kamera: ' + (deg ? deg + '°' : 'normal'));
+  try{
+    const r = await postConfig({camera_rotation: deg});
+    const d = await r.json().catch(()=>({}));
+    if (d.ok){
+      logLine('   ✓ arah kamera tersimpan (' + (deg ? deg + '°' : 'normal') + ')', 'ok');
+      // Pull a fresh frame right away so the turn is visible immediately —
+      // cancelling the pending tick first, or we would leave two refresh
+      // chains running and double the snapshot load for the rest of the session.
+      if (prevOn){ clearTimeout(prevTimer); prevTimer = null; refreshPrev(); }
+    } else {
+      logLine('   ✗ ' + (d.error || ('HTTP '+r.status)), 'err');
+    }
+  }catch(e){ logLine('   ✗ gagal (' + (e.name||e) + ')', 'err'); }
+}
+
 // ── description verbosity ─────────────────────────────────────────────────────
 async function setVerbosity(v){
   logLine('panjang deskripsi: ' + v);
@@ -375,6 +584,110 @@ async function setVerbosity(v){
     if (d.ok) logLine('   ✓ deskripsi: ' + v + ' (aktif)', 'ok');
     else      logLine('   ✗ ' + (d.error || ('HTTP '+r.status)), 'err');
   }catch(e){ logLine('   ✗ gagal (' + (e.name||e) + ')', 'err'); }
+}
+
+// ── voice ────────────────────────────────────────────────────────────────────
+// Every OpenAI voice reads Indonesian acceptably once the accent instruction is
+// applied, so which one to use is taste, not correctness — it belongs to
+// whoever listens to the device, not to a config file they cannot reach.
+const VOICES = ['alloy','nova','sage','coral','shimmer','echo'];
+let voicePending = null;      // auditioned but not yet saved
+let voiceActive  = 'alloy';
+let voiceEditingUntil = 0;
+
+function renderVoices(){
+  const seg = $('voiceSeg');
+  if (!seg || seg.childElementCount) return;    // build once
+  // Build the onclick with escaped quotes. Written as "\'" + v + "\'" — an
+  // earlier edit lost the backslashes, which closed the string literal early
+  // and made the WHOLE inline <script> fail to parse. Nothing on this page ran
+  // after that: no poll(), so the header sat on "menghubungkan…" forever, and
+  // every button was a dead ReferenceError. A parse error takes the entire
+  // block, not just the broken line, which is why one voice-picker typo
+  // silenced the whole console.
+  seg.innerHTML = VOICES.map(v =>
+    '<button class="btn" id="vc_' + v + '" aria-pressed="false" ' +
+    'onclick="testVoice(\'' + v + '\')">' + v + '</button>').join('');
+}
+
+function applyVoice(){
+  const shown = voicePending || voiceActive;
+  VOICES.forEach(v => {
+    const el = $('vc_' + v);
+    if (el) el.setAttribute('aria-pressed', v === shown ? 'true' : 'false');
+  });
+  const save = $('bVoiceSave');
+  if (save){
+    save.disabled = !voicePending || voicePending === voiceActive;
+    save.textContent = voicePending && voicePending !== voiceActive
+      ? 'Pakai "' + voicePending + '"' : 'Pakai suara ini';
+  }
+}
+
+async function setTtsProvider(p){
+  logLine('suara pembaca: ' + (p === 'openai' ? 'OpenAI' : 'Google'));
+  voiceEditingUntil = Date.now() + 4000;
+  $('tpGtts').setAttribute('aria-pressed', p === 'gtts' ? 'true' : 'false');
+  $('tpOpenai').setAttribute('aria-pressed', p === 'openai' ? 'true' : 'false');
+  $('voiceWrap').hidden = (p !== 'openai');
+  try{
+    const r = await postConfig({tts_provider:p});
+    const d = await r.json().catch(()=>({}));
+    if (d.ok) logLine('   ✓ suara pembaca: ' + p, 'ok');
+    else      logLine('   ✗ ' + (d.error || ('HTTP '+r.status)), 'err');
+  }catch(e){ logLine('   ✗ gagal (' + (e.name||e) + ')', 'err'); }
+}
+
+// Auditions a voice WITHOUT saving it, so a candidate can be rejected without
+// ever having been the setting the device actually used.
+async function testVoice(v){
+  voiceEditingUntil = Date.now() + 8000;
+  if (v){ voicePending = v; applyVoice(); }
+  logLine('coba suara: ' + (v || voiceActive) + ' …');
+  try{
+    // Longer timeout than a config write: this one waits on a real render.
+    const r = await postAuthed('/tts-test', v ? {voice:v} : {}, 20000);
+    const d = await r.json().catch(()=>({}));
+    if (d.ok) logLine('   ✓ sedang diucapkan (' + d.voice + ')', 'ok');
+    else      logLine('   ✗ ' + (d.error || ('HTTP '+r.status)), 'err');
+  }catch(e){ logLine('   ✗ gagal (' + (e.name||e) + ')', 'err'); }
+}
+
+async function saveVoice(){
+  if (!voicePending) return;
+  const v = voicePending;
+  voiceEditingUntil = Date.now() + 4000;
+  logLine('simpan suara: ' + v);
+  try{
+    const r = await postConfig({tts_openai_voice:v});
+    const d = await r.json().catch(()=>({}));
+    if (d.ok){
+      voiceActive = v; voicePending = null; applyVoice();
+      logLine('   ✓ suara tersimpan: ' + v, 'ok');
+    } else {
+      logLine('   ✗ ' + (d.error || ('HTTP '+r.status)), 'err');
+    }
+  }catch(e){ logLine('   ✗ gagal (' + (e.name||e) + ')', 'err'); }
+}
+
+// ── boot mode: which mode the device stands in at power-on ───────────────────
+async function setBootMode(m){
+  logLine('mode saat nyala: ' + m);
+  applyBootMode(m);            // optimistic; the status poll reconciles
+  try{
+    const r = await postConfig({boot_mode:m});
+    const d = await r.json().catch(()=>({}));
+    if (d.ok) logLine('   ✓ mode saat nyala: ' + m, 'ok');
+    else      logLine('   ✗ ' + (d.error || ('HTTP '+r.status)), 'err');
+  }catch(e){ logLine('   ✗ gagal (' + (e.name||e) + ')', 'err'); }
+}
+
+function applyBootMode(m){
+  const map = {idle:'bmIdle', explorer:'bmExplorer', last:'bmLast'};
+  Object.keys(map).forEach(k=>{
+    const el = $(map[k]);
+    if (el) el.setAttribute('aria-pressed', k === m ? 'true' : 'false');
+  });
 }
 
 // ── audio render mode: caching per-kata (true) vs satu blok audio (false) ─────
@@ -428,21 +741,21 @@ function toggleContrast(){
   const on = document.documentElement.getAttribute('data-contrast') === 'high';
   document.documentElement.setAttribute('data-contrast', on ? 'normal' : 'high');
   $('btnContrast').setAttribute('aria-pressed', on ? 'false' : 'true');
-  try{ localStorage.setItem('aural_contrast', on ? 'normal' : 'high'); }catch(_){}
+  try{ localStorage.setItem('isora_contrast', on ? 'normal' : 'high'); }catch(_){}
 }
 function toggleLargeType(){
   const on = document.documentElement.getAttribute('data-type') === 'large';
   document.documentElement.setAttribute('data-type', on ? 'normal' : 'large');
   $('btnLarge').setAttribute('aria-pressed', on ? 'false' : 'true');
-  try{ localStorage.setItem('aural_type', on ? 'normal' : 'large'); }catch(_){}
+  try{ localStorage.setItem('isora_type', on ? 'normal' : 'large'); }catch(_){}
 }
 (function restoreA11y(){
   try{
-    if (localStorage.getItem('aural_contrast') === 'high'){
+    if (localStorage.getItem('isora_contrast') === 'high'){
       document.documentElement.setAttribute('data-contrast','high');
       $('btnContrast').setAttribute('aria-pressed','true');
     }
-    if (localStorage.getItem('aural_type') === 'large'){
+    if (localStorage.getItem('isora_type') === 'large'){
       document.documentElement.setAttribute('data-type','large');
       $('btnLarge').setAttribute('aria-pressed','true');
     }
@@ -516,7 +829,17 @@ function setConn(ok){
   $('dot').className = 'dot ' + (ok ? 'dot--ok' : 'dot--danger');
   $('connTxt').textContent = ok ? 'tersambung' : 'terputus';
 }
-function modeLabel(m){ return ({explorer:'Explorer',context:'Context',qris:'QRIS'})[m] || m || '—'; }
+function modeLabel(m){ return ({idle:'Diam',explorer:'Explorer',context:'Context',qris:'QRIS'})[m] || m || '—'; }
+
+// What the device decided about its own temperature. It no longer says this
+// out loud — the person wearing it can't act on it — so this chip is where a
+// pendamping sees that the device eased itself off.
+const POWER_TIER = {
+  normal:   {txt:'normal',        cls:''},
+  warm:     {txt:'hemat ringan',  cls:'v--warn'},
+  hot:      {txt:'hemat (panas)', cls:'v--warn'},
+  critical: {txt:'hemat maksimal',cls:'v--danger'},
+};
 
 function applyState(s){
   const onboarding = (s.setup_completed === false) && (s.url_ack === false);
@@ -551,17 +874,51 @@ function applyState(s){
     $('lActShort').textContent  = qris ? 'Pindai QRIS' : 'Deskripsikan';
     $('lActLong').textContent   = 'Ulangi hasil';
     $('bActShort').disabled = false; $('bActLong').disabled = false;
-    $('hMode').innerHTML = '<span class="role">Tekan</span>: putar mode Explorer→Context→QRIS · <span class="role">Tekan lama</span>: ucapkan ulang alamat web.';
+    $('hMode').innerHTML = '<span class="role">Tekan</span>: putar mode Diam→Explorer→Context→QRIS · <span class="role">Tekan lama</span>: ucapkan ulang alamat web.';
     $('hAct').innerHTML  = '<span class="role">Tekan</span>: ' + (qris?'pindai kode QRIS':'deskripsikan sekitar') + ' · <span class="role">Tekan lama</span>: ulangi hasil terakhir.';
   }
 
-  ['Explorer','Context','Qris'].forEach(n=>{
+  ['Idle','Explorer','Context','Qris'].forEach(n=>{
     const el = $('q'+n); if (el) el.classList.toggle('btn--cur', s.mode === n.toLowerCase());
   });
+
+  const p = s.power || {};
+  const tier = POWER_TIER[p.tier] || POWER_TIER.normal;
+  const temp = (s.temperature != null) ? Math.round(s.temperature) + '°C' : '—';
+  const el = $('stPower');
+  if (el){
+    el.textContent = temp + ' · ' + tier.txt
+                   + (p.target_fps != null ? ' · ' + p.target_fps + ' fps' : '');
+    el.className = 'v ' + tier.cls;
+  }
+
+  applyBootMode((s.power && s.power.boot_mode) || 'idle');
+
+  if (typeof s.audio_volume === 'number' && Date.now() > volEditingUntil
+      && s.audio_volume !== curVol){
+    curVol = s.audio_volume; renderVol();
+  }
 
   const sv = s.scene_verbosity || 'detail';
   $('vSedang').setAttribute('aria-pressed', sv === 'sedang' ? 'true' : 'false');
   $('vDetail').setAttribute('aria-pressed', sv === 'detail' ? 'true' : 'false');
+
+  // voice — don't fight the user while they are auditioning
+  renderVoices();
+  if (Date.now() > voiceEditingUntil){
+    const tp = s.tts_provider || 'gtts';
+    $('tpGtts').setAttribute('aria-pressed', tp === 'gtts' ? 'true' : 'false');
+    $('tpOpenai').setAttribute('aria-pressed', tp === 'openai' ? 'true' : 'false');
+    $('voiceWrap').hidden = (tp !== 'openai');
+    voiceActive = s.tts_openai_voice || 'alloy';
+    if (voicePending === voiceActive) voicePending = null;
+    applyVoice();
+    $('hVoice').textContent = s.tts_openai_available === false
+      ? 'OpenAI butuh API key di menu Pengaturan AI.'
+      : (tp === 'openai'
+         ? 'Suara aktif: ' + voiceActive + '. Tanpa ffmpeg, jadi lebih cepat dan konsisten.'
+         : 'Google gratis, tapi waktunya berubah-ubah (2–9 detik).');
+  }
 
   // audio render mode + gap slider
   const cacheOn = (s.word_cache_enabled !== false);
@@ -571,11 +928,16 @@ function applyState(s){
     onGapInputDisplayOnly(s.word_cache_gap_ms);
   }
 
+  if (Date.now() > rotEditingUntil && typeof s.camera_rotation === 'number'){
+    applyRotation(s.camera_rotation);
+  }
+  applyPreviewShape(s.cam_w, s.cam_h);
+
   renderMetrics(s);
 
-  if (s.device_name || s.mdns_host){
-    $('devName').textContent = 'I-Sora · ' + (s.device_name || s.mdns_host);
-  }
+  if (s.brand) applyBrand(s.brand);
+  $('devName').textContent = brandDisplay(s.brand || BRAND) + ' · '
+      + (s.device_name || s.mdns_host || 'operasi normal');
 }
 // update the slider readout without extending the editing-suppression window
 function onGapInputDisplayOnly(v){
@@ -586,7 +948,14 @@ function onGapInputDisplayOnly(v){
 
 async function poll(){
   try{
-    const r = await tfetch('/status', {}, 2500);
+    // 8s, not 2.5s. Opening the camera or loading the NPU model is a C call
+    // that holds the GIL for a couple of seconds, so /status legitimately
+    // stalls that long right after a mode switch. At 2.5s every mode change
+    // printed "koneksi terputus — mencoba ulang…" at a caregiver whose device
+    // was perfectly healthy, training them to distrust the one indicator they
+    // have. Slower failure detection is the right trade: a real outage still
+    // shows up, just one poll later.
+    const r = await tfetch('/status', {}, 8000);
     const s = await r.json();
     if (!connected){ setConn(true); logLine('terhubung ke perangkat','ok'); }
     applyState(s);
@@ -613,9 +982,61 @@ function refreshPrev(){
   tmp.src = '/snapshot?t=' + Date.now();
 }
 
+// ── hidden brand toggle: long-press the logo (I-Sora ⇄ AuralAI) ───────────────
+// Same software, different branding. A ~1.6s hold on the page title flips the
+// device's spoken greeting + this UI name between the two brands. Deliberately
+// undiscoverable by touch (no label / no aria) so the blind user never triggers
+// it by accident; a sighted operator who knows the gesture uses it at a demo.
+function brandDisplay(b){ return b === 'isora' ? 'I-Sora' : 'AuralAI'; }
+function applyBrand(b){
+  if (b !== 'auralai' && b !== 'isora') return;
+  BRAND = b;
+  const name = brandDisplay(b);
+  $('brandTitle').textContent = 'Kontrol ' + name;
+  document.title = 'Kontrol ' + name;
+}
+async function toggleBrand(){
+  const next = (BRAND === 'isora') ? 'auralai' : 'isora';
+  logLine('ganti brand → ' + brandDisplay(next) + '…');
+  try{
+    const h = {'Content-Type':'application/json'};
+    if (TOKEN) h['X-Auth-Token'] = TOKEN;   // /brand is open, but send token if we have one
+    const r = await tfetch('/brand', {method:'POST', headers:h,
+              body: JSON.stringify({brand: next})}, 6000);
+    const d = await r.json().catch(()=>({}));
+    if (d.ok && d.brand){
+      applyBrand(d.brand);
+      logLine('   ✓ brand: ' + brandDisplay(d.brand) + ' (aktif) — dengarkan sapaan', 'ok');
+    } else {
+      logLine('   ✗ ' + (d.error || ('HTTP '+r.status)), 'err');
+    }
+  }catch(e){
+    logLine('   ✗ gagal ganti brand (' + (e.name||e) + ')', 'err');
+  }
+}
+(function bindBrandLongPress(){
+  const el = $('brandTitle');
+  if (!el) return;
+  let timer = null, fired = false;
+  const HOLD_MS = 1600;
+  const begin = () => {
+    fired = false;
+    el.classList.add('holding');
+    timer = setTimeout(() => { fired = true; el.classList.remove('holding'); toggleBrand(); }, HOLD_MS);
+  };
+  const cancel = () => { el.classList.remove('holding'); if (timer){ clearTimeout(timer); timer = null; } };
+  // Pointer events cover touch + mouse on every WebView this ships to (Chrome 55+).
+  el.addEventListener('pointerdown', begin);
+  el.addEventListener('pointerup', cancel);
+  el.addEventListener('pointerleave', cancel);
+  el.addEventListener('pointercancel', cancel);
+  // Suppress the text-selection / context menu the long hold would otherwise raise.
+  el.addEventListener('contextmenu', e => e.preventDefault());
+})();
+
 // ── boot ─────────────────────────────────────────────────────────────────────
-logLine('Halaman simulasi tombol siap. Pakai saat tombol fisik mati.', 'dim');
-initToken().finally(poll);
+logLine('Kontrol perangkat siap.', 'dim');
+initToken().finally(() => { loadVol(); poll(); });
 </script>
 </body>
 </html>

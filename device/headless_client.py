@@ -9,9 +9,9 @@ Fungsi:
                                  mode 2=ocr, mode 3=describe, mode 4=qris
 
 Env yang dipakai (set di MaixCAM):
-  AURAL_COMPANION_HOST=192.168.x.x
-  AURAL_COMPANION_PORT=5000
-  (opsional) AURAL_WIFI_SSID / AURAL_WIFI_PASSWORD
+  ISORA_COMPANION_HOST=192.168.x.x
+  ISORA_COMPANION_PORT=5000
+  (opsional) ISORA_WIFI_SSID / ISORA_WIFI_PASSWORD
 
 Jalankan:
   python headless_client.py
@@ -32,10 +32,10 @@ except ImportError:
     print("ERROR: modul requests tidak ditemukan di MaixCAM.")
 
 
-SSID = (os.environ.get("AURAL_WIFI_SSID") or "").strip()
-PASSWORD = os.environ.get("AURAL_WIFI_PASSWORD") or ""
-HOST_IP = (os.environ.get("AURAL_COMPANION_HOST") or "").strip()
-HOST_PORT = int(os.environ.get("AURAL_COMPANION_PORT") or "5000")
+SSID = (os.environ.get("ISORA_WIFI_SSID") or "").strip()
+PASSWORD = os.environ.get("ISORA_WIFI_PASSWORD") or ""
+HOST_IP = (os.environ.get("ISORA_COMPANION_HOST") or "").strip()
+HOST_PORT = int(os.environ.get("ISORA_COMPANION_PORT") or "5000")
 
 API_FRAME = f"http://{HOST_IP}:{HOST_PORT}/api/frame"
 API_PREVIEW = f"http://{HOST_IP}:{HOST_PORT}/api/frame_preview"
@@ -105,7 +105,7 @@ def _get_json(url: str, timeout_s: float):
 
 def _img_to_b64_jpeg(img) -> str:
     # Pakai save ke /tmp agar kompatibel dan stabil
-    path = "/tmp/aural_headless.jpg"
+    path = "/tmp/isora_headless.jpg"
     img.save(path)
     with open(path, "rb") as f:
         return base64.b64encode(f.read()).decode("utf-8")
@@ -113,7 +113,7 @@ def _img_to_b64_jpeg(img) -> str:
 
 def main() -> None:
     if not HOST_IP:
-        print("ERROR: AURAL_COMPANION_HOST belum diset.")
+        print("ERROR: ISORA_COMPANION_HOST belum diset.")
         return
     if not requests:
         return

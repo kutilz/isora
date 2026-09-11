@@ -27,13 +27,16 @@ class _NullLogger:
 @pytest.fixture
 def am(tmp_path, monkeypatch):
     """Real AudioManager with the word cache redirected to a temp dir, caching
-    on, trim/gap neutralised (smoothing is covered elsewhere)."""
+    on, trim/gap/length-cap neutralised (smoothing + the length cap are
+    covered elsewhere) so this file stays focused on the warm-to-instant
+    convergence claim."""
     from config import cfg
     monkeypatch.setattr(cfg, "_data", {**cfg._data,
                                        "word_cache_dir": str(tmp_path),
                                        "word_cache_enabled": True,
                                        "word_cache_trim_enabled": False,
                                        "word_cache_gap_ms": 0,
+                                       "word_cache_max_words": 0,
                                        "tts_enabled": True,
                                        "audio_mode": "both"})
     mgr = am_mod.AudioManager(orchestrator=None, logger=_NullLogger())

@@ -21,7 +21,7 @@
 
 - [ ] Device is connected to the user's WiFi network.
 - [ ] API key has been set via the dashboard.
-- [ ] Audio test: Device plays "Isora ready" upon boot.
+- [ ] Audio test: Device plays "I-Sora ready" upon boot.
 - [ ] Explorer mode check: Objects are detected → audio alerts play.
 - [ ] Speaker volume is sufficiently loud for the user's environment.
 - [ ] Battery / power supply is securely attached.
@@ -47,7 +47,7 @@
 
 | Heard Sound                       | Meaning                            |
 | --------------------------------- | ---------------------------------- |
-| "Isora siap digunakan"            | Boot successful, ready for use     |
+| "Isora siap digunakan"           | Boot successful, ready for use     |
 | "Mode penjelajah aktif"           | Entered Explorer Mode              |
 | "Mode konteks aktif"              | Entered Scene Mode                 |
 | "Mode scan bayar aktif"           | Entered QRIS Mode                  |
@@ -136,7 +136,7 @@
 ## 8. Reading System Logs
 
 - From the dashboard: Logs menu → real-time log stream.
-- On the device: `/root/logs/aural_*.log` (auto-rotated: 7 days or 100MB limit).
+- On the device: `/root/logs/isora_*.log` (auto-rotated: 7 days or 100MB limit).
 - Log Format: `[TIMESTAMP] [LEVEL] [MODULE] message`
 - TTS Cache: `/root/audio/tts_cache/` — stores WAV files from runtime synthesis.
 
@@ -157,7 +157,7 @@
 ### Soft Reset (Restart Application Service)
 
 - Dashboard → click Restart Service.
-- Or via SSH: `systemctl restart aural-ai`
+- Or via SSH: `systemctl restart isora`
 
 ### Hard Reset (Reboot Hardware)
 
@@ -220,4 +220,4 @@ This logbook data is collected for post-pilot IEEE research reports.
 | User reports incorrect info | Note details, switch to offline mode, contact dev. |
 
 > **Dev contact:** [Fill in developer name/contact info]  
-> **Repository:** `github.com/kutilz/isora`
+> **Repository:** `github.com/<username>/AuralAI-SDK`

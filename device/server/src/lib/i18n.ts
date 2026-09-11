@@ -13,7 +13,7 @@ import en from "../i18n/en.json";
 type Dict = Record<string, unknown>;
 
 const DICTS: Record<string, Dict> = { id, en };
-const LS_KEY = "auralai.lang";
+const LS_KEY = "isora.lang";
 let _lang: "id" | "en" = "id";
 
 try {
@@ -68,7 +68,7 @@ export function setLang(lang: "id" | "en") {
   // Re-render hook: dispatch a custom event so root components can
   // useState-bump if they care. Most UI updates on next state change
   // (e.g. polling tick) anyway.
-  window.dispatchEvent(new CustomEvent("auralai:langchange"));
+  window.dispatchEvent(new CustomEvent("isora:langchange"));
 }
 
 // Set <html lang> on import so server rendering and SR see correct lang.

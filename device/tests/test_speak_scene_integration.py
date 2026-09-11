@@ -23,13 +23,15 @@ class _NullLogger:
 @pytest.fixture
 def am(tmp_path, monkeypatch):
     # Redirect the word cache to a temp dir before construction (no host litter).
-    # Trim off + zero gap so the HIT output is a deterministic plain concat
-    # (smoothing is covered by the word_cache unit tests).
+    # Trim off + zero gap so the HIT output is a deterministic plain concat,
+    # and no length cap so this test sentence still exercises concat
+    # (smoothing + the length cap are covered by the word_cache unit tests).
     from config import cfg
     monkeypatch.setattr(cfg, "_data", {**cfg._data,
                                        "word_cache_dir": str(tmp_path),
                                        "word_cache_trim_enabled": False,
-                                       "word_cache_gap_ms": 0})
+                                       "word_cache_gap_ms": 0,
+                                       "word_cache_max_words": 0})
     mgr = am_mod.AudioManager(orchestrator=None, logger=_NullLogger())
     yield mgr
     mgr.stop()

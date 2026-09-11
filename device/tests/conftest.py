@@ -1,7 +1,7 @@
 """Pytest bootstrap for device-side unit tests.
 
 The on-device app runs with `device/` as the import root (main.py lives in
-/root/aural-ai and does `from core...`, `from utils...`, `from config...`).
+/root/isora and does `from core...`, `from utils...`, `from config...`).
 Mirror that here so tests import the same way the device does.
 """
 

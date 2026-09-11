@@ -18,10 +18,7 @@ class ClaudeAdapter(AIAdapter):
 
     def _api_key(self) -> str:
         import os
-        return (
-            os.environ.get("ANTHROPIC_API_KEY")
-            or self._cfg.get("claude_api_key", "")
-        )
+        return os.environ.get("ANTHROPIC_API_KEY") or self._cfg.CLAUDE_API_KEY
 
     def _call(self, jpeg_bytes: bytes, prompt: str, max_tokens: int) -> str:
         key = self._api_key()
@@ -29,7 +26,7 @@ class ClaudeAdapter(AIAdapter):
             raise AdapterError("claude_api_key not configured")
 
         model   = self._cfg.get("claude_model", "claude-haiku-4-5-20251001")
-        timeout = int(self._cfg.get("ai_timeout_s", 15))
+        timeout = self._cfg.AI_TIMEOUT_S
 
         content: list = []
         if jpeg_bytes:
@@ -45,9 +42,12 @@ class ClaudeAdapter(AIAdapter):
         content.append({"type": "text", "text": prompt})
 
         payload = {
-            "model":      model,
-            "max_tokens": max_tokens,
-            "messages":   [{"role": "user", "content": content}],
+            "model":       model,
+            "max_tokens":  max_tokens,
+            # Deterministic decoding — see utils/scene_prompt.py for why a
+            # re-worded answer to an unchanged scene is a bug, not variety.
+            "temperature": self._cfg.AI_TEMPERATURE,
+            "messages":    [{"role": "user", "content": content}],
         }
 
         req = urllib.request.Request(
@@ -72,8 +72,10 @@ class ClaudeAdapter(AIAdapter):
         except Exception as e:
             raise AdapterError(str(e)) from e
 
+    # Matches the OpenAI/Gemini budget: the structured prompt allows up to
+    # three sentences, and a 150-token cap truncated the third one mid-word.
     def describe_scene(self, jpeg_bytes: bytes, prompt: str) -> str:
-        return self._call(jpeg_bytes, prompt, max_tokens=150)
+        return self._call(jpeg_bytes, prompt, max_tokens=220)
 
     def scan_qris(self, jpeg_bytes: bytes, prompt: str) -> str:
         return self._call(jpeg_bytes, prompt, max_tokens=80)

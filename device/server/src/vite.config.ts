@@ -3,12 +3,14 @@ import preact from "@preact/preset-vite";
 import { resolve } from "path";
 
 /**
- * Multi-page build for AuralAI companion / admin / guide / setup.
+ * Multi-page build for I-Sora companion / admin / guide / setup.
  *
  * Output → ../static/app/  (sibling of static/index.html). The device
  * web_server.py serves these as plain static files at the corresponding
  * URLs:
- *   /           → companion.html  (after setup_completed=true)
+ *   /           → buttons.html    (blind user's button console; /setup first
+ *                                  run, until setup_completed=true)
+ *   /companion  → companion.html  (pendamping dashboard)
  *   /admin      → admin.html
  *   /guide      → guide.html
  *   /setup      → setup.html

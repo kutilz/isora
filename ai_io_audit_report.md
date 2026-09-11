@@ -1,4 +1,4 @@
-# Audit Report: AI Input/Output System - AuralAI SDK
+# Audit Report: AI Input/Output System - I-Sora SDK
 
 ## 1. AI Architecture Overview
 

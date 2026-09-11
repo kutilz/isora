@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AuralAI QRIS Benchmark & Stability Test v1
+I-Sora QRIS Benchmark & Stability Test v1
 ===========================================
 Mengukur performa sistem QRIS detection dalam berbagai kondisi nyata.
 
@@ -501,9 +501,9 @@ def test_false_positive(cam, csv_path, trials=20, live_mode=False):
 # ─────────────────────────────────────────────────────────
 def print_final_report(all_results, guidance_results, fp_rate, fp_count,
                         total_trials, csv_path, report_path):
-    psec("LAPORAN BENCHMARK QRIS — AuralAI")
+    psec("LAPORAN BENCHMARK QRIS — I-Sora")
 
-    lines = [DIV, "  LAPORAN BENCHMARK QRIS — AuralAI", f"  {now_str()}", DIV]
+    lines = [DIV, "  LAPORAN BENCHMARK QRIS — I-Sora", f"  {now_str()}", DIV]
 
     def prl(label="", val=""):
         line = f"  {label:<44} {val}" if val else f"  {label}"
@@ -622,7 +622,7 @@ def print_final_report(all_results, guidance_results, fp_rate, fp_count,
 # MAIN
 # ─────────────────────────────────────────────────────────
 def main():
-    parser = argparse.ArgumentParser(description="AuralAI QRIS Benchmark")
+    parser = argparse.ArgumentParser(description="I-Sora QRIS Benchmark")
     parser.add_argument("--synthetic",    action="store_true",
                         help="Paksa mode synthetic (tanpa kamera)")
     parser.add_argument("--trials",       type=int, default=10,
@@ -638,7 +638,7 @@ def main():
                         help="Trial untuk false positive test (default: 20)")
     args = parser.parse_args()
 
-    psec("AuralAI QRIS Benchmark & Stability Test v1")
+    psec("I-Sora QRIS Benchmark & Stability Test v1")
 
     live_mode = MAIX_OK and not args.synthetic
     pr("Mode",          "Live (MaixCAM)" if live_mode else "Synthetic (simulasi)")

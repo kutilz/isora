@@ -1,4 +1,4 @@
-# AuralAI  Long-Term Stress Test Report
+# I-Sora  Long-Term Stress Test Report
 
 > 
 
@@ -15,7 +15,7 @@
 
 ## 2. Tujuan & Metode
 
-**Tujuan:** memverifikasi stabilitas termal dan ketahanan FPS pipeline AuralAI
+**Tujuan:** memverifikasi stabilitas termal dan ketahanan FPS pipeline I-Sora
 saat dijalankan terus-menerus minimal 5 jam/hari selama 5 hari berturut-turut, untuk
 memastikan tidak ada thermal throttling, kebocoran memori, atau crash pada
 penggunaan jangka panjang.

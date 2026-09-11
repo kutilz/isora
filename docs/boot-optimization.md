@@ -1,7 +1,7 @@
 # Boot-Time Optimization
 
 > **Date:** 2025-06-23
-> **Goal:** Reduce time from power-on to hearing "AuralAI menyala"
+> **Goal:** Reduce time from power-on to hearing "I-Sora menyala"
 > **Result:** ~28-30s → **~2.0s** (measured on device; was ~16s before the
 > early-init chime — see "Early-init chime" below)
 
@@ -23,7 +23,7 @@ chime plays via ALSA long before Python matters. It only speeds full readiness.
 ## Early-init chime (S00a) — the big win
 
 The boot chime no longer lives in `rc.local`. It is a standalone init script
-installed at **`/etc/init.d/S00aauralchime`** — the *first* script `rcS` runs,
+installed at **`/etc/init.d/S00aisorachime`** — the *first* script `rcS` runs,
 before `S00kmod` loads the ~25 soph camera/NPU modules and long before WiFi.
 
 Why this is safe (the design goal was: **never stall boot just to make a sound**):
@@ -47,7 +47,7 @@ on-device: modules + camera still come up clean, single chime at ~2.0s.
 
 1. **`tools/run.py`** — `RC_BLOCK` autostart block:
    - `sleep 5` → `sleep 1`
-   - Boot chime moved OUT of `rc.local` into the `S00aauralchime` init script
+   - Boot chime moved OUT of `rc.local` into the `S00aisorachime` init script
      (above); `rc.local` now only launches the app
    - Original block preserved as `RC_BLOCK_LEGACY` for one-line rollback
 
@@ -76,12 +76,12 @@ python tools/run.py --autostart
 ssh root@<device-ip>  # password: root
 cat > /etc/rc.local << 'REVERT'
 #!/bin/sh
-# >>> AuralAI autostart >>>
+# >>> I-Sora autostart >>>
 sleep 5
-cd /root/aural-ai
-nohup python3 /root/aural-ai/main.py >> /tmp/aural_main.log 2>&1 &
-echo $! > /tmp/aural_main.pid
-# <<< AuralAI autostart <<<
+cd /root/isora
+nohup python3 /root/isora/main.py >> /tmp/isora_main.log 2>&1 &
+echo $! > /tmp/isora_main.pid
+# <<< I-Sora autostart <<<
 REVERT
 chmod +x /etc/rc.local && sync && reboot
 ```
@@ -96,7 +96,7 @@ chmod +x /etc/rc.local && sync && reboot
 ### Why `aplay` works
 - ALSA device: `hw:1,0` (card 1: cv182xa_dac)
 - PCM format: `S16_LE`, 48000 Hz, mono — matches `audio_manager._ensure_pcm`
-- File: `/root/audio/auralai_menyala.pcm` (165888 bytes, ~1.7s audio)
+- File: `/root/audio/isora_menyala.pcm` (165888 bytes, ~1.7s audio)
 - `2>/dev/null &` — runs in background, errors suppressed
 
 ### Import timing (measured on device)
@@ -115,12 +115,12 @@ chmod +x /etc/rc.local && sync && reboot
 Both `aplay` (rc.local) and `_boot_cue_fast` (main.py) can play the boot chime.
 A flag file `/tmp/.boot_chime_played` coordinates them:
 
-- rc.local sets the flag **only if** `auralai_menyala.pcm` exists (so the flag
+- rc.local sets the flag **only if** `isora_menyala.pcm` exists (so the flag
   reliably means "aplay had something to play"). `_boot_cue_fast` sees the flag
   and skips → no double-play.
 - If the PCM is **missing** (fresh flash, deleted cache, or a re-recorded WAV),
   rc.local does NOT set the flag and `aplay` plays nothing. `_boot_cue_fast`
-  then takes the **fallback** path: it calls `play_wav_blocking("auralai_menyala.wav")`,
+  then takes the **fallback** path: it calls `play_wav_blocking("isora_menyala.wav")`,
   which regenerates the PCM via ffmpeg (cached next to the WAV) and plays it.
   This is the *only* path that recreates the PCM — without it the cue would be
   silent forever once the cache is gone.

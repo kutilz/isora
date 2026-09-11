@@ -10,11 +10,27 @@ import signal
 import subprocess
 import sys
 import threading
+import time
 from http.server import HTTPServer, BaseHTTPRequestHandler, ThreadingHTTPServer
 from functools import partial
 
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+
+# Voices /v1/audio/speech accepts. Kept here rather than fetched so a device
+# with no internet can still validate a POST /config, and so an unknown name is
+# refused with a list instead of failing once per describe.
+_OPENAI_VOICES = {
+    "alloy", "ash", "ballad", "coral", "echo", "fable",
+    "nova", "onyx", "sage", "shimmer", "verse",
+}
+
+# What the "Coba suara" button speaks. A real-shaped sentence — positions and a
+# clearance call, the two things a description actually has to land — so the
+# listener is judging the voice on the words they will really hear.
+_TTS_TEST_PHRASE = ("Di depan ada seorang pria berkacamata berdiri dekat meja "
+                    "komputer. Di sebelah kanan Anda ada kursi kosong, jalur "
+                    "di depan aman.")
 _DEVICE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 
@@ -237,8 +253,8 @@ _suite     = BenchmarkSuiteRunner()
 
 # ─── Request Handler ───────────────────────────────────────────────────────────
 
-class AuralAIHandler(BaseHTTPRequestHandler):
-    """HTTP request handler untuk semua endpoint AuralAI."""
+class IsoraHandler(BaseHTTPRequestHandler):
+    """HTTP request handler untuk semua endpoint I-Sora."""
 
     def __init__(self, orchestrator, logger, data_collector, *args, **kwargs):
         self.orch = orchestrator
@@ -267,6 +283,10 @@ class AuralAIHandler(BaseHTTPRequestHandler):
             self._serve_companion_root()
         elif path == "/admin" or path == "/admin/":
             self._serve_app_page("admin.html", fallback_legacy=True)
+        elif path == "/companion" or path == "/companion/":
+            # Caregiver/companion dashboard — relocated here from `/` now that the
+            # button console is the blind user's primary home page.
+            self._serve_app_page("companion.html", fallback_legacy=True)
         elif path == "/guide" or path == "/guide/":
             self._serve_app_page("guide.html")
         elif path == "/setup" or path == "/setup/":
@@ -355,10 +375,14 @@ class AuralAIHandler(BaseHTTPRequestHandler):
 
         if path == "/command":
             self._handle_command()
+        elif path == "/tts-test":
+            self._handle_tts_test()
         elif path == "/button":
             self._handle_button()
         elif path == "/config":
             self._handle_config()
+        elif path == "/brand":
+            self._handle_brand()
         # ── Benchmark ─────────────────────────────────────────────────────────
         elif path == "/benchmark/run":
             self._handle_benchmark_run()
@@ -412,6 +436,7 @@ class AuralAIHandler(BaseHTTPRequestHandler):
     # POST paths that require token auth. Other POSTs and all GETs stay open.
     _AUTH_REQUIRED_POSTS = {
         "/command",
+        "/tts-test",
         "/config",
         "/ai-settings",
         "/ai-settings/test",
@@ -423,18 +448,21 @@ class AuralAIHandler(BaseHTTPRequestHandler):
     }
 
     # Data-collection endpoints stay OPEN on the LAN: the /collect page is meant
-    # to be driven by a non-technical helper from their phone with no login, and
-    # /auth/token is localhost-only (a remote browser can never obtain a token).
-    # The photos themselves are already readable without auth via GET /snapshot
-    # and GET /collect/photo, so gating start/stop/mode/delete added no real
-    # protection — only made the page unusable remotely. (/collect/mode toggles
-    # Mode Ambil Data; start/stop/delete control capture.)
+    # to be driven by a non-technical helper from their phone with no login.
+    # SECURITY NOTE: /auth/token is LAN-accessible (any RFC1918/link-local peer,
+    # not just loopback — see _is_lan_peer), so token auth is only as strong as
+    # the WiFi the device is on. On a shared network any peer can obtain the
+    # token; the intended deployment is a private/isolated AP. Do not treat these
+    # open endpoints as loopback-protected. (/collect/mode toggles Mode Ambil
+    # Data; start/stop/delete control capture.)
 
-    # Bootstrap mode — when setup_completed=False, these endpoints are needed
-    # by the first-time setup wizard but the pendamping has no way to get a
-    # token (the wizard runs from a remote browser, /auth/token is
-    # localhost-only). Auth is skipped for these paths until setup completes.
-    # Once setup_completed=True is persisted, the full auth gate engages.
+    # Bootstrap mode — when setup_completed=False, these endpoints are needed by
+    # the first-time setup wizard, which runs from the pendamping's phone on the
+    # same LAN. Auth is skipped for these paths until setup completes; the
+    # protected-key stripping in _handle_config still applies, so an
+    # unauthenticated bootstrap client cannot set device_token/auth_required or
+    # overwrite encrypted keys. Once setup_completed=True is persisted, the full
+    # auth gate engages.
     _BOOTSTRAP_OPEN_POSTS = {
         "/config",
         "/ai-settings",
@@ -512,22 +540,18 @@ class AuralAIHandler(BaseHTTPRequestHandler):
 
     def _serve_companion_root(self):
         """
-        `/` handler. Routes:
+        `/` handler — the device's home page.
           - to /setup if setup_completed=False (first-time pendamping)
-          - to static/app/companion.html if built and present
-          - falls back to the legacy operator dashboard otherwise so the device
-            is never left without a UI.
+          - otherwise the button console (buttons.html): the blind user's
+            PRIMARY daily interface. User interviews found they rely on it as a
+            familiar "second control" (their phone) alongside the physical
+            buttons, so it is the home page. The caregiver/companion dashboard
+            moved to /companion; the technical dashboard is at /admin.
         """
         from config import cfg as _cfg
         if not _cfg.SETUP_COMPLETED:
             self._send_redirect("/setup")
             return
-        if self._app_file_exists("companion.html"):
-            self._serve_app_page("companion.html")
-            return
-        # Build artefacts not yet present → button simulator (Indonesian,
-        # caregiver-safe) instead of the English developer dashboard. The dev
-        # dashboard stays reachable at /admin/legacy.
         self._serve_file("buttons.html", "text/html")
 
     def _serve_app_page(self, filename: str, fallback_legacy: bool = False):
@@ -599,6 +623,12 @@ class AuralAIHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def _serve_snapshot(self):
+        # Tell the AI loop someone is looking, so it starts paying for the JPEG
+        # encode again. It stops on its own once the polling stops.
+        try:
+            self.orch.note_preview_request()
+        except Exception:
+            pass
         snap = self.orch.snapshot
         if snap is None:
             self._send_404()
@@ -629,11 +659,17 @@ class AuralAIHandler(BaseHTTPRequestHandler):
         from config import cfg as _cfg
         # Allow files in /audio/ root and subfolders (e.g. /audio/chimes/boot.wav).
         # Filename is everything after "/audio/" — already URL-decoded by BaseHTTPRequestHandler.
-        # Guard against path traversal.
-        if ".." in filename.split("/"):
+        # Guard against path traversal: reject ".." segments AND absolute paths
+        # (os.path.join drops the base when the second arg starts with "/", so a
+        # request like /audio//root/config.json would otherwise escape AUDIO_DIR),
+        # then confirm the resolved real path is still contained in AUDIO_DIR.
+        base = os.path.realpath(_cfg.AUDIO_DIR)
+        filepath = os.path.realpath(os.path.join(base, filename))
+        if (".." in filename.split("/")
+                or os.path.isabs(filename)
+                or (filepath != base and not filepath.startswith(base + os.sep))):
             self._send_404()
             return
-        filepath = os.path.join(_cfg.AUDIO_DIR, filename)
         try:
             with open(filepath, "rb") as f:
                 data = f.read()
@@ -800,11 +836,60 @@ class AuralAIHandler(BaseHTTPRequestHandler):
             self.logger.error(f"Command error: {e}")
             self._send_json({"error": str(e)}, 500)
 
+    def _handle_tts_test(self):
+        """Speak a fixed sample so a voice can be auditioned from the phone.
+
+        Without this, changing the voice means pressing Deskripsikan and waiting
+        out a whole AI round-trip to hear one sentence — and the pendamping
+        choosing the voice is often not the person holding the device. Body may
+        carry {"voice": "..."} to preview a voice WITHOUT saving it, so a
+        candidate can be rejected without ever having been the live setting.
+        """
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            data = json.loads(self.rfile.read(length)) if length else {}
+        except Exception:
+            data = {}
+
+        voice = str(data.get("voice", "")).strip()
+        if voice and voice not in _OPENAI_VOICES:
+            self._send_json({"error": "invalid voice",
+                             "allowed": sorted(_OPENAI_VOICES)}, 400)
+            return
+
+        am = getattr(self.orch, "audio_manager", None)
+        if am is None:
+            self._send_json({"error": "audio unavailable"}, 503)
+            return
+
+        from config import cfg as _cfg
+        prev = _cfg.get("tts_openai_voice", "alloy")
+        try:
+            if voice and voice != prev:
+                # In-memory only — never written to config.json, so a preview
+                # can't outlive the request or survive a reboot.
+                _cfg._data["tts_openai_voice"] = voice
+            am.clear()          # the sample is the point; drop what's queued
+            am.speak_scene(_TTS_TEST_PHRASE)
+            # Give the background renderer time to read the voice before we put
+            # the previous one back; speak_scene returns as soon as it starts.
+            time.sleep(0.4)
+        finally:
+            if voice and voice != prev:
+                _cfg._data["tts_openai_voice"] = prev
+
+        self._send_json({"ok": True, "voice": voice or prev,
+                         "text": _TTS_TEST_PHRASE})
+
     def _handle_button(self):
         """
         Inject a simulated MODE/ACTION button press — the web fallback for a
-        device whose physical buttons are dead. Body: {"button": "mode"|"action",
-        "long": bool}.
+        device whose physical buttons are dead. Body:
+        {"button": "mode"|"action"|"chord", "long": bool}.
+
+        "chord" is both buttons held together (open/close volume mode). It has
+        no long/short form: a page cannot hold two buttons, so the gesture is
+        sent as one event.
 
         Stays OPEN on the LAN (not in _AUTH_REQUIRED_POSTS) for the same reason
         as the /collect endpoints: a non-technical pendamping drives this from
@@ -818,9 +903,9 @@ class AuralAIHandler(BaseHTTPRequestHandler):
             data   = json.loads(self.rfile.read(length)) if length else {}
             which      = str(data.get("button", "")).strip().lower()
             long_press = bool(data.get("long", False))
-            if which not in ("mode", "action"):
+            if which not in ("mode", "action", "chord"):
                 self._send_json(
-                    {"error": "button must be 'mode' or 'action'"}, 400)
+                    {"error": "button must be 'mode', 'action' or 'chord'"}, 400)
                 return
             queued = self.orch.simulate_button(which, long_press)
             self.logger.info(
@@ -837,6 +922,93 @@ class AuralAIHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self._send_error(e)
 
+    # ── Brand toggle (I-Sora ⇄ AuralAI white-label) ─────────────────────────────
+    # Hidden feature: a long-press on the /buttons logo flips the device's spoken
+    # identity + web UI name between the two brands (same software). The switch
+    # copies the selected greeting set from /root/audio/brand/<brand>/ over the
+    # canonical isora_menyala.* / isora_siap_digunakan.* names that the boot
+    # cue (main.py) and AudioManager resolve, then persists cfg["brand"].
+    #
+    # Stays OPEN on the LAN (not in _AUTH_REQUIRED_POSTS), like /button: it is a
+    # cosmetic demo toggle driven from the same page with no login, and must keep
+    # working even if the /auth/token fetch flakes at the venue. It writes only
+    # the brand key + two greeting files — no auth/identity/secret material.
+    _BRANDS = ("auralai", "isora")
+    # greeting kind -> canonical active filename stem in AUDIO_DIR
+    _BRAND_FILES = {
+        "menyala":        "isora_menyala",
+        "siap_digunakan": "isora_siap_digunakan",
+    }
+
+    def _apply_brand(self, brand):
+        """Copy the <brand> greeting set over the canonical names + persist
+        cfg["brand"]. Returns (ok: bool, error: str|None). Never raises."""
+        import shutil
+        from config import cfg as _cfg
+        if brand not in self._BRANDS:
+            return False, "unknown brand: %s" % brand
+        base = os.path.realpath(_cfg.AUDIO_DIR)
+        src_dir = os.path.join(base, "brand", brand)
+        copied = 0
+        for kind, canon in self._BRAND_FILES.items():
+            got = set()
+            for ext in ("wav", "pcm"):
+                src = os.path.join(src_dir, "%s.%s" % (kind, ext))
+                if not os.path.exists(src):
+                    continue
+                dst = os.path.join(base, "%s.%s" % (canon, ext))
+                try:
+                    tmp = dst + ".tmp"
+                    shutil.copyfile(src, tmp)
+                    os.replace(tmp, dst)   # atomic swap of the active greeting
+                    copied += 1
+                    got.add(ext)
+                except OSError as e:
+                    return False, "copy %s.%s: %s" % (kind, ext, e)
+            # A brand that ships only .wav would otherwise leave the PREVIOUS
+            # brand's .pcm in place — and nothing would ever regenerate it:
+            # _ensure_pcm short-circuits on `if os.path.exists(pcm)`, and the
+            # fast boot cue in main.py reads the .pcm directly. The UI would say
+            # one brand while the device audibly greets with the other. Drop the
+            # stale derived file so it is rebuilt from the new .wav on next play.
+            if "wav" in got and "pcm" not in got:
+                try:
+                    os.remove(os.path.join(base, "%s.pcm" % canon))
+                except OSError:
+                    pass
+        if copied == 0:
+            return False, "no audio for brand '%s' (looked in %s)" % (brand, src_dir)
+        _cfg.update({"brand": brand})
+        return True, None
+
+    def _handle_brand(self):
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            data = json.loads(self.rfile.read(length)) if length else {}
+        except Exception:
+            data = {}
+        from config import cfg as _cfg
+        cur = _cfg.get("brand", "isora")
+        req = str(data.get("brand", "")).strip().lower()
+        # Explicit valid brand → set it; otherwise toggle to the other one.
+        target = req if req in self._BRANDS else ("auralai" if cur == "isora" else "isora")
+        ok, err = self._apply_brand(target)
+        if not ok:
+            self.logger.error("Brand switch failed: %s" % err)
+            self._send_json({"ok": False, "error": err, "brand": cur}, 500)
+            return
+        # Audible confirmation: play the freshly-activated "<brand> siap
+        # digunakan" greeting so the (blind) user hears which brand is now active.
+        try:
+            am = getattr(self.orch, "audio_manager", None)
+            if am:
+                am.queue_cue("isora_siap_digunakan.wav")
+        except Exception:
+            pass
+        self.logger.info("Brand switched: %s -> %s" % (cur, target),
+                         module="WebServer")
+        self._send_json({"ok": True, "brand": target})
+
     def _handle_config(self):
         try:
             length = int(self.headers.get("Content-Length", 0))
@@ -850,12 +1022,59 @@ class AuralAIHandler(BaseHTTPRequestHandler):
                     "allowed": ["chime", "speech", "both"],
                 }, 400)
                 return
+            # Which mode the device stands in at power-on. Rejected rather
+            # than coerced: a typo silently becoming "idle" would look like the
+            # setting simply doesn't work, and the pendamping setting it is the
+            # one person who cannot see the device's screen to check.
+            if "boot_mode" in data:
+                from core.orchestrator import Orchestrator
+                allowed = list(Orchestrator.MODES) + ["last"]
+                if data["boot_mode"] not in allowed:
+                    self._send_json({
+                        "error": "invalid boot_mode",
+                        "allowed": allowed,
+                        "hint": "mode saat perangkat dinyalakan, atau 'last'",
+                    }, 400)
+                    return
             if "scene_verbosity" in data and data["scene_verbosity"] not in ("sedang", "detail"):
                 self._send_json({
                     "error": "invalid scene_verbosity",
                     "allowed": ["sedang", "detail"],
                 }, 400)
                 return
+            # Which cloud voice renders free-form speech. Rejected rather than
+            # coerced for the same reason as boot_mode: a typo falling back to
+            # the slow backend looks exactly like "the setting does nothing".
+            if "tts_provider" in data and data["tts_provider"] not in ("auto", "gtts", "openai"):
+                self._send_json({
+                    "error": "invalid tts_provider",
+                    "allowed": ["auto", "gtts", "openai"],
+                    "hint": "auto = openai kalau ada API key, kalau tidak gtts",
+                }, 400)
+                return
+            # Voice name is sent straight to the TTS API; a typo would come back
+            # as an HTTP 400 per describe and read to the user as "the device
+            # stopped talking", so reject it here where we can say why.
+            if "tts_openai_voice" in data and data["tts_openai_voice"] not in _OPENAI_VOICES:
+                self._send_json({
+                    "error": "invalid tts_openai_voice",
+                    "allowed": sorted(_OPENAI_VOICES),
+                }, 400)
+                return
+            # Vision sampling temperature. Clamped rather than rejected: the
+            # same key also arrives via the cloud config push, which does no
+            # validation, and every provider answers an out-of-range value with
+            # an HTTP 400 — a describe press that just says "gagal menganalisis".
+            if "ai_temperature" in data:
+                try:
+                    temp = float(data["ai_temperature"])
+                except (TypeError, ValueError):
+                    self._send_json({
+                        "error": "invalid ai_temperature",
+                        "hint":  "kirim angka 0.0 - 2.0 (0 = jawaban paling konsisten)",
+                    }, 400)
+                    return
+                data["ai_temperature"] = max(0.0, min(2.0, temp))
             # Per-word audio cache toggle ("caching per-kata" vs "satu blok audio").
             if "word_cache_enabled" in data:
                 data["word_cache_enabled"] = bool(data["word_cache_enabled"])
@@ -871,10 +1090,78 @@ class AuralAIHandler(BaseHTTPRequestHandler):
                     }, 400)
                     return
                 data["word_cache_gap_ms"] = max(-60, min(60, gap))
+            # Word-count cap for concat mode (0 = disabled). Clamp to a sane
+            # band so a bad value can't silently wedge every describe onto
+            # the slow synth path (too low) or defeat the point of the cap
+            # (absurdly high).
+            if "word_cache_max_words" in data:
+                try:
+                    mw = int(data["word_cache_max_words"])
+                except (TypeError, ValueError):
+                    self._send_json({
+                        "error": "invalid word_cache_max_words",
+                        "hint": "kirim bilangan bulat jumlah kata (0 = nonaktif)",
+                    }, 400)
+                    return
+                data["word_cache_max_words"] = max(0, min(40, mw))
+            # Camera orientation. Snapped to a quarter turn rather than
+            # rejected: the value reaches image.rotate() on the AI loop's hot
+            # path, and the same key also arrives via the cloud config push,
+            # which does no validation at all.
+            if "camera_rotation" in data:
+                from utils.orientation import VALID_ROTATIONS
+                try:
+                    deg = int(data["camera_rotation"])
+                except (TypeError, ValueError):
+                    deg = None
+                # Wrap (so -90 and 450 are accepted as 270 and 90) but do NOT
+                # snap: silently turning a typo'd 45 into 0 would leave the
+                # camera sideways while the UI reports it fixed.
+                rot = None if deg is None else deg % 360
+                if rot not in VALID_ROTATIONS:
+                    self._send_json({
+                        "error": "invalid camera_rotation",
+                        "allowed": list(VALID_ROTATIONS),
+                        "hint": "derajat searah jarum jam: 0, 90, 180, atau 270",
+                    }, 400)
+                    return
+                data["camera_rotation"] = rot
             if "setup_completed" in data:
-                data["setup_completed"] = bool(data["setup_completed"])
+                # One-way latch. COMPLETING setup here is the whole point of
+                # _BOOTSTRAP_OPEN_POSTS — the pendamping finishes the wizard from
+                # a phone with no token. CLEARING it is the opposite: it puts
+                # /config, /ai-settings, /ai-settings/test, /ai-settings/secure
+                # and /presets/apply back on the unauthenticated open list, so a
+                # single leaked LAN token (and /auth/token answers any RFC1918
+                # peer) would buy a standing bypass that outlives rotating that
+                # token. Nothing in the UI ever sends false — the wizard stays
+                # reachable at /setup regardless — so refuse the direction
+                # outright. Re-opening setup is a factory-reset-grade action and
+                # belongs out-of-band, by editing /root/config.json over SSH.
+                if not bool(data["setup_completed"]):
+                    self._send_json({
+                        "error": "forbidden",
+                        "hint":  "setup_completed tidak bisa dibatalkan lewat "
+                                 "/config; ubah /root/config.json lewat SSH",
+                    }, 403)
+                    return
+                data["setup_completed"] = True
+            # Speaker volume reaches player.volume() on every playback, in a
+            # blind user's ear. Clamped here as well as in Config.AUDIO_VOLUME so
+            # a bad value is rejected at the edge rather than silently corrected
+            # on every read.
+            if "audio_volume" in data:
+                try:
+                    vol = int(data["audio_volume"])
+                except (TypeError, ValueError):
+                    self._send_json({
+                        "error": "invalid audio_volume",
+                        "hint":  "kirim bilangan bulat 0-100",
+                    }, 400)
+                    return
+                data["audio_volume"] = max(0, min(100, vol))
             # device_name becomes the mDNS `.local` label — keep it DNS-safe.
-            # Empty ("") is allowed: it reverts to the auto "aural-<id>" default.
+            # Empty ("") is allowed: it reverts to the auto "isora-<id>" default.
             # Reject only a non-empty name that sanitizes to nothing (e.g. "@@@").
             if "device_name" in data:
                 from utils.identity import sanitize_name
@@ -887,7 +1174,39 @@ class AuralAIHandler(BaseHTTPRequestHandler):
                     }, 400)
                     return
                 data["device_name"] = clean
+            # Security: POST /config is a general tuning endpoint AND is open
+            # pre-setup for the wizard (see _BOOTSTRAP_OPEN_POSTS). It must never
+            # write auth/identity/secret material — those belong to dedicated,
+            # authenticated flows (/ai-settings, /ai-settings/secure) or are set
+            # out-of-band. Strip protected keys so neither an unauthenticated
+            # bootstrap client nor a plain token holder can seize the device
+            # (device_token / auth_required), disable the key lock, or overwrite
+            # encrypted keys here.
+            _PROTECTED = {
+                "device_token", "auth_required", "api_keys_locked",
+                "cloud_device_secret", "admin_role_token", "device_privkey_enc",
+            }
+            blocked = [k for k in list(data)
+                       if k in _PROTECTED
+                       or k.endswith("_api_key_enc") or k.endswith("_api_key")]
+            for k in blocked:
+                data.pop(k, None)
+            if blocked:
+                self.logger.warn(
+                    f"POST /config ignored protected keys: {blocked}",
+                    module="WebServer")
             cfg.update(data)
+            # Apply a new orientation to the live camera immediately — the
+            # helper re-clips the device and watches the preview come out the
+            # right way up. The engine picks it up on its own thread; every
+            # camera call has to stay off this HTTP thread.
+            if "camera_rotation" in data:
+                try:
+                    engine = getattr(self.orch, "ai_engine", None)
+                    if engine is not None:
+                        engine.request_orientation_reload()
+                except Exception:
+                    pass
             # Re-publish mDNS under the new name if it changed.
             if "device_name" in data:
                 try:
@@ -1060,10 +1379,16 @@ class AuralAIHandler(BaseHTTPRequestHandler):
     def _serve_config(self):
         from config import cfg
         data = cfg.as_dict()
-        # Don't leak secrets via /config — mask keys + token
-        for k in ("openai_api_key", "gemini_api_key", "claude_api_key", "device_token"):
-            if data.get(k):
-                v = data[k]
+        # Don't leak secrets via /config — this endpoint is UNAUTHENTICATED and
+        # served with permissive CORS, so redact EVERY secret-bearing field, not
+        # just the three plaintext API keys: the cloud device secret, the admin
+        # role token, and any encrypted-key / private-key blobs must be masked too.
+        def _is_secret(k):
+            return (k.endswith("_token") or k.endswith("_secret")
+                    or k.endswith("_enc") or "api_key" in k or "privkey" in k)
+        for k in list(data.keys()):
+            if _is_secret(k) and data.get(k):
+                v = str(data[k])
                 data[k] = "***" + v[-4:] if len(v) > 4 else "****"
         self._send_json(data)
 
@@ -1104,8 +1429,20 @@ class AuralAIHandler(BaseHTTPRequestHandler):
             "note": "POST /i2c-probe {\"action\":\"probe\"} to run probe, {\"action\":\"disable\"} to disable",
         })
 
+    def _read_body_json(self):
+        """Read and JSON-parse the request body; {} on empty/invalid."""
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            if length <= 0:
+                return {}
+            return json.loads(self.rfile.read(length))
+        except Exception:
+            return {}
+
     def _handle_i2c_probe(self):
         if not self._auth_ok():
+            self._send_json(
+                {"error": "unauthorized", "hint": "X-Auth-Token required"}, 401)
             return
         body = self._read_body_json() or {}
         action = body.get("action", "probe")
@@ -1125,7 +1462,7 @@ class AuralAIHandler(BaseHTTPRequestHandler):
     # ─── AI Settings endpoints ─────────────────────────────────────────────────
 
     def _serve_ai_settings(self):
-        from config import cfg
+        from config import cfg, _DEFAULTS
         data = cfg.as_dict()
         # Mask secrets — send only whether a key is set, not the value
         def _masked(key: str) -> str:
@@ -1149,16 +1486,16 @@ class AuralAIHandler(BaseHTTPRequestHandler):
 
         self._send_json({
             "ai_provider":   data.get("ai_provider", "openai"),
-            "ai_timeout_s":  data.get("ai_timeout_s", 15),
-            "openai_model":  data.get("openai_model", "gpt-4o-mini"),
+            "ai_timeout_s":  data.get("ai_timeout_s", _DEFAULTS["ai_timeout_s"]),
+            "openai_model":  data.get("openai_model", _DEFAULTS["openai_model"]),
             "openai_key_set":  _has("openai"),
             "openai_key_hint": _masked("openai_api_key"),
             "openai_key_status": _enc_status("openai"),
-            "gemini_model":  data.get("gemini_model", "gemini-1.5-flash"),
+            "gemini_model":  data.get("gemini_model", _DEFAULTS["gemini_model"]),
             "gemini_key_set":  _has("gemini"),
             "gemini_key_hint": _masked("gemini_api_key"),
             "gemini_key_status": _enc_status("gemini"),
-            "claude_model":  data.get("claude_model", "claude-haiku-4-5-20251001"),
+            "claude_model":  data.get("claude_model", _DEFAULTS["claude_model"]),
             "claude_key_set":  _has("claude"),
             "claude_key_hint": _masked("claude_api_key"),
             "claude_key_status": _enc_status("claude"),
@@ -1358,7 +1695,7 @@ class WebServer:
             self.logger.exception(
                 f"Auth token init failed: {e}", module="WebServer", exc=e,
             )
-        handler = partial(AuralAIHandler, self.orch, self.logger, self.data_collector)
+        handler = partial(IsoraHandler, self.orch, self.logger, self.data_collector)
         # ThreadingHTTPServer: a slow handler (e.g. /snapshot during AI engine
         # reload) no longer blocks unrelated polls. Daemon threads die with
         # the server on shutdown.

@@ -1,9 +1,9 @@
 {
-  "name": "auralai-ui",
+  "name": "isora-ui",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "AuralAI companion + admin + guide UI — Preact build for device/server/static/app/.",
+  "description": "I-Sora companion + admin + guide UI — Preact build for device/server/static/app/.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

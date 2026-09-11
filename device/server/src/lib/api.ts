@@ -1,13 +1,13 @@
 /**
  * Tiny HTTP helper for the device API. Auto-injects X-Auth-Token from
- * localStorage["aural_token"], identical convention to the legacy
+ * localStorage["isora_token"], identical convention to the legacy
  * dashboard.js so a single token works across both UIs.
  *
  * Returns the parsed JSON (or null on 204/empty). Throws on non-2xx so
  * callers can `.catch()` for error UI.
  */
 
-const TOKEN_KEY = "aural_token";
+const TOKEN_KEY = "isora_token";
 
 export function getToken(): string {
   try {

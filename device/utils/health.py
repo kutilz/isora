@@ -55,7 +55,7 @@ def battery_info() -> dict:
     Real implementation requires a HAT-specific driver; this stub
     returns a placeholder so callers can check `if battery_info()`.
     """
-    if not _BATTERY_HAT_PRESENT:
+    if not battery_hat_present():
         return {}
     # TODO: implement HAT-specific register reads (INA219, MAX17043, etc.)
     return {"present": True}
@@ -187,9 +187,13 @@ class HealthMonitor:
     """
     Background daemon polling hardware every poll_interval_s seconds.
 
-    Fires on_throttle(temp_c) when CPU temp exceeds throttle_temp_c,
-    and on_recover(temp_c) when it drops back below.
-    Both callbacks run in the monitor thread — keep them short.
+    Hands EVERY sample to on_sample(snapshot). The old contract fired only when
+    a threshold was crossed, which is all a one-shot warning needs and not
+    nearly enough for the power governor: a tiered plan with hysteresis has to
+    see the trend, hold a tier while the temperature hovers, and ease back down
+    as it falls. The callback runs in the monitor thread — keep it short, and
+    note that an exception in it is swallowed so one bad sample cannot end the
+    monitor (and with it, all further adaptation).
     """
 
     def __init__(self, throttle_temp_c: float = 80.0,
@@ -200,17 +204,13 @@ class HealthMonitor:
         self._snapshot: dict  = {}
         self._lock            = threading.Lock()
         self._stop            = threading.Event()
-        self._on_throttle: Optional[Callable] = None
-        self._on_recover:  Optional[Callable] = None
+        self._on_sample:  Optional[Callable] = None
         self._thread = threading.Thread(
             target=self._loop, daemon=True, name="HealthMonitor"
         )
 
-    def start(self,
-              on_throttle: Optional[Callable] = None,
-              on_recover:  Optional[Callable] = None):
-        self._on_throttle = on_throttle
-        self._on_recover  = on_recover
+    def start(self, on_sample: Optional[Callable] = None):
+        self._on_sample = on_sample
         self._thread.start()
 
     def stop(self):
@@ -236,18 +236,11 @@ class HealthMonitor:
             cpu_temp = snap.get("cpu_temp_c", 0.0)
 
             with self._lock:
-                was_throttling  = self._throttling
-                now_throttling  = bool(cpu_temp > 0 and cpu_temp > self._throttle_temp)
-                self._throttling = now_throttling
+                self._throttling = bool(cpu_temp > 0 and cpu_temp > self._throttle_temp)
                 self._snapshot   = snap
 
-            if now_throttling and not was_throttling and self._on_throttle:
+            if self._on_sample:
                 try:
-                    self._on_throttle(cpu_temp)
-                except Exception:
-                    pass
-            elif not now_throttling and was_throttling and self._on_recover:
-                try:
-                    self._on_recover(cpu_temp)
+                    self._on_sample(snap)
                 except Exception:
                     pass

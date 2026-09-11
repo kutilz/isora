@@ -117,8 +117,10 @@ a:hover { text-decoration: underline; }
 .site-nav { display: flex; gap: var(--s-2); margin-left: auto; flex-wrap: wrap; }
 .site-nav a {
   color: var(--ink-2); font-weight: 600; padding: 8px 12px; border-radius: var(--r-md);
+  display: inline-flex; align-items: center; min-height: var(--hit);
 }
 .site-nav a:hover { background: var(--surface-2); text-decoration: none; }
+.site-nav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent-ink); }
 
 .site-footer {
   border-top: 1px solid var(--border); margin-top: var(--s-16);
@@ -219,6 +221,7 @@ a:hover { text-decoration: underline; }
 .notice--ok { background: var(--ok-soft); color: var(--ok); }
 .notice--err { background: var(--danger-soft); color: var(--danger); }
 .notice--info { background: var(--info-soft); color: var(--info); }
+.notice--warn { background: var(--warn-soft); color: var(--warn); }
 
 /* ── Preview (audio) ──────────────────────────────────────────────── */
 .audio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--s-3); }

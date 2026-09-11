@@ -63,17 +63,3 @@ maix-docs/
 maix_docs/
 .gstack/
 .clone/
-
-# ─── Agent / tooling state (never commit) ─────────────────────────────────────
-.claude/
-.antigravitycli/
-.understand-anything/
-
-# ─── Node / Next.js / Vercel (web/) ───────────────────────────────────────────
-node_modules/
-npm-debug.log*
-yarn-error.log*
-*.tsbuildinfo
-.next/
-.vercel
-out/

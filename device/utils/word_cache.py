@@ -16,6 +16,7 @@ it unit-tests with no network or hardware.
 
 import os
 import hashlib
+import struct
 import threading
 import re
 from collections import namedtuple
@@ -23,8 +24,11 @@ from collections import namedtuple
 # How to render one utterance.
 #   mode="concat"          -> play word_paths back-to-back (zero network)
 #   mode="synth_sentence"  -> speak the whole text via gTTS (a word was missing)
-# `missing` lists words to warm in the background regardless of mode.
-Plan = namedtuple("Plan", ["mode", "word_paths", "missing"])
+# `missing` lists words to warm in the background regardless of mode — it is a
+# WARM LIST, not a miss count: when the max_words cap fires it holds every token
+# even on a full cache hit. `cached_count` is the honest hit count for telemetry.
+Plan = namedtuple("Plan", ["mode", "word_paths", "missing", "cached_count"])
+Plan.__new__.__defaults__ = (0,)
 
 # Indonesian scene text is ASCII; split on word chars, drop punctuation/case.
 # A hyphenated token like "kiri-atas" splits into "kiri","atas" — fine, each is
@@ -37,13 +41,33 @@ def tokenize(text: str) -> list:
     return _WORD_RE.findall((text or "").lower())
 
 
-def plan_utterance(text: str, lookup) -> Plan:
+def plan_utterance(text: str, lookup, max_words: int = 0) -> Plan:
     """Decide how to render `text`. `lookup(word) -> path|None` resolves a word
     to its cached audio. If every word resolves we concatenate (instant, no
-    network); if any is missing we speak the whole sentence (no ompong)."""
+    network); if any is missing we speak the whole sentence (no ompong).
+
+    `max_words` caps concat to short/recurring phrases: past that length we go
+    straight to synth_sentence even on a full cache hit. A sentence spliced
+    from independently-synthesized words loses sentence-level prosody (pitch,
+    stress, connected speech) — each extra seam makes that worse, no matter
+    how smooth the seam itself is — so long free-form text (e.g. "detail"
+    scene descriptions) sounds better as one fluent gTTS render. Words still
+    get reported for background warming either way, so short-phrase reuse
+    elsewhere still benefits. 0 disables the cap.
+    """
+    toks = tokenize(text)
+    if max_words > 0 and len(toks) > max_words:
+        seen = set()
+        deduped = [w for w in toks if not (w in seen or seen.add(w))]
+        # The cap fires on FULL cache hits too, so `missing` here says nothing
+        # about how warm the cache is. Count the real hits separately or the
+        # dashboard reports a fully-warm cache as 0-cached on every long
+        # description — the exact metric used to judge whether caching works.
+        return Plan("synth_sentence", [], deduped,
+                    sum(1 for w in toks if lookup(w)))
     paths = []
     missing = []
-    for w in tokenize(text):
+    for w in toks:
         p = lookup(w)
         if p:
             paths.append(p)
@@ -52,8 +76,8 @@ def plan_utterance(text: str, lookup) -> Plan:
     if missing:
         seen = set()
         deduped = [w for w in missing if not (w in seen or seen.add(w))]
-        return Plan("synth_sentence", [], deduped)
-    return Plan("concat", paths, [])
+        return Plan("synth_sentence", [], deduped, len(paths))
+    return Plan("concat", paths, [], len(paths))
 
 
 class WordCache:
@@ -164,15 +188,46 @@ def trim_silence(pcm: bytes, threshold: int = 600, margin_samples: int = 0) -> b
     return pcm[start * 2:end * 2]
 
 
+def _crossfade_join(prev: bytearray, nxt: bytes, overlap_samples: int) -> bytearray:
+    """Blend `overlap_samples` samples at the seam between `prev` (accumulated
+    so far) and `nxt` (next word), linearly ramping from prev's tail to nxt's
+    head instead of hard-cutting either side.
+
+    A hard cut leaves an abrupt amplitude jump at the seam — audible as a
+    click/pop — because the two words were synthesized independently and
+    don't share a waveform phase. Blending removes that discontinuity. Reads
+    via struct.unpack_from (not a memoryview) so `prev` can be safely resized
+    afterwards. Shrinks to whatever overlap both sides can actually supply,
+    so a very short cached word never underflows.
+    """
+    n = min(overlap_samples, len(prev) // 2, len(nxt) // 2)
+    if n <= 0:
+        prev += nxt
+        return prev
+    a_start = len(prev) // 2 - n
+    a_tail = struct.unpack_from("<%dh" % n, prev, a_start * 2)
+    b_head = struct.unpack_from("<%dh" % n, nxt, 0)
+    blended = bytearray()
+    for i in range(n):
+        t = (i + 1) / (n + 1)
+        s = a_tail[i] * (1 - t) + b_head[i] * t
+        s = max(-32768, min(32767, round(s)))
+        blended += struct.pack("<h", s)
+    del prev[a_start * 2:]
+    prev += blended
+    prev += nxt[n * 2:]
+    return prev
+
+
 def assemble_words(word_blobs, gap_samples: int = 0,
                    trim_threshold: int = 0, trim_margin_samples: int = 0) -> bytes:
     """Concatenate per-word PCM into one utterance.
 
     - trim_threshold > 0 trims each word's silence first (smoother).
     - gap_samples > 0 inserts that many silent samples between words.
-    - gap_samples < 0 OVERLAPS adjacent words by removing |gap_samples| samples
-      at each seam (split across the two words) — the "negative gap" that tightens
-      run-on words for a less choppy result.
+    - gap_samples < 0 crossfades adjacent words over |gap_samples| samples at
+      each seam (see _crossfade_join) — the "negative gap" that tightens
+      run-on words AND smooths the seam, instead of just hard-cutting it.
     """
     out = bytearray()
     for b in word_blobs:
@@ -186,12 +241,5 @@ def assemble_words(word_blobs, gap_samples: int = 0,
             out += b"\x00\x00" * gap_samples
             out += b
         else:
-            cut = -gap_samples
-            cut_prev = (cut // 2) * 2          # bytes off the end of what we have
-            cut_next = (cut - cut // 2) * 2    # bytes off the start of the next word
-            if cut_prev and len(out) > cut_prev:
-                del out[len(out) - cut_prev:]
-            if cut_next < len(b):
-                b = b[cut_next:]
-            out += b
+            out = _crossfade_join(out, b, -gap_samples)
     return bytes(out)

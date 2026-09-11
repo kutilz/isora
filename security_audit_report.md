@@ -1,4 +1,4 @@
-# System Security Audit Report: Hardware & Software - AuralAI SDK
+# System Security Audit Report: Hardware & Software - I-Sora SDK
 
 ## 1. Network & Web Server Security
 

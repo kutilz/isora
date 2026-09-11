@@ -1,12 +1,15 @@
 """
-AuralAI SDK — Dynamic configuration
+I-Sora SDK — Dynamic configuration
 Loaded from /root/config.json at startup; updatable at runtime via companion API.
 """
 
 import os
 import json
 import threading
+import time
 from pathlib import Path
+
+from utils import scene_prompt
 
 _CONFIG_PATH = Path("/root/config.json")
 
@@ -21,6 +24,17 @@ _DEFAULTS: dict = {
     "input_width":              320,
     "input_height":             224,
     "camera_fps":               30,
+    # ── Camera orientation (persisted across reboots) ─────────────────────────
+    # Quarter-turn correction applied to every frame the moment it leaves the
+    # sensor: 0 | 90 | 180 | 270, clockwise. The mount angle changes with how
+    # the device is worn (chest clip vs. hung the other way round vs. strapped
+    # sideways), and a rotated frame silently corrupts everything downstream —
+    # left/right in the spoken alert, the ground-contact distance hint, and the
+    # collected dataset. Set from the web UI (POST /config), stored here so the
+    # device comes back correctly oriented after a power cycle. 180 is applied
+    # by the sensor ISP (free); quarter turns rotate in software and swap the
+    # frame axes. See utils/orientation.py.
+    "camera_rotation":          0,
     "snapshot_interval_ms":     500,
     "web_host":                 "0.0.0.0",
     "web_port":                 8080,
@@ -78,7 +92,12 @@ _DEFAULTS: dict = {
     "ai_slow_warn_s":           9,
     # OpenAI
     "openai_api_key":           "",
-    "openai_model":             "gpt-4o-mini",
+    "openai_model":             "gpt-5.6-terra",
+    # Reasoning-capable models think by default (adds latency the same way
+    # Gemini's thinkingConfig does — see gemini_adapter.py); keep this low
+    # for a scene description that needs no reasoning. One of: none, minimal,
+    # low, medium, high, xhigh (not all models support every value).
+    "openai_reasoning_effort":  "low",
     "openai_timeout_s":         10,   # kept for backward-compat; ai_timeout_s is used
     # Gemini
     "gemini_api_key":           "",
@@ -86,24 +105,30 @@ _DEFAULTS: dict = {
     # Claude (Anthropic)
     "claude_api_key":           "",
     "claude_model":             "claude-haiku-4-5-20251001",
+    # Sampling temperature for the vision call. 0.0 = as deterministic as the
+    # provider allows, which is what a describe button wants: pressing it twice
+    # on an unchanged scene should not produce a re-worded world. Reasoning
+    # models (gpt-5.6 and friends) reject the parameter outright, so the
+    # OpenAI adapter drops it there and the prompt's output contract carries
+    # the consistency on its own — see utils/scene_prompt.py.
+    "ai_temperature":           0.0,
     # Prompts (runtime-editable)
     # Context-mode scene description. Two verbosity levels, switchable live from
     # the /buttons UI via `scene_verbosity` ("sedang" | "detail"). "detail" is
     # the long, complete description; "sedang" is one short, consistent sentence
     # — far faster to synthesize/play and far more likely to hit the per-word
     # cache (so it gets instant as the vocabulary warms).
+    #
+    # Both defaults come from utils/scene_prompt.py, which documents WHY they
+    # are long: a flat one-liner gave a re-worded answer on every press,
+    # described the wall behind a held banknote, and produced the same generic
+    # "ada meja dan kursi" in a lab, a lecture hall and a pavement.
     "scene_verbosity": "detail",
-    "prompt_scene": (
-        "Deskripsikan scene ini secara singkat dalam Bahasa Indonesia, "
-        "fokus pada objek yang relevan untuk pengguna tunanetra. "
-        "Maksimal 2 kalimat."
-    ),
-    "prompt_scene_sedang": (
-        "Sebutkan maksimal tiga objek terpenting di depan pengguna tunanetra "
-        "beserta posisinya (kiri, kanan, atau depan), dalam SATU kalimat "
-        "Bahasa Indonesia yang singkat, maksimal dua belas kata. Pakai kata "
-        "yang sederhana dan konsisten. Jangan memberi deskripsi panjang."
-    ),
+    "prompt_scene":         scene_prompt.SCENE_PROMPT_DETAIL,
+    "prompt_scene_sedang":  scene_prompt.SCENE_PROMPT_SEDANG,
+    # Which prompt pack generation the stored config was written by. Devices
+    # provisioned before a pack bump get migrated on load (migrate_prompt_pack).
+    "prompt_pack_version":  scene_prompt.PROMPT_PACK_VERSION,
     "prompt_qris": (
         "Baca kode QRIS ini. Sebutkan: nama merchant dan nominal jika ada. "
         "Format: MERCHANT: [nama], NOMINAL: [angka]. "
@@ -111,9 +136,58 @@ _DEFAULTS: dict = {
     ),
     "log_path":                 "/root/logs",
     "log_max_lines":            500,
+    # ── Adaptive power management (utils/power.py) ────────────────────────────
+    # thermal_throttle_temp_c is the "hot" rung of the governor's ladder; the
+    # warm and critical rungs sit at fixed offsets around it, so this one number
+    # tunes the whole response. The device answers heat by doing less work —
+    # fewer frames, fewer inferences, no dashboard preview — and never by
+    # announcing it. Someone walking with the device strapped on cannot act on
+    # a "suhu tinggi" warning, and telling them to power down mid-journey is
+    # not an option the product has.
     "thermal_throttle_temp_c":  80.0,
+    # Legacy: superseded by the governor's per-tier fps ladder. Kept so an
+    # existing /root/config.json and cfg.THERMAL_THROTTLE_FPS still resolve.
     "thermal_throttle_fps":     10,
+    # How far below a tier's entry temperature the device must cool before it
+    # steps back down. Stops a reading hovering on a boundary from retiming the
+    # loop every poll.
+    "power_recover_margin_c":   5.0,
+    # Quiet-scene downshift: after this many seconds with no detections, no
+    # pending command and no recent interaction, drop to power_idle_fps. One
+    # busy frame restores the full rate immediately — the event that ends a
+    # quiet stretch is exactly the one the user needs to hear about.
+    "power_idle_after_s":       20.0,
+    "power_idle_fps":           8.0,
+    # How long after the last /snapshot fetch the device keeps encoding the
+    # dashboard preview. The page polls twice a second, so a few seconds spans
+    # normal polling without leaving the encoder running for a closed tab.
+    "preview_grace_s":          5.0,
+    # ── Boot mode ─────────────────────────────────────────────────────────────
+    # Mode the device stands in at power-on: "idle" | "explorer" | "context" |
+    # "qris" | "last". Default "idle" — the neutral state where the device is
+    # on, reachable and quiet. Booting straight into explorer means it starts
+    # narrating before anyone has asked it to, while it is still in a bag or
+    # being handed over. "last" resumes whatever mode it was switched off in.
+    "boot_mode":                "idle",
+    # Written on every mode switch so boot_mode="last" has something to read.
+    "last_mode":                "explorer",
     "watchdog_timeout_s":       5.0,
+    # ── SoC hardware watchdog (utils/hw_watchdog.py) ─────────────────────────
+    # The in-process watchdog above cannot survive the failure this device
+    # actually hits: a camera/NPU teardown that blocks inside a C call holds
+    # the GIL, so every Python thread — the watchdog included — stops. Only
+    # silicon can recover that. Confirmed on a MaixCAM Lite: /dev/watchdog
+    # exists, arms on open, and really does reset the board.
+    # DEFAULT OFF, deliberately. Arming an auto-reset that nobody has watched
+    # run turns a rare hang into a possible reboot loop, which is worse. Switch
+    # it on per unit after observing one run with it armed.
+    "hw_watchdog_enabled":      False,
+    "hw_watchdog_timeout_s":    60,
+    "hw_watchdog_pet_s":        2.0,
+    # How stale the AI-loop heartbeat may get before petting stops. Generous:
+    # one tick legitimately covers a cloud describe, so this must sit well
+    # above the slowest healthy tick or a busy device would reset itself.
+    "hw_watchdog_stale_s":      45.0,
     # ── Hardware buttons (active-low to GND; internal pull-up, no resistor) ───
     # The GPIO listener enables PULL_UP, so any free standard GPIO works — wire
     # each button: leg1 → pad, leg2 → GND. Pads that can NEVER work:
@@ -129,6 +203,26 @@ _DEFAULTS: dict = {
     "button_pin_action":        "A29",
     # Speaker volume (0-100); read by AudioManager on every play
     "audio_volume":             80,
+    # ── Volume mode (hold MODE + ACTION together) ────────────────────────────
+    # How long both buttons must be held together before volume mode opens.
+    # Long enough that a clumsy two-finger grab is not a chord, short enough
+    # that it is not a wait.
+    # MUST stay above button_longpress_s. At the old 0.6s the chord fired
+    # BEFORE a long press could complete, so any long press where a finger
+    # brushed the second pad opened volume mode instead — and the chord eats
+    # the release, so the long press the user wanted never happened at all.
+    "button_chord_hold_s":      1.5,
+    # Volume mode closes itself this long after the last step, so the buttons
+    # are never left in a state the user has to remember to leave.
+    "volume_mode_timeout_s":    5.0,
+    # Points per press. 10 spans the useful range in 8 taps.
+    "volume_step":              10,
+    # Floor and ceiling for BUTTON-driven volume. Silence stays reachable from
+    # /config, never from the buttons: audio is the only channel a blind user
+    # has, and a device muted from the outside of the web UI cannot tell them
+    # how to get it back.
+    "volume_button_min":        20,
+    "volume_button_max":        100,
     # Auth: device token (auto-generated on first boot if empty)
     "device_token":             "",
     # CORS: list of allowed origins for dashboard. Empty list = same-origin only.
@@ -148,6 +242,26 @@ _DEFAULTS: dict = {
     # TTS hybrid: synthesize dynamic text via gTTS and cache on device
     "tts_enabled":              True,
     "tts_cache_dir":            "/root/audio/tts_cache",
+    # Which cloud voice renders free-form speech (scene descriptions, QRIS
+    # results). "auto" = openai when a key is configured, else gtts.
+    #
+    # DEFAULT IS gtts, on accent, not on speed. OpenAI's /v1/audio/speech is the
+    # faster path on paper — it answers in raw PCM, so nothing has to be decoded
+    # by ffmpeg (a flat 1.2-1.8 s per sentence on this board) — but its voices
+    # read Indonesian with an audible English accent, which for a user who only
+    # has the audio is a worse trade than a second of latency. Set "openai" only
+    # with tts_openai_model="gpt-4o-mini-tts" and a tts_openai_instructions that
+    # pins the accent, and listen to it before leaving it on.
+    "tts_provider":             "gtts",   # "auto" | "gtts" | "openai"
+    "tts_openai_model":         "gpt-4o-mini-tts",
+    "tts_openai_voice":         "alloy",
+    # Only gpt-4o-mini-tts honours this; tts-1/tts-1-hd ignore it.
+    "tts_openai_instructions":  ("Bacakan dalam Bahasa Indonesia dengan logat "
+                                 "Indonesia yang natural, tenang, dan jelas. "
+                                 "Jangan memakai aksen Inggris."),
+    "tts_openai_timeout_s":     15.0,
+    # How long to wait on one gTTS render before giving up on it.
+    "tts_gtts_timeout_s":       20.0,
     # Per-word TTS cache (context mode). Scene sentences are near-unique but
     # reuse a small Indonesian vocabulary, so caching audio per word lets a
     # fully-seen sentence play with zero network. A missing word never drops a
@@ -159,12 +273,23 @@ _DEFAULTS: dict = {
     # head/tail silence, which makes a naive concat sound choppy):
     #   trim each word's silence, then a NEGATIVE gap overlaps adjacent words to
     #   tighten them. All live-tunable via /config to taste.
-    "word_cache_gap_ms":        -10,   # <0 = overlap (smoother), >0 = inserted silence
+    "word_cache_gap_ms":        -10,   # <0 = overlap+crossfade (smoother), >0 = inserted silence
+    # Cap (in words) on sentence length eligible for concat mode. Long
+    # free-form text (e.g. "detail" scene descriptions) loses sentence-level
+    # prosody when spliced word-by-word, so past this length we speak one
+    # fluent gTTS sentence instead. 0 disables the cap. 12 comfortably covers
+    # short/"sedang"-style phrases while routing longer ones to synth.
+    "word_cache_max_words":     12,
     "word_cache_trim_enabled":  True,
     "word_cache_trim_threshold": 600,  # |amplitude| below this counts as silence
     "word_cache_trim_margin_ms": 8,    # keep this much real audio around the signal
     "word_warm_per_call":       8,     # words warmed (gTTS) per describe (gentle on the 1-core box)
     "word_warm_gap_s":          0.5,   # pause between background warms (avoid load spikes)
+    # Sentence chunks a scene description is streamed in. gTTS time scales with
+    # text length (measured on-device: 155 chars -> 5.3 s, 89 chars -> 1.8 s),
+    # so speaking the first sentence while the rest still synthesizes cuts the
+    # silence after the chime roughly in half. 1 disables streaming.
+    "scene_stream_chunks":      3,
     # I2C battery HAT: enabled only after manual probe via /i2c-probe endpoint
     "i2c_battery_enabled":      False,
     # Companion redesign (handoff §4.3) — audio playback preference
@@ -172,6 +297,17 @@ _DEFAULTS: dict = {
     # "speech" → only TTS, skip chimes
     # "both"   → chime then TTS (legacy behavior)
     "audio_mode":               "both",
+    # ── Brand identity (white-label toggle: "auralai" | "isora") ──────────────
+    # Same software, different branding. Controls the spoken boot/ready greeting
+    # (which audio set plays) and the name shown in the /buttons web UI. Flipped
+    # live from the hidden long-press on the /buttons logo (POST /brand). The
+    # greeting sets live in /root/audio/brand/<brand>/{menyala,siap_digunakan}.
+    # {wav,pcm} and are copied over the canonical isora_menyala.* /
+    # isora_siap_digunakan.* names (which main.py + AudioManager resolve) on a
+    # switch. Upstream SDK default is "auralai"; I-Sora ships pinned to "isora".
+# A field unit can still be pinned to a
+    # brand in its /root/config.json (e.g. the I-Sora demo unit → "isora").
+    "brand":                    "isora",
     # Companion redesign (handoff §1) — admin role token. If empty, every
     # holder of device_token can reach /admin. If set, only admin_role_token
     # holders can. Companion (`/`) always works with device_token.
@@ -192,7 +328,7 @@ _DEFAULTS: dict = {
     # carry the device around just to collect photos.
     "data_collection_mode":     False,
     # ── Device identity & spoken-URL onboarding (multi-device) ────────────────
-    # Friendly device name; "" → auto "aural-<mac-suffix>" (see utils/identity).
+    # Friendly device name; "" → auto "isora-<mac-suffix>" (see utils/identity).
     # Becomes the mDNS `.local` label, so it must stay DNS-safe (UI sanitizes it).
     "device_name":              "",
     # Publish <device_name>.local via mDNS so the dashboard URL survives DHCP.
@@ -203,13 +339,13 @@ _DEFAULTS: dict = {
     "url_ack":                  False,
     # Hardware button long-press threshold (s) — long = acknowledge / reserved.
     "button_longpress_s":       1.0,
-    # ── Cloud pairing (auralai web hub) ───────────────────────────────────────
+    # ── Cloud pairing (isora web hub) ───────────────────────────────────────
     # When True, once online the device registers with the cloud relay, speaks a
     # short pairing code, and pulls config pushed from the web. Offline-safe:
     # if the cloud is unreachable it falls back to the local spoken-URL setup.
     "cloud_enabled":            True,
     # Base URL of the deployed web hub (Vercel). Override for local testing, e.g.
-    # "http://<your-pc-ip>:3000". Production: the I-Sora hub on Vercel.
+    # "http://<your-pc-ip>:3000". Production: your isora-smartglasses.vercel.app / *.vercel.app URL.
     "cloud_base_url":           "https://isora-smartglasses.vercel.app",
     # Identity on the cloud relay — generated once on first online boot.
     "cloud_device_id":          "",
@@ -231,6 +367,38 @@ def select_scene_prompt(verbosity: str, sedang: str, detail: str) -> str:
     return sedang if verbosity == "sedang" else detail
 
 
+def migrate_prompt_pack(data: dict) -> dict:
+    """Return the keys that must change so `data` carries the current prompts.
+
+    Config._load merges the saved file OVER _DEFAULTS, so a unit provisioned
+    before a prompt-pack bump keeps its old prompt forever — a new default is
+    otherwise invisible in the field, which is exactly how the pilot units
+    ended up still running the flat one-line prompt long after it was replaced
+    in the repo. Same trap the openai adapter documents for openai_model.
+
+    Only prompts this project itself shipped are replaced (scene_prompt's
+    legacy tables). A prompt the operator wrote in the dashboard is left
+    untouched no matter how old the pack version is — their edit outranks our
+    default, and silently reverting it would look like the field simply does
+    not save.
+
+    Returns {} when nothing needs to change, so the caller can skip the write.
+    """
+    try:
+        stored_ver = int(data.get("prompt_pack_version", 0))
+    except (TypeError, ValueError):
+        stored_ver = 0
+    if stored_ver >= scene_prompt.PROMPT_PACK_VERSION:
+        return {}
+
+    changes: dict = {"prompt_pack_version": scene_prompt.PROMPT_PACK_VERSION}
+    if scene_prompt.is_legacy_scene_prompt(data.get("prompt_scene", "")):
+        changes["prompt_scene"] = scene_prompt.SCENE_PROMPT_DETAIL
+    if scene_prompt.is_legacy_sedang_prompt(data.get("prompt_scene_sedang", "")):
+        changes["prompt_scene_sedang"] = scene_prompt.SCENE_PROMPT_SEDANG
+    return changes
+
+
 class Config:
     """
     Thread-safe configuration backed by /root/config.json.
@@ -239,6 +407,11 @@ class Config:
 
     def __init__(self):
         self._lock = threading.RLock()
+        # Separate from _lock: _lock guards the dict (held briefly), _save_lock
+        # guards the write+replace to disk (held across flash I/O). Sharing one
+        # would make every reader wait out an fsync.
+        self._save_lock    = threading.RLock()
+        self._save_pending = False
         self._data: dict = dict(_DEFAULTS)
         self._load()
 
@@ -248,30 +421,113 @@ class Config:
         try:
             with open(_CONFIG_PATH) as f:
                 loaded = json.load(f)
+            # Migrate off `loaded`, NOT off the merged dict: _DEFAULTS already
+            # carries the current prompt_pack_version, so a merged dict always
+            # looks up to date and every stale unit in the field would keep its
+            # old prompt forever — the exact failure the migration exists to fix.
+            changes = migrate_prompt_pack(loaded)
             with self._lock:
                 self._data.update(loaded)
+                self._data.update(changes)
+            # Persist outside the lock — save() takes it again, and a prompt
+            # migration that only lived in RAM would re-run on every boot.
+            if changes:
+                self.save()
         except FileNotFoundError:
             self._write_defaults()
         except Exception:
-            pass
+            # Corrupt/unreadable config: preserve it as .corrupt for recovery
+            # instead of letting the next save() silently overwrite it (which
+            # would permanently lose device_token, pairing, and encrypted keys).
+            backed_up = False
+            try:
+                if _CONFIG_PATH.exists():
+                    os.replace(_CONFIG_PATH, str(_CONFIG_PATH) + ".corrupt")
+                backed_up = True
+            except Exception:
+                backed_up = False
+            # Only regenerate defaults once the original is safely out of the
+            # way. If the rename itself failed (read-only mount after an fsck,
+            # EACCES, or the path is a directory) then writing defaults here
+            # would destroy the only copy of device_token and every
+            # *_api_key_enc — precisely the loss the backup exists to prevent.
+            # Run on the in-memory defaults __init__ already loaded and leave
+            # the file alone; an operator can still recover it by hand.
+            if backed_up:
+                self._write_defaults()
 
     def _write_defaults(self):
+        # Same tmp+fsync+replace durability as save(): a half-written defaults
+        # file is exactly as unreadable as the corrupt one it replaces, and
+        # would send the next boot down this same path.
         try:
             _CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-            with open(_CONFIG_PATH, "w") as f:
+            tmp = str(_CONFIG_PATH) + ".tmp"
+            with open(tmp, "w") as f:
                 json.dump(_DEFAULTS, f, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp, _CONFIG_PATH)
         except Exception:
             pass
 
     def save(self):
-        """Persist current config to disk."""
+        """Persist current config to disk atomically (tmp file + os.replace).
+
+        A plain truncate-then-write leaves a half-written file if power is cut
+        mid-save; _load() then falls back to defaults and the next save makes
+        the loss permanent. Writing to a temp file and atomically replacing
+        guarantees the on-disk config is always a complete, valid document.
+
+        TWO writers, one tmp path. Every caller used to write the SAME
+        "config.json.tmp": a volume step saving from the button thread while
+        the web UI saved from an HTTP thread had one process os.replace() a
+        file the other was still streaming into, publishing a truncated
+        document as the live config. That costs device_token and every
+        encrypted API key on the unit — recoverable only by re-provisioning.
+        The tmp name is now unique per writer, and _save_lock serializes the
+        replace so the last writer always publishes a whole document.
+        """
         with self._lock:
             data = dict(self._data)
-        try:
-            with open(_CONFIG_PATH, "w") as f:
-                json.dump(data, f, indent=2)
-        except Exception:
-            pass
+        tmp = "%s.tmp.%d.%d" % (_CONFIG_PATH, os.getpid(),
+                                threading.get_ident())
+        with self._save_lock:
+            try:
+                with open(tmp, "w") as f:
+                    json.dump(data, f, indent=2)
+                    f.flush()
+                    os.fsync(f.fileno())
+                os.replace(tmp, _CONFIG_PATH)
+            except Exception:
+                try:
+                    os.unlink(tmp)
+                except Exception:
+                    pass
+
+    def save_async(self, delay_s: float = 1.0):
+        """Coalesced background save — for callers on a latency-critical thread.
+
+        A button press must never wait on flash. Repeated calls inside `delay_s`
+        collapse into one write, so mashing the volume chord cannot turn into a
+        burst of concurrent saves (the exact pattern that used to race on the
+        shared tmp path above).
+        """
+        with self._save_lock:
+            if self._save_pending:
+                return
+            self._save_pending = True
+
+        def _run():
+            try:
+                time.sleep(delay_s)
+            except Exception:
+                pass
+            with self._save_lock:
+                self._save_pending = False
+            self.save()
+
+        threading.Thread(target=_run, daemon=True, name="CfgSave").start()
 
     # ─── Read / Write ─────────────────────────────────────────────────────────
 
@@ -320,6 +576,18 @@ class Config:
         return self.get("camera_fps")
 
     @property
+    def CAMERA_ROTATION(self) -> int:
+        """Frame rotation in clockwise degrees, snapped to 0/90/180/270.
+
+        Normalized at the READ site as well as in the POST /config handler: the
+        cloud config push writes straight into cfg without going through that
+        validation, and a bogus value here would be handed to image.rotate()
+        on the AI loop's hot path.
+        """
+        from utils.orientation import normalize_rotation
+        return normalize_rotation(self.get("camera_rotation", 0))
+
+    @property
     def SNAPSHOT_INTERVAL_MS(self) -> int:
         return self.get("snapshot_interval_ms")
 
@@ -353,7 +621,16 @@ class Config:
 
     @property
     def AI_TIMEOUT_S(self) -> int:
-        return self.get("ai_timeout_s", 15)
+        # Every adapter reads its socket timeout here rather than doing its own
+        # int() on the raw value. ai_timeout_s is settable via POST /config and
+        # the cloud config push and neither validates it; a bare ValueError
+        # raised inside an adapter would bypass ai_engine's `except AdapterError`
+        # and leave the user with silence instead of the "AI error" cue.
+        try:
+            t = int(self.get("ai_timeout_s", 15))
+        except (TypeError, ValueError):
+            return 15
+        return max(1, min(120, t))
 
     @property
     def OPENAI_API_KEY(self) -> str:
@@ -434,7 +711,33 @@ class Config:
 
     @property
     def AUDIO_VOLUME(self) -> int:
-        return int(self.get("audio_volume", 80))
+        # Clamped at the READ site, not only in the POST /config handler: this
+        # value is passed straight to player.volume() for a speaker sitting in a
+        # blind user's ear, and the cloud config push (cloud.py
+        # ALLOWED_CONFIG_KEYS) writes audio_volume without going through that
+        # handler's validation at all.
+        try:
+            vol = int(self.get("audio_volume", 80))
+        except (TypeError, ValueError):
+            return 80
+        return max(0, min(100, vol))
+
+
+    @property
+    def AI_TEMPERATURE(self) -> float:
+        """Sampling temperature for the vision call, clamped to 0.0-2.0.
+
+        Clamped at the READ site as well as in POST /config: the cloud config
+        push writes straight into cfg with no validation, and a junk value here
+        would be sent verbatim to three different provider APIs — each of which
+        answers a bad temperature with an HTTP 400, i.e. a describe press that
+        fails with "gagal menganalisis" and no hint why.
+        """
+        try:
+            t = float(self.get("ai_temperature", 0.0))
+        except (TypeError, ValueError):
+            return 0.0
+        return max(0.0, min(2.0, t))
 
     @property
     def PROMPT_SCENE(self) -> str:
@@ -491,6 +794,12 @@ class Config:
         """Audio playback preference: "chime" | "speech" | "both". Defaults to "both"."""
         m = self.get("audio_mode", "both")
         return m if m in ("chime", "speech", "both") else "both"
+
+    @property
+    def BRAND(self) -> str:
+        """White-label brand: "auralai" | "isora". Anything else → "isora"."""
+        b = self.get("brand", "isora")
+        return b if b in ("auralai", "isora") else "isora"
 
     @property
     def ADMIN_ROLE_TOKEN(self) -> str:

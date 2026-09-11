@@ -3,10 +3,13 @@
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import Notice from "@/components/Notice";
 
 export default function LoginClient() {
   const params = useSearchParams();
   const next = params.get("next") || "/dashboard";
+  // /auth/callback redirects here with ?error= when a magic link is bad/expired
+  const authFailed = !!params.get("error");
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [err, setErr] = useState("");
@@ -32,6 +35,12 @@ export default function LoginClient() {
     }
   };
 
+  const shownErr =
+    err ||
+    (authFailed
+      ? "Tautan masuk tidak valid atau sudah kedaluwarsa. Masukkan email untuk menerima tautan baru."
+      : "");
+
   return (
     <div className="container section" style={{ maxWidth: 460 }}>
       <h1 style={{ fontSize: "var(--t-2xl)", letterSpacing: "-.02em" }}>Masuk</h1>
@@ -40,9 +49,9 @@ export default function LoginClient() {
       </p>
 
       {sent ? (
-        <div className="notice notice--ok">
+        <Notice kind="ok">
           Tautan masuk sudah dikirim ke <strong>{email}</strong>. Cek inbox (dan folder spam).
-        </div>
+        </Notice>
       ) : (
         <form onSubmit={submit} className="card" style={{ display: "grid", gap: "var(--s-4)" }}>
           <div className="field">
@@ -58,7 +67,7 @@ export default function LoginClient() {
               autoComplete="email"
             />
           </div>
-          {err && <div className="notice notice--err">{err}</div>}
+          {shownErr && <Notice kind="err">{shownErr}</Notice>}
           <button className="btn btn--primary btn--lg" type="submit" disabled={busy || !email}>
             {busy ? "Mengirim…" : "Kirim tautan masuk"}
           </button>

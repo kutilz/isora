@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AuralAI Standardized Benchmark Suite — Entry Point
+I-Sora Standardized Benchmark Suite — Entry Point
 ====================================================
 Menjalankan ke-4 uji secara berurutan dan menghasilkan laporan akhir.
 
@@ -53,7 +53,7 @@ def _divider(char="═", width=64):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="AuralAI Benchmark Suite")
+    parser = argparse.ArgumentParser(description="I-Sora Benchmark Suite")
     parser.add_argument("--tests",       default="T1,T2,T3,T4",
                         help="Comma-separated tests to run (T1,T2,T3,T4)")
     parser.add_argument("--t1-frames",   type=int,   default=100)
@@ -66,7 +66,7 @@ def main():
     selected = [t.strip().upper() for t in args.tests.split(",")]
 
     _divider()
-    print("AuralAI Standardized Benchmark Suite", flush=True)
+    print("I-Sora Standardized Benchmark Suite", flush=True)
     print(f"Running: {', '.join(selected)}", flush=True)
     print(f"Started: {time.strftime('%Y-%m-%dT%H:%M:%S')}", flush=True)
     _divider()

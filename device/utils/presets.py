@@ -11,6 +11,8 @@ elsewhere. The dashboard discovers presets via GET /presets.
 
 from typing import Dict, List
 
+from utils import scene_prompt
+
 
 PRESETS: Dict[str, Dict[str, dict]] = {
     # ── Explorer (YOLO live detection) ──────────────────────────────────────
@@ -65,52 +67,50 @@ PRESETS: Dict[str, Dict[str, dict]] = {
         },
     },
 
-    # ── Scene description ──────────────────────────────────────────────────
+    # ── Scene description ──────────────────────────────────────────────
+    # All four prompts come from utils/scene_prompt.py rather than being spelled
+    # out here. They used to be independent one-liners, which meant applying any
+    # preset silently reverted the device to a prompt with no priority ladder and
+    # no output contract — the exact regression the pack exists to prevent.
     "scene": {
         "default": {
             "label":  "Default",
-            "desc":   "Deskripsi singkat 2 kalimat, timeout 15s.",
+            "desc":   "Prioritas benda yang dipegang, lalu bahaya, orang, "
+                      "ruangan. Maks 3 kalimat.",
             "values": {
-                "ai_timeout_s":  15,
-                "prompt_scene": (
-                    "Deskripsikan scene ini secara singkat dalam Bahasa Indonesia, "
-                    "fokus pada objek yang relevan untuk pengguna tunanetra. "
-                    "Maksimal 2 kalimat."
-                ),
+                "ai_timeout_s":     15,
+                "scene_verbosity":  "detail",
+                "prompt_scene":     scene_prompt.SCENE_PROMPT_DETAIL,
             },
         },
-        "detailed": {
-            "label":  "Detail",
-            "desc":   "Deskripsi lebih panjang, posisi objek dieja, timeout 20s.",
-            "values": {
-                "ai_timeout_s":  20,
-                "prompt_scene": (
-                    "Deskripsikan adegan ini dalam Bahasa Indonesia untuk pengguna tunanetra. "
-                    "Sebutkan posisi setiap objek penting (kiri/tengah/kanan, dekat/jauh) "
-                    "dan aktivitas yang sedang terjadi. Maksimal 4 kalimat."
-                ),
-            },
-        },
-        "brief": {
+        "ringkas": {
             "label":  "Ringkas",
-            "desc":   "Satu kalimat ultra-pendek. Timeout 8s — cocok untuk jaringan tidak stabil.",
+            "desc":   "Satu kalimat, maks 14 kata. Paling cepat dan paling "
+                      "sering kena cache audio.",
             "values": {
-                "ai_timeout_s":  8,
-                "prompt_scene": (
-                    "Sebut objek paling penting di scene dalam satu kalimat Bahasa Indonesia. "
-                    "Maksimal 12 kata."
-                ),
+                "ai_timeout_s":         12,
+                "scene_verbosity":      "sedang",
+                "prompt_scene_sedang":  scene_prompt.SCENE_PROMPT_SEDANG,
             },
         },
-        "navigation": {
-            "label":  "Navigasi",
-            "desc":   "Fokus pada hambatan, jalur, dan arah. Timeout 15s.",
+        "baca_objek": {
+            "label":  "Baca Benda",
+            "desc":   "Untuk menyodorkan uang, label, atau harga ke kamera. "
+                      "Latar belakang tidak pernah disebut.",
             "values": {
-                "ai_timeout_s":  15,
-                "prompt_scene": (
-                    "Saya pengguna tunanetra. Sebut hambatan dan jalur yang aman dalam "
-                    "Bahasa Indonesia: arah, jarak relatif, dan bahaya. Maksimal 3 kalimat."
-                ),
+                "ai_timeout_s":     18,
+                "scene_verbosity":  "detail",
+                "prompt_scene":     scene_prompt.SCENE_PROMPT_BACA,
+            },
+        },
+        "navigasi": {
+            "label":  "Navigasi",
+            "desc":   "Untuk berjalan: bahaya dan jalur kosong lebih dulu, "
+                      "benda di tangan diabaikan.",
+            "values": {
+                "ai_timeout_s":     15,
+                "scene_verbosity":  "detail",
+                "prompt_scene":     scene_prompt.SCENE_PROMPT_NAVIGASI,
             },
         },
     },

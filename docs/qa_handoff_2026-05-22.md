@@ -1,4 +1,4 @@
-# QA Pre-Handoff Sweep — AuralAI Web Interface
+# QA Pre-Handoff Sweep — I-Sora Web Interface
 
 **Date**: 2026-05-22  
 **Device**: MaixCAM @ `http://10.146.235.103:8080`  
@@ -74,7 +74,7 @@
 
 **Symptoms**:
 ```
-File "/root/aural-ai/server/web_server.py", line 1184, in _send_json
+File "/root/isora/server/web_server.py", line 1184, in _send_json
     self.wfile.write(body)
   File "/usr/lib/python3.11/socketserver.py", line 834, in write
     self._sock.sendall(b)
@@ -118,7 +118,7 @@ BrokenPipeError: [Errno 32] Broken pipe
 ### 🟡 PL-1 — Icon path for autostart launcher
 **File**: `tools/run.py:407`
 ```python
-icon = /root/aural-ai/icon.png
+icon = /root/isora/icon.png
 ```
 **Issue**: The autostart desktop entry references `icon.png`, but the icon asset does not exist. Booting into the launcher shows a broken icon.
 **Status**: Deferred. Visual assets are not finalized yet.
@@ -135,7 +135,7 @@ icon = /root/aural-ai/icon.png
 
 ### 🟢 DEF-1 — Missing Visual Assets
 - `/assets/og_cover.jpg` (referenced from `guide.html`)
-- `/root/aural-ai/icon.png` (autostart launcher icon)
+- `/root/isora/icon.png` (autostart launcher icon)
 - Mock placeholders are acceptable for now.
 
 ### 🔴 BL-1 — Not Re-verified Live

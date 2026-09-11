@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AuralAI Overnight Stress Test — daemon yang menjalankan full pipeline loop.
+I-Sora Overnight Stress Test — daemon yang menjalankan full pipeline loop.
 Status ditulis ke /tmp/overnight_status.json setiap 10 detik.
 Berhenti jika /tmp/overnight_stop ada atau menerima SIGTERM.
 Jalankan: python3 overnight_stress.py [--hours N]

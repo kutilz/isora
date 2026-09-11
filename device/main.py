@@ -1,12 +1,12 @@
 """
-AuralAI SDK — Entry Point
+I-Sora SDK — Entry Point
 Run on MaixCAM via MaixVision or: python main.py
 
 Threads:
   AILoop        — camera → NPU inference → audio queue
   WebServer     — HTTP dashboard + API
   Watchdog      — module health monitor (restarts crashed components)
-  HealthMonitor — hardware telemetry + thermal throttle
+  HealthMonitor — hardware telemetry → adaptive power governor
   BtnListener   — GPIO mode-cycle button (if configured)
 
 Boot-time optimization (2025-06-23)
@@ -32,11 +32,30 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# ── Freeze forensics ─────────────────────────────────────────────────────────
+# The camera/NPU teardown is a C call that holds the GIL. When it blocks in the
+# cvitek VI driver the ENTIRE interpreter stops — no log line, no heartbeat, no
+# traceback, and the audio already handed to the DMA loops one phrase forever.
+# faulthandler's handler runs at the C level and walks the interpreter state
+# directly, so `kill -USR1 <pid>` still prints every thread's Python stack while
+# the GIL is held. It is the only way to see where a freeze actually happened.
+# Costs nothing until the signal arrives.
+try:
+    import faulthandler
+    import signal as _signal
+    _fh_log = open("/tmp/isora_faulthandler.log", "a", buffering=1)
+    faulthandler.enable(file=_fh_log, all_threads=True)
+    if hasattr(_signal, "SIGUSR1"):
+        faulthandler.register(_signal.SIGUSR1, file=_fh_log,
+                              all_threads=True, chain=False)
+except Exception:
+    pass
+
 # ── NOTE: Heavy imports are deferred into main() — see docstring above. ──────
 
 
 def _boot_cue_fast():
-    """Play 'AuralAI menyala' the instant we boot, with minimal imports.
+    """Play 'Isora menyala' the instant we boot, with minimal imports.
 
     Three cases, in order:
 
@@ -52,7 +71,7 @@ def _boot_cue_fast():
        config.py import (volume is read straight from /root/config.json).
 
     3. PCM missing (fresh flash, deleted cache, or re-recorded WAV) → FALLBACK:
-       regenerate it from auralai_menyala.wav via play_wav_blocking(), which
+       regenerate it from isora_menyala.wav via play_wav_blocking(), which
        runs ffmpeg, caches the .pcm next to the WAV, and plays it. Slower and
        pulls in audio_manager, but only in this degraded case — and it is the
        ONLY path that recreates the PCM, so without it the cue would be silent
@@ -62,7 +81,7 @@ def _boot_cue_fast():
     Any error → returns silently.
     """
     try:
-        pcm_path = "/root/audio/auralai_menyala.pcm"
+        pcm_path = "/root/audio/isora_menyala.pcm"
 
         # Read volume from config.json directly (avoid importing config.py)
         vol = 80  # safe default
@@ -73,11 +92,36 @@ def _boot_cue_fast():
         except Exception:
             pass
 
-        # Case 3: PCM missing → regenerate + play (the only self-heal path).
-        if not os.path.exists(pcm_path):
+        # Case 3: PCM missing OR not built from the WAV sitting next to it →
+        # regenerate (the only self-heal path). The mtime half matters after an
+        # audio deploy: a fresh isora_menyala.wav sitting next to last
+        # release's .pcm would otherwise greet with the OLD recording forever,
+        # because this fast path never looks at the WAV at all.
+        #
+        # Same equality test as audio_manager._pcm_is_fresh, inlined because
+        # this path must not import audio_manager (that is the whole point of
+        # the fast path). A "pcm older than wav" test would call every cache
+        # entry stale here: the clock reads 1970 until NTP lands, so a .pcm
+        # rebuilt on a previous boot is stamped behind a WAV deployed in 2026.
+        wav_path = "/root/audio/isora_menyala.wav"
+        try:
+            delta = os.path.getmtime(pcm_path) - os.path.getmtime(wav_path)
+            pcm_stale = abs(delta) > 2.0
+        except OSError:
+            pcm_stale = False        # no WAV to compare against → leave it be
+        if pcm_stale or not os.path.exists(pcm_path):
             try:
-                from core.audio_manager import play_wav_blocking
-                play_wav_blocking("auralai_menyala.wav", volume=vol)
+                from core.audio_manager import (
+                    play_wav_blocking, _ensure_pcm_standalone,
+                )
+                if pcm_stale and os.path.exists("/tmp/.boot_chime_played"):
+                    # S00a's aplay already greeted this boot — off the stale
+                    # PCM, but playing a SECOND, different greeting on top of
+                    # it is worse than one outdated one. Rebuild the cache
+                    # quietly so the next boot is right, and stay silent now.
+                    _ensure_pcm_standalone(wav_path)
+                else:
+                    play_wav_blocking("isora_menyala.wav", volume=vol)
             except Exception:
                 pass
             return
@@ -105,9 +149,28 @@ def _boot_cue_fast():
         pass  # Fast path failed silently
 
 
+def _mark_boot_ready():
+    """Record time-to-ready against the monotonic boot clock.
+
+    The wall clock cannot measure boot: it starts at the epoch and NTP jumps it
+    forward at an unpredictable point *during* boot, so two log timestamps can
+    sit in different time bases and their difference is meaningless.
+    /proc/uptime never jumps. Written where the user-visible milestone is --
+    every thread up, the device about to announce itself -- and read back by
+    tools/boot_timeline.py. Best-effort: a failure here must never affect boot.
+    """
+    try:
+        with open("/proc/uptime") as f:
+            uptime = f.read().split()[0]
+        with open("/tmp/isora_boot_ready", "w") as f:
+            f.write(uptime)
+    except (OSError, IndexError):
+        pass
+
+
 def main():
     # ── Boot voice cue (IMMEDIATE — before heavy imports) ──────────────────────
-    # Fire the "AuralAI menyala" sound the instant we enter main(), using a
+    # Fire the "Isora menyala" sound the instant we enter main(), using a
     # minimal PCM player that doesn't need config.py or audio_manager.
     # This runs in a daemon thread so main() can proceed to imports in parallel.
     boot_cue_thread = threading.Thread(
@@ -137,12 +200,12 @@ def main():
         max_lines=cfg.LOG_MAX_LINES,
     )
     logger.info("=" * 50, module="Main")
-    logger.info("AuralAI SDK — Starting up", module="Main")
+    logger.info("I-Sora SDK — Starting up", module="Main")
     logger.info("=" * 50, module="Main")
 
     # ── Second boot cue: "menghubungkan ke wifi" ──────────────────────────────
     # Played via the full audio_manager path (which is now imported).
-    # The fast boot cue thread above handles "auralai_menyala" — this one plays
+    # The fast boot cue thread above handles "isora_menyala" — this one plays
     # the follow-up "connecting to wifi" message. Wait for the first cue to
     # finish so they don't overlap.
     def _boot_cue_wifi():
@@ -169,10 +232,9 @@ def main():
         throttle_temp_c=cfg.THERMAL_THROTTLE_TEMP_C,
         poll_interval_s=5.0,
     )
-    health.start(
-        on_throttle=orchestrator._on_thermal_throttle,
-        on_recover=orchestrator._on_thermal_recover,
-    )
+    # Every sample feeds the power governor (not just threshold crossings): a
+    # tiered plan with hysteresis has to see the trend to hold and release it.
+    health.start(on_sample=orchestrator.on_health_sample)
     logger.ok("HealthMonitor started", module="Main")
 
     # ── Data Collector ────────────────────────────────────────────────────────
@@ -220,6 +282,21 @@ def main():
     ).start()
     logger.ok("AI loop started", module="Main")
 
+    # ── SoC hardware watchdog ────────────────────────────────────────────────
+    # Armed only when the unit opts in (cfg["hw_watchdog_enabled"]). This is
+    # the ONLY mechanism that can recover the device from a camera/NPU teardown
+    # that blocks inside a C call: that hang holds the GIL, so no Python
+    # supervisor — including core/watchdog.py — ever runs again. Started after
+    # the AI loop so there is a real heartbeat to judge, and fed from the
+    # loop's own tick rather than from anything engine-specific, because idle
+    # mode has no engine. See utils/hw_watchdog.py for why it defaults to off.
+    from utils import hw_watchdog as _hw_watchdog
+    _stale_s = cfg.get("hw_watchdog_stale_s", 45.0)
+    hw_wd = _hw_watchdog.start_if_enabled(
+        cfg, logger=logger,
+        is_alive_fn=lambda: orchestrator.loop_healthy(_stale_s),
+    )
+
     # ── Spoken-URL onboarding (last; waits for WiFi + web + audio) ─────────────
     announcer = OnboardingAnnouncer(orchestrator=orchestrator, logger=logger)
     orchestrator.onboarding = announcer
@@ -238,6 +315,15 @@ def main():
         logger.info(f"Cloud client → {cfg.CLOUD_BASE_URL}", module="Main")
 
     logger.info("All threads running. Press Ctrl+C to stop.", module="Main")
+    _mark_boot_ready()
+
+    # Pre-warm the speech backend AFTER boot-ready is stamped, so its cost never
+    # lands in the boot-latency number — and, more to the point, never lands on
+    # the user's first describe. See AudioManager.warm_speech_stack.
+    try:
+        orchestrator.audio_manager.warm_speech_stack(delay_s=2.0)
+    except Exception as e:
+        logger.debug(f"Speech pre-warm not started: {e}", module="Main")
 
     # ── Main thread: keep alive, handle shutdown ───────────────────────────────
     # Treat SIGTERM (from `kill` / tools/run.py --stop) like Ctrl+C so the camera
@@ -253,6 +339,10 @@ def main():
             time.sleep(1)
     except KeyboardInterrupt:
         logger.info("Shutdown requested", module="Main")
+        # Disarm FIRST and with the magic close: a deliberate stop must not
+        # leave the board to reset itself one timeout after we exit.
+        if hw_wd is not None:
+            hw_wd.stop(disarm=True)
         orchestrator.stop()
         watchdog.stop()
         health.stop()
@@ -260,7 +350,7 @@ def main():
             mdns.stop()
         if cloud:
             cloud.stop()
-        logger.info("AuralAI SDK stopped.", module="Main")
+        logger.info("I-Sora SDK stopped.", module="Main")
 
 
 if __name__ == "__main__":

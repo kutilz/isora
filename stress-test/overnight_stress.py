@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AuralAI Overnight Stress Test v1
+I-Sora Overnight Stress Test v1
 ==================================
 Dirancang untuk berjalan tanpa pengawasan selama 8 jam.
 Sepenuhnya mandiri — tidak butuh companion PC.
@@ -501,7 +501,7 @@ def print_final_report(shared, t_start, log):
 # MAIN
 # ─────────────────────────────────────────────────────────
 def main():
-    parser = argparse.ArgumentParser(description="AuralAI Overnight Stress Test")
+    parser = argparse.ArgumentParser(description="I-Sora Overnight Stress Test")
     parser.add_argument("--duration",    type=float, default=8,    help="Total jam (default: 8)")
     parser.add_argument("--active-min",  type=float, default=15,   help="Fase active menit (default: 15)")
     parser.add_argument("--standby-min", type=float, default=2,    help="Fase standby menit (default: 2)")
@@ -568,7 +568,7 @@ def main():
 
     # ── Print config
     log.ok("=" * 60)
-    log.ok("AuralAI Overnight Stress Test v1")
+    log.ok("I-Sora Overnight Stress Test v1")
     log.ok("=" * 60)
     log.info(f"  Mode          : {'DRY RUN (CPU only)' if dry_run else 'LIVE (MaixCAM)'}")
     log.info(f"  Duration      : {CFG['total_hours']}h  ({CFG['total_hours']*3600:.0f}s)")

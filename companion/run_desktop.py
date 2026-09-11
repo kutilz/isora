@@ -1,5 +1,5 @@
 """
-AuralAI Desktop Runner — Web-Controlled (companion)
+I-Sora Desktop Runner — Web-Controlled (companion)
 =======================================================================
 Jalankan dari root repo setelah `python companion/webserver.py` aktif.
 Browser terbuka ke dashboard; kontrol mode & scan dari browser.
@@ -204,9 +204,9 @@ try:
     from ultralytics import YOLO
     yolo_model = YOLO("yolov8n.pt")
     YOLO_OK    = True
-    print("[AuralAI] YOLO berhasil dimuat (ultralytics yolov8n)")
+    print("[I-Sora] YOLO berhasil dimuat (ultralytics yolov8n)")
 except Exception:
-    print("[AuralAI] INFO: ultralytics tidak ada — Mode Auto berjalan tanpa deteksi lokal")
+    print("[I-Sora] INFO: ultralytics tidak ada — Mode Auto berjalan tanpa deteksi lokal")
     print("         Pasang dengan:  pip install ultralytics")
 
 # ============================================================
@@ -218,7 +218,7 @@ try:
 except ImportError:
     _psutil   = None
     PSUTIL_OK = False
-    print("[AuralAI] INFO: psutil tidak ada — telemetry baterai/suhu tidak tersedia")
+    print("[I-Sora] INFO: psutil tidak ada — telemetry baterai/suhu tidak tersedia")
     print("         Pasang dengan:  pip install psutil")
 
 # ============================================================
@@ -245,7 +245,7 @@ _rt_cal             = parse_remote_settings({})
 # ============================================================
 cap = cv2.VideoCapture(0)
 if not cap.isOpened():
-    print("[AuralAI] WARN: Webcam tidak ditemukan — pakai frame hitam")
+    print("[I-Sora] WARN: Webcam tidak ditemukan — pakai frame hitam")
 
 def read_frame():
     ret, frame = cap.read()
@@ -264,7 +264,7 @@ def _post(url, payload, timeout=2.0):
 
 def notify_mode(mode_id):
     _post(API_MODE, {"mode": mode_id, "name": MODE_LABELS.get(mode_id, "")})
-    print(f"[AuralAI] Mode -> {MODE_LABELS.get(mode_id, mode_id)}")
+    print(f"[I-Sora] Mode -> {MODE_LABELS.get(mode_id, mode_id)}")
 
 def _read_telemetry():
     """Baca baterai, WiFi, CPU, RAM, suhu dari sistem (pakai psutil jika ada)."""
@@ -310,7 +310,7 @@ def send_heartbeat():
     try:
         r = requests.post(API_PING, json=payload, timeout=2)
         _last_ping_ms = round((time.time() - t0) * 1000, 1)
-        print(f"[AuralAI] Heartbeat OK: {r.status_code} ({_last_ping_ms}ms)")
+        print(f"[I-Sora] Heartbeat OK: {r.status_code} ({_last_ping_ms}ms)")
         srv = r.json()
         if "settings" in srv:
             _apply_settings(srv["settings"])
@@ -318,7 +318,7 @@ def send_heartbeat():
             _show_bbox = bool(srv["settings"].get("show_bbox", True))
     except Exception as e:
         _last_ping_ms = None
-        print(f"[AuralAI] Heartbeat GAGAL: {e}")
+        print(f"[I-Sora] Heartbeat GAGAL: {e}")
 
 def send_update(payload):
     _post(API_UPDATE, payload, timeout=0.3)
@@ -360,9 +360,9 @@ def _frame_worker(frame_bgr, task):
         b64  = base64.b64encode(buf).decode("utf-8")
         resp = requests.post(API_FRAME, json={"image": b64, "task": task}, timeout=25)
         last_result_text = resp.json().get("result", "Tidak ada hasil")[:200]
-        print(f"[AuralAI] AI hasil: {last_result_text[:80]}")
+        print(f"[I-Sora] AI hasil: {last_result_text[:80]}")
     except Exception as e:
-        print(f"[AuralAI] Frame GAGAL: {e}")
+        print(f"[I-Sora] Frame GAGAL: {e}")
         last_result_text = f"Gagal: {str(e)[:80]}"
     finally:
         processing = False
@@ -370,7 +370,7 @@ def _frame_worker(frame_bgr, task):
 
 def trigger_scan(frame_bgr):
     if processing:
-        print("[AuralAI] Masih memproses, skip scan")
+        print("[I-Sora] Masih memproses, skip scan")
         return
     task = "ocr" if current_mode == MODE_TEXT else "describe"
     t = threading.Thread(target=_frame_worker, args=(frame_bgr.copy(), task), daemon=True)
@@ -401,7 +401,7 @@ def poll_command():
 def _open_browser():
     time.sleep(2.0)
     url = f"http://{HOST_IP}:{HOST_PORT}"
-    print(f"[AuralAI] Membuka browser: {url}")
+    print(f"[I-Sora] Membuka browser: {url}")
     webbrowser.open(url)
 
 threading.Thread(target=_open_browser, daemon=True).start()
@@ -410,7 +410,7 @@ threading.Thread(target=_open_browser, daemon=True).start()
 # MAIN LOOP
 # ============================================================
 print("\n" + "=" * 55)
-print("  AuralAI Desktop Runner")
+print("  I-Sora Desktop Runner")
 print(f"  Server  : http://{HOST_IP}:{HOST_PORT}")
 print(f"  Camera  : {'OK' if cap.isOpened() else 'TIDAK TERSEDIA'}")
 print(f"  YOLO    : {'OK (yolov8n)' if YOLO_OK else 'Tidak terpasang'}")
@@ -520,7 +520,7 @@ try:
         time.sleep(0.04)   # ~25fps loop
 
 except KeyboardInterrupt:
-    print("\n[AuralAI] Dihentikan.")
+    print("\n[I-Sora] Dihentikan.")
 finally:
     cap.release()
-    print("[AuralAI] Selesai.")
+    print("[I-Sora] Selesai.")

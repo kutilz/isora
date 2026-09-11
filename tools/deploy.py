@@ -28,12 +28,12 @@ if os.path.exists(_env_path):
 
 # Default MaixCAM connection
 # Override via .env file atau --host flag
-DEFAULT_HOST = os.environ.get("AURAL_MAIX_HOST", "maixcam.local")
-DEFAULT_PORT = int(os.environ.get("AURAL_MAIX_PORT", "22"))
-DEFAULT_USER = os.environ.get("AURAL_MAIX_USER", "root")
-DEFAULT_PASS = os.environ.get("AURAL_MAIX_PASS", "root")
+DEFAULT_HOST = os.environ.get("ISORA_MAIX_HOST", "maixcam.local")
+DEFAULT_PORT = int(os.environ.get("ISORA_MAIX_PORT", "22"))
+DEFAULT_USER = os.environ.get("ISORA_MAIX_USER", "root")
+DEFAULT_PASS = os.environ.get("ISORA_MAIX_PASS", "root")
 
-REMOTE_DEVICE_DIR = "/root/aural-ai/"
+REMOTE_DEVICE_DIR = "/root/isora/"
 REMOTE_AUDIO_DIR  = "/root/audio/"
 
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), "..")
@@ -92,7 +92,7 @@ def deploy_directory(sftp, local_dir, remote_dir, dry_run=False):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="AuralAI Deploy Script")
+    parser = argparse.ArgumentParser(description="I-Sora Deploy Script")
     parser.add_argument("--host", default=DEFAULT_HOST)
     parser.add_argument("--port", type=int, default=DEFAULT_PORT)
     parser.add_argument("--user", default=DEFAULT_USER)
@@ -107,7 +107,7 @@ def main():
         print("ERROR: paramiko tidak terinstall. Jalankan: pip install paramiko")
         sys.exit(1)
 
-    print(f"AuralAI Deploy -> {args.user}@{args.host}:{args.port}")
+    print(f"I-Sora Deploy -> {args.user}@{args.host}:{args.port}")
     if args.dry_run:
         print("DRY RUN MODE - tidak ada yang di-upload\n")
 
@@ -169,8 +169,8 @@ def main():
     if not args.dry_run:
         print(f"\nJalankan di MaixCAM:")
         print(f"  cd {REMOTE_DEVICE_DIR} && python main.py")
-        print(f"  # Companion PC: python aural_maix.py (set AURAL_COMPANION_HOST)")
-        print(f"\nAtau via MaixVision: buka main.py atau aural_maix.py -> Run")
+        print(f"  # Companion PC: python isora_maix.py (set ISORA_COMPANION_HOST)")
+        print(f"\nAtau via MaixVision: buka main.py atau isora_maix.py -> Run")
 
 
 if __name__ == "__main__":

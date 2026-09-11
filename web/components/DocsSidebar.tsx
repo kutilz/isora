@@ -15,6 +15,7 @@ export default function DocsSidebar({
           key={d.slug}
           href={`/docs/${d.slug}`}
           className={d.slug === active ? "active" : undefined}
+          aria-current={d.slug === active ? "page" : undefined}
         >
           {d.title}
         </Link>

@@ -1,9 +1,9 @@
-# AuralAI SDK — Resource Update Asana
+# I-Sora SDK — Resource Update Asana
 
 Bahan siap-tempel untuk mengisi progress ke Asana. Disusun dari `git log` +
 `CHANGELOG.md` + `README.md`.
 
-- **Project:** AuralAI SDK — on-device visual assistant di Sipeed MaixCAM untuk
+- **Project:** I-Sora SDK — on-device visual assistant di Sipeed MaixCAM untuk
   membantu tunanetra mengenali lingkungan lewat audio.
 - **Cara pakai:** tiap heading `##` = Section/kolom di Asana. Tiap `###` = nama
   task. Teks di bawahnya = deskripsi task (paste ke field Description).
@@ -25,7 +25,7 @@ model converter) di folder `tools/`.
 
 ### Companion PC MVP
 Jalur Companion: MaixCAM (UI + YOLO lokal) ⇄ PC Flask (OpenAI Vision, MJPEG,
-browser TTS). File: `device/aural_maix.py` + `companion/webserver.py`,
+browser TTS). File: `device/isora_maix.py` + `companion/webserver.py`,
 `companion/run_desktop.py` (simulasi pakai webcam), `companion/minimal_server.py`
 (tes koneksi tanpa OpenAI).
 

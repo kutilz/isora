@@ -21,7 +21,7 @@ import argparse
 import subprocess
 
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "audio")
-WORDLIST_DEFAULT = os.path.join(OUTPUT_DIR, "AuralAI_Audio_Wordlist.md")
+WORDLIST_DEFAULT = os.path.join(OUTPUT_DIR, "Isora_Audio_Wordlist.md")
 
 # Default time-compression for nav speech — fast screen-reader cadence (T5a / D1).
 # atempo is applied at GENERATION time only; the 1-core device never re-tempos.
@@ -55,11 +55,15 @@ SYSTEM_EVENTS = {
     # Onboarding / status cues for the screen-less device. Keys match the
     # AudioManager._find_wav safe-name of the spoken text, so these play
     # offline (no gTTS call) at boot and on button-acknowledge.
-    "isora_siap_digunakan":         "Isora siap digunakan.",
+    "isora_siap_digunakan":       "Isora siap digunakan.",
     "baik_sudah_paham":             "Baik, sudah paham.",
     # Keys must match orchestrator.switch_mode's queue_system(f"mode_{new_mode}"),
     # i.e. mode_explorer / mode_context / mode_qris (NOT *_aktif) so _find_wav
     # resolves system_mode_<x>.wav instead of TTS-speaking the literal key.
+    # "idle" is the config/API name for the neutral mode; spoken, "mode diam"
+    # is what actually lands in Indonesian — an English word here would be one
+    # more thing to decode for someone navigating by ear alone.
+    "mode_idle":                    "mode diam",
     "mode_explorer":                "mode penjelajah aktif",
     "mode_context":                 "mode konteks aktif",
     "mode_qris":                    "mode scan bayar aktif",
@@ -81,43 +85,189 @@ SYSTEM_EVENTS = {
 }
 
 
-# ─── Non-speech chimes (synthesized offline, no network/gTTS) ─────────────────
-# Each chime is a list of (frequency_Hz, duration_ms) tone segments. Played as
-# instant tactile/state feedback by AudioManager.queue_cue (see device side).
+# ─── Non-speech chimes (synthesized offline, no network/gTTS) ─────────────
+# These are the device's only non-verbal voice, and the first version made it
+# sound broken rather than responsive: constant-amplitude sine bursts, butt-
+# joined, each note ramping down to silence before the next ramped up. A flat
+# sine held at full level for 90 ms is exactly the waveform cheap electronics
+# use to say "fault", and the seam between segments read as a stutter — the
+# device sounded like it was glitching, not acknowledging.
+#
+# What makes a tone read as a CHIME instead of a BEEP:
+#   1. Percussive envelope. A struck object is loud for a few ms and then decays
+#      — a high crest factor. A flat envelope has none, and the ear files it
+#      under "alarm". Every note here is fast attack + exponential ring-out.
+#   2. Overlap, not concatenation. Notes sit on a timeline and are MIXED, so a
+#      note is still ringing when the next is struck. That is what turns three
+#      pitches into a chord instead of three separate bleeps.
+#   3. Partials. A pure sine is a test tone. A few decaying overtones above the
+#      fundamental (each dying faster than the one below it, as in a real bar or
+#      bell) give the warmth that makes it sound like an object, not a circuit.
+#   4. Register. The device speaker is a tiny driver with nothing below ~500 Hz;
+#      the old error cue's 440->330 Hz fell straight into that hole and came out
+#      as a buzz. Everything now sits in 780-1900 Hz, where it is both efficient
+#      and easy to hear over street noise.
+#
 # Synthesized with numpy + stdlib wave — no downloads, no licensing.
-_CHIME_RATE = 48000        # Hz, mono s16 (matches AudioManager PCM target)
-_CHIME_AMP  = 0.30         # peak amplitude (0..1), gentle on a small speaker
+_CHIME_RATE      = 48000     # Hz, mono s16 (matches AudioManager PCM target)
+_CHIME_PEAK      = 0.55      # peak after normalize; the decay keeps RMS gentle
+_CHIME_ATTACK_MS = 4.0       # strike time — longer sounds soft, shorter clicks
+_CHIME_LEAD_MS   = 6         # silence before the first strike (ALSA start pop)
+_CHIME_TAIL_MS   = 30        # room for the last note to die out naturally
 
+# Partial sets: (frequency_ratio, gain, decay_multiplier). Higher partials must
+# decay FASTER (multiplier < 1) — that downward-settling brightness is what the
+# ear hears as a struck physical object.
+_VOICES = {
+    # Soft glass/tube bell: octave plus a slightly stretched twelfth.
+    "bell": [(1.0, 1.00, 1.00), (2.0, 0.28, 0.55),
+             (3.01, 0.12, 0.34), (4.21, 0.05, 0.20)],
+    # Marimba-ish bar: strong 4th partial, everything gone quickly. Used where
+    # the cue must be felt as a tap rather than heard as a tone.
+    "wood": [(1.0, 1.00, 1.00), (4.0, 0.22, 0.30), (9.2, 0.05, 0.16)],
+}
+
+# name -> (voice, [(freq_hz, onset_ms, ring_ms, gain), ...])
+# onset_ms is when the note is STRUCK; ring_ms is how long it takes to fade out.
+# Overlapping onsets (onset < previous onset + ring) are the point.
 CHIMES = {
-    "chime_press":   [(1200, 60)],                       # soft tick — press ack
-    "chime_capture": [(660, 80), (990, 90)],             # rising — capture started
-    "chime_success": [(660, 70), (880, 70), (1320, 110)],# rising arpeggio — done
-    "chime_error":   [(440, 120), (330, 150)],           # descending — failed
-    "chime_ready":   [(523, 90), (659, 90), (784, 130)], # C-E-G — boot ready
-    "chime_mode":    [(880, 70)],                        # neutral blip — mode switch
+    # Press ack: one short wooden tap. Must feel instant, so it is the shortest
+    # cue here — a long ring on every button press would smear into the speech
+    # that follows it.
+    "chime_press":    ("wood", [(1568.0, 0, 120, 1.00)]),
+    # Mode switch: single neutral bell, no direction implied.
+    "chime_mode":     ("bell", [(1174.7, 0, 220, 1.00)]),
+    # Capture started: rising fifth, the second note struck while the first rings.
+    "chime_capture":  ("bell", [(880.0, 0, 260, 0.85),
+                                (1318.5, 70, 340, 1.00)]),
+    # Done: C-E-G major triad, arpeggiated fast enough to land as one chord.
+    "chime_success":  ("bell", [(1046.5, 0, 300, 0.80),
+                                (1318.5, 80, 360, 0.90),
+                                (1568.0, 160, 520, 1.00)]),
+    # Boot ready: wider, warmer, slower — this one is allowed to sound like an
+    # arrival rather than an acknowledgement.
+    "chime_ready":    ("bell", [(784.0, 0, 380, 0.75),
+                                (1046.5, 110, 420, 0.85),
+                                (1568.0, 220, 760, 1.00)]),
+    # Failure: descending major third. Falling = something did not work, but at
+    # a pitch the speaker reproduces cleanly and with a bell's soft decay, so it
+    # informs instead of alarming a user who cannot see what went wrong.
+    "chime_error":    ("bell", [(987.8, 0, 320, 0.90),
+                                (784.0, 130, 560, 1.00)]),
     # Last-resort obstacle earcon: played when even the generic per-direction
-    # phrase is unavailable offline, so a detection is NEVER silent (Decision 4A).
-    # Two short low pulses = "something there", distinct from the success/error tones.
-    "chime_obstacle": [(500, 90), (0, 40), (500, 90)],
+    # phrase is unavailable offline, so a detection is NEVER silent (Decision
+    # 4A). Two identical wooden taps — repetition reads as "attention" without
+    # borrowing the falling shape that means "error".
+    "chime_obstacle": ("wood", [(1174.7, 0, 200, 1.00),
+                                (1174.7, 150, 260, 1.00)]),
+
+    # ── Volume mode (both buttons held together) ──────────────────────────────
+    # The whole set below is WOOD on purpose. Every bell cue in this file means
+    # something happened to the world (a mode changed, a capture ran, an error);
+    # volume mode is the one state where the user is adjusting the DEVICE, and a
+    # different timbre is what tells them — without a screen — which of the two
+    # they are in. Direction is carried by the interval, so up and down stay
+    # distinguishable even at the lowest level the buttons can reach.
+    #
+    # The level itself is not encoded in these cues at all: the step chime is
+    # played AT the new volume, so the user hears the setting rather than a
+    # number they would have to imagine.
+    "chime_vol_enter": ("wood", [(1046.5, 0, 140, 0.85),
+                                 (1318.5, 60, 140, 0.92),
+                                 (1568.0, 120, 260, 1.00)]),
+    "chime_vol_exit":  ("wood", [(1568.0, 0, 140, 1.00),
+                                 (1318.5, 60, 140, 0.92),
+                                 (1046.5, 120, 300, 0.85)]),
+    # One step louder / quieter: two taps, rising or falling. Short — these fire
+    # on every tap and a long ring would smear one step into the next.
+    "chime_vol_up":    ("wood", [(1318.5, 0, 110, 0.85),
+                                 (1760.0, 55, 170, 1.00)]),
+    "chime_vol_down":  ("wood", [(1568.0, 0, 110, 0.90),
+                                 (1046.5, 55, 190, 1.00)]),
+    # Already at the ceiling or the floor: two fast taps on ONE low pitch. No
+    # interval = no direction = "that press moved nothing", which is a different
+    # message from the error bell (something you asked for failed).
+    "chime_vol_limit": ("wood", [(880.0, 0, 130, 1.00),
+                                 (880.0, 75, 190, 0.85)]),
+    # "I heard you, but I am too busy to take it." A press dropped because the
+    # button queue was full used to be completely silent on the device — the
+    # only sign was a line of text on a web page, which is exactly what the
+    # person holding this cannot read. Measured on hardware: 14% of presses
+    # during a mash were dropped this way. Deliberately dull and low, clearly
+    # not the bright confirmation tick, so "busy" never reads as "done".
+    #
+    # Distinguished by RHYTHM, not pitch. Everything below ~700 Hz is under the
+    # speaker's rolloff and comes out as a buzz, so "low and dull" is not
+    # available on this hardware; and the pitch space is already crowded — a
+    # single tap is the press tick, a rising or falling pair is a volume step,
+    # a same-pitch pair is the volume limit. Three fast taps is the one rhythm
+    # nothing else uses, at the bottom of the audible register so it still
+    # reads as a refusal rather than a confirmation.
+    "chime_busy":     ("wood", [(740.0, 0, 80, 0.85),
+                                (740.0, 90, 80, 0.70),
+                                (740.0, 180, 140, 0.55)]),
 }
 
 
-def _render_chime(segments):
-    """Render (freq, dur_ms) segments → int16 numpy samples with click-free envelope."""
+def _note_envelope(n, attack_n, tau_n):
+    """Raised-cosine attack into an exponential ring-out, over `n` samples."""
     import numpy as np
-    out = []
-    for freq, dur_ms in segments:
-        n = int(_CHIME_RATE * dur_ms / 1000.0)
+    env = np.exp(-np.arange(n) / max(tau_n, 1.0))
+    a = min(attack_n, n)
+    if a > 1:
+        # 0->1 over the attack, smooth at both ends: a linear ramp corners at
+        # the top, and that corner is audible as a faint tick at this speed.
+        env[:a] *= 0.5 - 0.5 * np.cos(np.linspace(0.0, np.pi, a))
+    return env
+
+
+def _render_chime(spec):
+    """Render a (voice, notes) chime spec into int16 numpy samples.
+
+    Notes are mixed onto one timeline at their onsets so they ring into each
+    other, then the whole mix is peak-normalized. Normalizing the SUM (rather
+    than scaling each note) is what keeps a three-note chord from clipping while
+    a one-note tap still comes out at full level.
+    """
+    import numpy as np
+    voice, notes = spec
+    partials = _VOICES[voice]
+
+    lead_n = int(_CHIME_RATE * _CHIME_LEAD_MS / 1000.0)
+    tail_n = int(_CHIME_RATE * _CHIME_TAIL_MS / 1000.0)
+    span_ms = max((onset + ring) for _f, onset, ring, _g in notes)
+    total_n = lead_n + int(_CHIME_RATE * span_ms / 1000.0) + tail_n
+    mix = np.zeros(total_n)
+
+    attack_n = int(_CHIME_RATE * _CHIME_ATTACK_MS / 1000.0)
+    for freq, onset_ms, ring_ms, gain in notes:
+        start = lead_n + int(_CHIME_RATE * onset_ms / 1000.0)
+        n = min(int(_CHIME_RATE * ring_ms / 1000.0), total_n - start)
+        if n <= 0:
+            continue
         t = np.arange(n) / _CHIME_RATE
-        wave_f = np.sin(2 * np.pi * freq * t)
-        # Linear attack/decay envelope (~5 ms each, clamped) to avoid clicks.
-        ramp = min(int(_CHIME_RATE * 0.005), n // 2) or 1
-        env = np.ones(n)
-        env[:ramp]  = np.linspace(0.0, 1.0, ramp)
-        env[-ramp:] = np.linspace(1.0, 0.0, ramp)
-        out.append(wave_f * env)
-    sig = np.concatenate(out) if out else np.zeros(0)
-    return (sig * _CHIME_AMP * 32767.0).astype("<i2")
+        # tau = ring/4 leaves the note at ~1.8% of its strike level by ring_ms,
+        # i.e. inaudible, so it dies on its own and never needs a hard cut.
+        base_tau_n = (_CHIME_RATE * ring_ms / 1000.0) / 4.0
+        note = np.zeros(n)
+        for ratio, p_gain, p_decay in partials:
+            f = freq * ratio
+            if f >= _CHIME_RATE / 2:      # never synthesize above Nyquist
+                continue
+            note += p_gain * np.sin(2 * np.pi * f * t) * _note_envelope(
+                n, attack_n, base_tau_n * p_decay
+            )
+        mix[start:start + n] += gain * note
+
+    peak = np.max(np.abs(mix)) if mix.size else 0.0
+    if peak > 0:
+        mix *= _CHIME_PEAK / peak
+    # Hard-guarantee the tail sits at zero: the ring-out is already inaudible by
+    # here, but a non-zero final sample is a click on every single playback.
+    fade_n = min(int(_CHIME_RATE * 0.008), mix.size // 2)
+    if fade_n > 1:
+        mix[-fade_n:] *= np.linspace(1.0, 0.0, fade_n)
+    return (mix * 32767.0).astype("<i2")
 
 
 def synth_chimes(output_dir, dry_run=False):
@@ -136,8 +286,10 @@ def synth_chimes(output_dir, dry_run=False):
     for name, segments in CHIMES.items():
         out_path = os.path.join(output_dir, f"{name}.wav")
         if dry_run:
-            total_ms = sum(d for _, d in segments)
-            print(f"  DRY   {name}.wav -> {segments} ({total_ms} ms)")
+            voice, notes = segments
+            total_ms = max(o + r for _f, o, r, _g in notes)
+            print(f"  DRY   {name}.wav -> {voice}, {len(notes)} note(s) "
+                  f"({total_ms} ms)")
             continue
         samples = _render_chime(segments)
         with wave.open(out_path, "wb") as w:
@@ -280,7 +432,7 @@ def _apply_atempo(path, rate):
 
 def parse_wordlist_markdown(md_path):
     """
-    Baca audio/AuralAI_Audio_Wordlist.md — baris pola:
+    Baca audio/Isora_Audio_Wordlist.md — baris pola:
     system_ready.wav                → "Isora siap digunakan"
     """
     items = []

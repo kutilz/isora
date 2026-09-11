@@ -1,5 +1,5 @@
 """
-Kalibrasi deteksi — dipakai di MaixCAM (aural_maix.py).
+Kalibrasi deteksi — dipakai di MaixCAM (isora_maix.py).
 Diselaraskan dengan companion/detection_calibration.py (nilai default sama).
 """
 

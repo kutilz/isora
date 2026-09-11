@@ -27,7 +27,7 @@ HOST_PORT = 5000
 
 _api_key = (
     os.getenv("OPENAI_API_KEY")
-    or os.getenv("AURAL_API_KEY")
+    or os.getenv("ISORA_API_KEY")
     or os.getenv("SONARA_API_KEY")
     or ""
 ).strip()
@@ -834,7 +834,7 @@ def api_capture():
 
     saved_types = ["jpg", "json"] + (["txt (YOLO)"] if yolo_lines else [])
     _dbg(f"[capture] {'FLAG' if flagged else 'snap'}: cap_{ts} — {', '.join(saved_types)}")
-    print(f"[AuralAI] Capture: {img_path} | YOLO annotations: {len(yolo_lines)} objs")
+    print(f"[I-Sora] Capture: {img_path} | YOLO annotations: {len(yolo_lines)} objs")
     return jsonify({"status": "ok", "file": f"cap_{ts}.jpg",
                     "annotations": len(yolo_lines), "flagged": flagged})
 
@@ -1041,7 +1041,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
           <div id="cam-nosignal" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-950">
             <div class="text-4xl mb-3 text-gray-800">&#128247;</div>
             <p class="text-gray-700 text-sm font-mono">Menunggu stream...</p>
-            <p class="text-gray-800 text-[10px] mt-1">Jalankan companion/run_desktop.py atau device/aural_maix.py</p>
+            <p class="text-gray-800 text-[10px] mt-1">Jalankan companion/run_desktop.py atau device/isora_maix.py</p>
           </div>
         </div>
       </div>
@@ -1385,7 +1385,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         <p class="text-[10px] text-gray-600 uppercase tracking-wider mb-1">Cara Pakai</p>
         <p class="text-[11px] text-gray-500">&#127381; Jalankan <code class="text-gray-400">webserver.py</code> di PC</p>
         <p class="text-[11px] text-gray-500">&#128187; Test desktop: <code class="text-gray-400">companion/run_desktop.py</code></p>
-        <p class="text-[11px] text-gray-500">&#128247; Di MaixCam: <code class="text-gray-400">device/aural_maix.py</code></p>
+        <p class="text-[11px] text-gray-500">&#128247; Di MaixCam: <code class="text-gray-400">device/isora_maix.py</code></p>
       </div>
 
     </div><!-- /right -->
@@ -2128,9 +2128,9 @@ def get_local_ip() -> str:
 if __name__ == "__main__":
     LAN_IP = get_local_ip()
     print("=" * 58)
-    print("  SERVER AURALAI (companion) AKTIF")
+    print("  SERVER I-SORA (companion) AKTIF")
     print(f"  IP PC    : {LAN_IP}")
     print(f"  URL HP   : http://{LAN_IP}:{HOST_PORT}")
-    print(f"  MaixCam  : export AURAL_COMPANION_HOST=\"{LAN_IP}\"  lalu python aural_maix.py")
+    print(f"  MaixCam  : export ISORA_COMPANION_HOST=\"{LAN_IP}\"  lalu python isora_maix.py")
     print("=" * 58)
     app.run(host="0.0.0.0", port=HOST_PORT, debug=False)

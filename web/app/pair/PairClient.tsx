@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import DeviceConfigForm, { type Device } from "@/components/DeviceConfigForm";
+import Notice from "@/components/Notice";
 import QrImage from "@/components/QrImage";
 
 const CODE_RE = /^[A-Z0-9]{4,8}$/;
@@ -20,6 +21,7 @@ async function loadDevice(id: string): Promise<Device | null> {
 function PairQr({ onClaimed }: { onClaimed: (d: Device) => void }) {
   const [value, setValue] = useState("");
   const [err, setErr] = useState("");
+  const [pollErr, setPollErr] = useState("");
   const knownIds = useRef<Set<string> | null>(null);
 
   const refreshToken = useCallback(async () => {
@@ -34,28 +36,43 @@ function PairQr({ onClaimed }: { onClaimed: (d: Device) => void }) {
   }, []);
 
   useEffect(() => {
-    // snapshot devices already owned so we can detect the newly paired one
-    fetch("/api/devices")
-      .then((r) => (r.ok ? r.json() : { devices: [] }))
-      .then((d) => {
-        knownIds.current = new Set((d.devices || []).map((x: any) => x.id));
-      });
     refreshToken();
     const tok = setInterval(refreshToken, 150_000); // refresh before 3-min expiry
 
+    // The baseline of already-owned device ids comes from the FIRST successful
+    // poll tick, so one failed request can never permanently disable detection.
+    let inFlight = false;
+    let fails = 0;
     const poll = setInterval(async () => {
-      if (!knownIds.current) return;
-      const r = await fetch("/api/devices");
-      if (!r.ok) return;
-      const d = await r.json();
-      const fresh = (d.devices || []).find((x: any) => !knownIds.current!.has(x.id));
-      if (fresh) {
-        const dev = await loadDevice(fresh.id);
-        if (dev) {
-          clearInterval(poll);
-          clearInterval(tok);
-          onClaimed(dev);
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        const r = await fetch("/api/devices");
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const d = await r.json();
+        const ids: string[] = (d.devices || []).map((x: any) => x.id);
+        fails = 0;
+        setPollErr("");
+        if (!knownIds.current) {
+          knownIds.current = new Set(ids);
+          return;
         }
+        const freshId = ids.find((id) => !knownIds.current!.has(id));
+        if (freshId) {
+          const dev = await loadDevice(freshId);
+          if (dev) {
+            clearInterval(poll);
+            clearInterval(tok);
+            onClaimed(dev);
+          }
+        }
+      } catch {
+        fails += 1;
+        if (fails > 4) {
+          setPollErr("Koneksi ke server terganggu — biarkan halaman tetap terbuka, kami terus mencoba…");
+        }
+      } finally {
+        inFlight = false;
       }
     }, 2500);
 
@@ -72,12 +89,16 @@ function PairQr({ onClaimed }: { onClaimed: (d: Device) => void }) {
         menautkan dirinya secara otomatis.
       </p>
       <div className="card" style={{ padding: "var(--s-4)", background: "#fff" }}>
-        {value ? <QrImage value={value} alt="Kode QR untuk dipindai perangkat" /> : <p>Memuat…</p>}
+        {value ? (
+          <QrImage value={value} alt="Kode QR untuk dipindai perangkat" />
+        ) : (
+          <p role="status">Memuat…</p>
+        )}
       </div>
-      <p className="hint" style={{ margin: 0 }}>
+      <p className="hint" role="status" style={{ margin: 0 }}>
         Menunggu perangkat memindai… biarkan halaman ini terbuka.
       </p>
-      {err && <div className="notice notice--err">{err}</div>}
+      {(err || pollErr) && <Notice kind="err">{err || pollErr}</Notice>}
     </div>
   );
 }
@@ -95,6 +116,12 @@ export default function PairClient() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [done, setDone] = useState(false);
+
+  // Announce screen changes to screen readers by moving focus to the new h1.
+  const headingRef = useRef<HTMLHeadingElement | null>(null);
+  useEffect(() => {
+    if (device || done) headingRef.current?.focus();
+  }, [device, done]);
 
   useEffect(() => {
     createClient()
@@ -132,7 +159,7 @@ export default function PairClient() {
     }
   };
 
-  if (!authChecked) return <div className="container section">Memuat…</div>;
+  if (!authChecked) return <div className="container section" role="status">Memuat…</div>;
 
   if (!signedIn) {
     const next = `/pair${code ? `?code=${encodeURIComponent(code)}` : ""}`;
@@ -150,10 +177,12 @@ export default function PairClient() {
   if (done) {
     return (
       <div className="container section" style={{ maxWidth: 560 }}>
-        <h1 style={{ fontSize: "var(--t-2xl)", letterSpacing: "-.02em" }}>Berhasil terhubung 🎉</h1>
-        <div className="notice notice--ok" style={{ marginBottom: "var(--s-6)" }}>
+        <h1 ref={headingRef} tabIndex={-1} style={{ fontSize: "var(--t-2xl)", letterSpacing: "-.02em" }}>
+          Berhasil terhubung <span aria-hidden="true">🎉</span>
+        </h1>
+        <Notice kind="ok" style={{ marginBottom: "var(--s-6)" }}>
           Pengaturan terkirim ke perangkat. Perangkat akan mengucapkan “Perangkat sudah terhubung.”
-        </div>
+        </Notice>
         <button className="btn btn--primary btn--lg" onClick={() => router.push("/dashboard")}>
           Lihat perangkat saya
         </button>
@@ -164,10 +193,12 @@ export default function PairClient() {
   if (device) {
     return (
       <div className="container section" style={{ maxWidth: 560 }}>
-        <h1 style={{ fontSize: "var(--t-2xl)", letterSpacing: "-.02em" }}>Atur perangkat</h1>
+        <h1 ref={headingRef} tabIndex={-1} style={{ fontSize: "var(--t-2xl)", letterSpacing: "-.02em" }}>
+          Atur perangkat
+        </h1>
         <p className="sub">Perangkat tertaut. Pilih layanan AI dan preferensi suara.</p>
         <div className="card">
-          <DeviceConfigForm device={device} onDone={() => setDone(true)} />
+          <DeviceConfigForm device={device} onDone={() => setDone(true)} sendAll />
         </div>
       </div>
     );
@@ -207,7 +238,7 @@ export default function PairClient() {
               aria-describedby="code-hint" />
             <span id="code-hint" className="hint">4–8 huruf/angka. Kedaluwarsa 10 menit, sekali pakai.</span>
           </div>
-          {err && <div className="notice notice--err">{err}</div>}
+          {err && <Notice kind="err">{err}</Notice>}
           <button className="btn btn--primary btn--lg" disabled={!valid || busy} type="submit">
             {busy ? "Menghubungkan…" : "Hubungkan"}
           </button>

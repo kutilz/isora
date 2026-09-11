@@ -1,4 +1,4 @@
-# Logging Quality Audit Report: Analysis & Traceability - AuralAI SDK
+# Logging Quality Audit Report: Analysis & Traceability - I-Sora SDK
 
 ## 1. Logging Architecture
 
@@ -6,7 +6,7 @@
 
 - **Location:** `device/utils/logger.py`
 - **Format:** Structured JSON (captures timestamp, level, module name, log message, and optional extra metadata).
-- **Outputs:** Dual-output (writes simultaneously to stdout/console and to physical log files under `/root/logs/aural_YYYYMMDD_HHMMSS.log`).
+- **Outputs:** Dual-output (writes simultaneously to stdout/console and to physical log files under `/root/logs/isora_YYYYMMDD_HHMMSS.log`).
 - **Retention:** Employs a memory-buffered `deque` capped at 500 lines for live dashboard log streaming over WebSockets/HTTP.
 
 ### Quality Analysis

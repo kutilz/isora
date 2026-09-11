@@ -58,6 +58,32 @@ def test_missing_words_deduped_preserving_first_seen_order():
     assert plan.missing == ["biru", "dan", "tua"]
 
 
+# ── max_words: restrict concat to short/recurring phrases ────────────────────
+
+def test_over_max_words_skips_concat_even_on_full_cache_hit():
+    # All 4 words ARE cached, but max_words=3 -> still refuse concat. A long
+    # free-form sentence spliced from independently-synthesized words loses
+    # sentence-level prosody no matter how smooth each seam is.
+    cache = {"kasur": "k.pcm", "di": "d.pcm", "kiri": "ki.pcm", "pintu": "p.pcm"}
+    plan = plan_utterance("kasur di kiri pintu", cache.get, max_words=3)
+    assert plan.mode == "synth_sentence"
+    assert plan.word_paths == []
+    # Still reported for background warming -> short-phrase reuse still wins.
+    assert plan.missing == ["kasur", "di", "kiri", "pintu"]
+
+
+def test_at_max_words_still_concats():
+    cache = {"kasur": "k.pcm", "di": "d.pcm", "kiri": "ki.pcm"}
+    plan = plan_utterance("kasur di kiri", cache.get, max_words=3)
+    assert plan.mode == "concat"
+
+
+def test_max_words_zero_disables_the_cap():
+    cache = {"kasur": "k.pcm", "di": "d.pcm", "kiri": "ki.pcm", "pintu": "p.pcm"}
+    plan = plan_utterance("kasur di kiri pintu", cache.get, max_words=0)
+    assert plan.mode == "concat"
+
+
 def test_concat_joins_word_audio_in_order():
     blobs = {"a.pcm": b"AAAA", "b.pcm": b"BBBB"}
     assert concat_pcm(["a.pcm", "b.pcm"], blobs.get) == b"AAAABBBB"
@@ -114,13 +140,57 @@ def test_assemble_positive_gap_inserts_silence_between_words():
     assert out == s16(100, 200, 0, 300)
 
 
-def test_assemble_negative_gap_overlaps_by_dropping_seam_samples():
-    # gap=-2 -> remove 2 samples at the seam, split across the two words.
+def test_assemble_negative_gap_crossfades_the_seam():
+    # gap=-2 -> the last 2 samples of word A and first 2 of word B are
+    # linearly blended (not hard-cut), smoothing the amplitude jump that
+    # causes an audible click when splicing independently-synthesized words.
     out = assemble_words([s16(1, 2, 3, 4), s16(5, 6, 7, 8)], gap_samples=-2)
-    assert out == s16(1, 2, 3, 6, 7, 8)
+    assert out == s16(1, 2, 4, 5, 7, 8)
+
+
+def test_assemble_negative_gap_shrinks_overlap_to_fit_short_words():
+    # Requested overlap (3) exceeds what a 2-sample word can supply -> clamp
+    # to what's actually available (n=2) instead of raising or corrupting
+    # output: both samples of word A blend with both samples of word B.
+    out = assemble_words([s16(1, 2), s16(9, 10)], gap_samples=-3)
+    assert out == s16(round(1 * 2/3 + 9 * 1/3), round(2 * 1/3 + 10 * 2/3))
 
 
 def test_assemble_trims_each_word_when_threshold_set():
     out = assemble_words([s16(0, 5000, 0), s16(0, 6000, 0)],
                          gap_samples=0, trim_threshold=1000, trim_margin_samples=0)
     assert out == s16(5000, 6000)
+
+
+# ── cached_count: honest telemetry independent of the warm list ──────────────
+
+def test_cap_reports_real_cache_hits_not_zero():
+    # The cap fires on FULL cache hits too, so plan.missing (which lists every
+    # token for background warming) says nothing about how warm the cache is.
+    # Deriving the hit count from it reported a fully-warm cache as 0-cached on
+    # every long description — the metric used to judge whether caching works.
+    cache = {"kasur": "k.pcm", "di": "d.pcm", "kiri": "ki.pcm", "pintu": "p.pcm"}
+    plan = plan_utterance("kasur di kiri pintu", cache.get, max_words=3)
+    assert plan.mode == "synth_sentence"
+    assert plan.cached_count == 4
+
+
+def test_cap_reports_partial_cache_hits():
+    cache = {"kasur": "k.pcm", "kiri": "ki.pcm"}
+    plan = plan_utterance("kasur di kiri pintu", cache.get, max_words=3)
+    assert plan.cached_count == 2
+
+
+def test_miss_reports_only_the_hits():
+    cache = {"kasur": "k.pcm", "di": "d.pcm"}
+    plan = plan_utterance("kasur di kiri", cache.get)
+    assert plan.mode == "synth_sentence"
+    assert plan.missing == ["kiri"]
+    assert plan.cached_count == 2
+
+
+def test_concat_reports_every_word_cached():
+    cache = {"kasur": "k.pcm", "di": "d.pcm", "kiri": "ki.pcm"}
+    plan = plan_utterance("kasur di kiri", cache.get)
+    assert plan.mode == "concat"
+    assert plan.cached_count == 3

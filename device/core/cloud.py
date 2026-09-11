@@ -1,5 +1,5 @@
 """
-Cloud client — pairs the device to the AuralAI web hub and pulls config.
+Cloud client — pairs the device to the I-Sora web hub and pulls config.
 
 Runs as a daemon thread. Flow (all over outbound HTTPS, so it works behind any
 home router without port-forwarding):
@@ -36,9 +36,17 @@ FW_VERSION = "device-1.0"
 # pushed command is ignored — the web cannot rewrite arbitrary device internals.
 ALLOWED_CONFIG_KEYS = {
     "ai_provider", "ai_timeout_s",
-    "openai_model", "gemini_model", "claude_model",
+    "openai_model", "openai_reasoning_effort", "gemini_model", "claude_model",
     "audio_mode", "audio_volume",
-    "device_name", "prompt_scene", "prompt_qris",
+    # Mount orientation. Safe to push unvalidated: Config.CAMERA_ROTATION
+    # normalizes at the read site, so a junk value degrades to "normal".
+    "camera_rotation",
+    "device_name", "prompt_scene", "prompt_scene_sedang", "prompt_qris",
+    # Which prompt the describe button uses, and how deterministic the
+    # decoding is. Both are safe to push unvalidated: Config.AI_TEMPERATURE
+    # clamps at the read site, and select_scene_prompt falls back to the
+    # detailed prompt for any verbosity string it does not recognize.
+    "scene_verbosity", "ai_temperature",
     "qris_mode", "tts_enabled", "url_announce_enabled",
     "setup_completed",
 }
@@ -210,6 +218,15 @@ class CloudClient:
 
         if patch:
             cfg.update(patch)
+            if "camera_rotation" in patch:
+                # Same live re-apply POST /config does — a rotation pushed from
+                # the hub should not wait for the next reboot to take effect.
+                try:
+                    engine = getattr(self.orch, "ai_engine", None)
+                    if engine is not None:
+                        engine.request_orientation_reload()
+                except Exception:
+                    pass
             self.logger.ok(f"Applied cloud config: {sorted(patch.keys())}", module="Cloud")
         self._ack(cmd.get("id"))
 
@@ -256,7 +273,7 @@ class CloudClient:
         return cfg.CLOUD_ENABLED and self.cloud_ok and not self._paired
 
     def on_qr_payload(self, payload: str):
-        """Called by the AI loop with a decoded QR. Acts only on AuralAI tokens."""
+        """Called by the AI loop with a decoded QR. Acts only on I-Sora tokens."""
         if not payload or not payload.startswith("auralai-pair:"):
             return
         token = payload[len("auralai-pair:"):].strip()

@@ -1,4 +1,4 @@
-# I-Sora — Setup Guide
+# I-Sora SDK — Setup Guide
 
 ## Prerequisites
 
@@ -13,8 +13,8 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/kutilz/isora.git
-cd isora
+git clone https://github.com/<username>/AuralAI-SDK.git
+cd AuralAI-SDK
 
 # Install PC-side dependencies
 pip install -r requirements_pc.txt
@@ -27,7 +27,7 @@ pip install -r requirements_pc.txt
 Run this command once before deployment (requires an internet connection for Google TTS):
 
 ```bash
-# Generate the full set from audio/AuralAI_Audio_Wordlist.md (~137 files)
+# Generate the full set from audio/Isora_Audio_Wordlist.md (~137 files)
 python tools/generate_audio.py --from-wordlist
 
 # Generate the legacy set (objects × position + system cues)
@@ -51,7 +51,7 @@ python tools/generate_audio.py --dry-run --from-wordlist
 2. Download the **YOLO11n COCO 320×224** model (in `.mud` format)
 3. Save it as `models/yolo11n.mud` and adjust `MODEL_PATH` in `device/config.py` accordingly.
 
-### For `device/aural_maix.py` (MVP stack / YOLOv5)
+### For `device/isora_maix.py` (MVP stack / YOLOv5)
 
 The script looks for model files in the following order:
 
@@ -67,7 +67,7 @@ Download a compatible YOLOv5 COCO 320×224 model from MaixHub, and place it at o
 ### 4a. Via MaixVision (Manual)
 
 1. Open MaixVision → Connect to your MaixCAM
-2. Upload the `device/` folder to `/root/aural-ai/` via the File Manager
+2. Upload the `device/` folder to `/root/isora/` via the File Manager
 3. Upload the `audio/` folder to `/root/audio/`
 4. Upload the YOLO model to `/root/models/yolo11n.mud`
 
@@ -106,7 +106,7 @@ load_dotenv("/root/.env")
 
 ---
 
-## 6. Run I-Sora
+## 6. Run I-Sora SDK
 
 ### Via MaixVision
 1. Open `device/main.py` in MaixVision
@@ -114,7 +114,7 @@ load_dotenv("/root/.env")
 
 ### Via SSH / MaixCAM Terminal
 ```bash
-cd /root/aural-ai/
+cd /root/isora/
 python main.py
 ```
 
@@ -163,7 +163,7 @@ This architecture splits **lightweight inference (YOLO on MaixCAM)** and **heavy
 ### 8a. PC (Laptop) Setup
 
 ```bash
-cd isora
+cd aural-ai-sdk
 pip install -r requirements_pc.txt
 cp companion/.env.example companion/.env    # On Windows: copy companion\.env.example companion\.env
 # Edit companion/.env and fill in your OPENAI_API_KEY
@@ -175,21 +175,21 @@ Note the **LAN IP** printed in the terminal (e.g., `192.168.1.78`).
 
 ### 8b. MaixCAM Setup
 
-Set these environment variables **before** running `aural_maix.py` (you can do this via terminal shell or wrapper in MaixVision):
+Set these environment variables **before** running `isora_maix.py` (you can do this via terminal shell or wrapper in MaixVision):
 
 | Variable | Example | Function |
 |----------|--------|----------|
-| `AURAL_WIFI_SSID` | SSID | Leave empty if already connected via **Settings → WiFi** (recommended if script DHCP hangs) |
-| `AURAL_WIFI_PASSWORD` | Password | — |
-| `AURAL_COMPANION_HOST` | Laptop IP | Must be on the same subnet as the MaixCAM |
-| `AURAL_COMPANION_PORT` | `5000` | Companion Flask port |
+| `ISORA_WIFI_SSID` | SSID | Leave empty if already connected via **Settings → WiFi** (recommended if script DHCP hangs) |
+| `ISORA_WIFI_PASSWORD` | Password | — |
+| `ISORA_COMPANION_HOST` | Laptop IP | Must be on the same subnet as the MaixCAM |
+| `ISORA_COMPANION_PORT` | `5000` | Companion Flask port |
 
-Run on MaixCAM (assuming code is deployed to `/root/aural-ai/`):
+Run on MaixCAM (assuming code is deployed to `/root/isora/`):
 
 ```bash
-cd /root/aural-ai/
-export AURAL_COMPANION_HOST=192.168.x.x
-python aural_maix.py
+cd /root/isora/
+export ISORA_COMPANION_HOST=192.168.x.x
+python isora_maix.py
 ```
 
 Open the Dashboard Observer: `http://<PC-IP>:5000` (from any phone or browser on the same network).
@@ -215,12 +215,12 @@ python companion/minimal_server.py
 2. **MaixCAM** — Point the probe host to your PC's Wi-Fi IP and test:
 
 ```bash
-export AURAL_PROBE_HOST=192.168.x.x
-export AURAL_PROBE_PORT=8765
+export ISORA_PROBE_HOST=192.168.x.x
+export ISORA_PROBE_PORT=8765
 python device/network_probe.py
 ```
 
-If the connection is successful, stop the test, start `companion/webserver.py`, and run `aural_maix.py` with `AURAL_COMPANION_HOST` set to the **same PC IP** and port `5000`. Ensure your Windows Firewall allows inbound connections to python on those ports.
+If the connection is successful, stop the test, start `companion/webserver.py`, and run `isora_maix.py` with `ISORA_COMPANION_HOST` set to the **same PC IP** and port `5000`. Ensure your Windows Firewall allows inbound connections to python on those ports.
 
 ---
 

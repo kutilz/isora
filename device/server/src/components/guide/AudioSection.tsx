@@ -3,7 +3,7 @@ import { useManifests, hasChime } from "../../lib/manifests";
 import { Icon } from "../atoms/Icon";
 
 const CHIMES = [
-  { id: "boot",        name: "I-Sora siap",        shape: "rise",   notes: "C5 → G5",      ms: 320, when: "Selesai boot",                 followup: "Suara: 'Isora siap digunakan'" },
+  { id: "boot",        name: "I-Sora siap",       shape: "rise",   notes: "C5 → G5",      ms: 320, when: "Selesai boot",                 followup: "Suara: 'I-Sora siap digunakan'" },
   { id: "mode-explorer", name: "Mode Jelajah",     shape: "single", notes: "G5",           ms: 120, when: "Pindah ke Jelajah",             followup: "Suara: 'Mode jelajah'" },
   { id: "mode-scene",  name: "Mode Deskripsi",     shape: "two",    notes: "G5–C6",        ms: 200, when: "Pindah ke Deskripsi",           followup: "Suara: 'Mode deskripsi'" },
   { id: "mode-qris",   name: "Mode QRIS",          shape: "three",  notes: "C5–E5–G5",     ms: 320, when: "Pindah ke QRIS",                followup: "Suara: 'Mode bayar'" },

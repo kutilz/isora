@@ -75,7 +75,7 @@ def compile_report(emit_cb=None) -> dict:
         print(text, flush=True)
 
     emit("═" * 64, "div")
-    emit("SAFETY & RELIABILITY INDEX — AuralAI SDK", "section")
+    emit("SAFETY & RELIABILITY INDEX — I-Sora SDK", "section")
     emit("═" * 64, "div")
 
     # ── Load results ──────────────────────────────────────────────────────────

@@ -124,7 +124,10 @@ function SetupApp() {
       if (audioModeFromQuery) payload.audio_mode = audioModeFromQuery;
       if (s.device_name.trim()) payload.device_name = s.device_name.trim();
       await apiPost("/config", payload);
-      window.location.href = "/";
+      // "/" is the blind user's button console since the home-page re-route —
+      // the pendamping's dashboard lives at /companion, which is what this
+      // step's own copy ("kembali ke beranda pendamping") promises.
+      window.location.href = "/companion";
     } catch (e: unknown) {
       setS((c) => ({
         ...c,
@@ -361,7 +364,7 @@ function Step1() {
       <p style={bodyStyle}>
         Tahan tombol <strong>Power</strong> di tangkai kanan selama 2 detik.
         Kacamata akan berbunyi chime singkat lalu mengucapkan{" "}
-        <em>"Isora siap digunakan"</em>.
+        <em>"I-Sora siap digunakan"</em>.
       </p>
       <div
         style={{
@@ -372,7 +375,7 @@ function Step1() {
         }}
       >
         <Checkpoint label="Lampu indikator hijau menyala" />
-        <Checkpoint label="Speaker mengucapkan 'Isora siap'" />
+        <Checkpoint label="Speaker mengucapkan 'I-Sora siap'" />
         <Checkpoint label="Layar dashboard menemukan perangkat di jaringan" />
       </div>
     </>
@@ -412,12 +415,12 @@ function Step2({ s, setS }: { s: State; setS: (u: (c: State) => State) => void }
         <small style={{ color: "var(--ink-3)", fontSize: "var(--t-sm)" }}>
           Jadi alamat web perangkat:{" "}
           <strong>
-            {(s.device_name.trim() || "aural-xxxx")
+            {(s.device_name.trim() || "isora-xxxx")
               .toLowerCase()
               .replace(/[^a-z0-9-]+/g, "-")
               .replace(/-{2,}/g, "-")
               .replace(/^-|-$/g, "")
-              .slice(0, 30) || "aural-xxxx"}
+              .slice(0, 30) || "isora-xxxx"}
             .local:8080
           </strong>
           . Beri nama berbeda untuk tiap unit supaya 5 perangkat tidak bentrok.

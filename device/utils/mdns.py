@@ -23,7 +23,7 @@ class MdnsPublisher:
                  ip_provider: Callable[[], str]):
         self.logger = logger
         self.port = port
-        self._name_provider = name_provider   # () -> "aural-bfe2"
+        self._name_provider = name_provider   # () -> "isora-bfe2"
         self._ip_provider = ip_provider       # () -> "10.146.235.103"
         self._zc = None
         self._info = None

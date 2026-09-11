@@ -23,7 +23,7 @@ web/
     pair/                 Halaman pairing (kode + QR)
     dashboard/            Daftar & pengaturan perangkat
     api/                  Route handlers (relay device ↔ web) — Fase 2+
-  components/             Nav, Footer, QrSetup, DocsSidebar
+  components/             Nav, Footer, Notice, QrImage, DocsSidebar, DeviceConfigForm
   content/docs/           Markdown panduan (sumber halaman /docs)
   lib/                    i18n, docs loader, (Supabase — Fase 2)
   public/audio/           Contoh WAV untuk halaman preview

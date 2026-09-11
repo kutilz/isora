@@ -21,31 +21,55 @@ except ImportError:
     MAIX_AVAILABLE = False
 
 from config import cfg, RELEVANT_LABELS, COCO_LABEL_MAP
-from utils import distance
+from utils import distance, orientation
 from utils.logger import position_from_bbox
 from utils.stage_timer import StageTimer
 from utils.scene_metrics import scene_metrics
 from adapters import get_adapter, AdapterError
 
 
-# Signatures of a *connectivity* failure (DNS / route / timeout / refused) as
-# opposed to a server-side or app error. urllib surfaces these inside the
-# AdapterError message, e.g. "<urlopen error [Errno -2] Name or service not
-# known>" or "<urlopen error timed out>". We use this to speak an honest
-# "tidak ada koneksi internet" cue instead of a generic failure. HTTP status
-# errors (e.g. "Gemini HTTP 429") intentionally do NOT match — there the network
-# is fine, the API just rejected the request.
-_NET_ERR_SIGNS = (
-    "urlopen error", "getaddrinfo", "name or service not known",
-    "temporary failure in name resolution", "timed out", "timeout",
-    "connection refused", "network is unreachable", "no route to host",
-    "connection reset", "connection aborted", "[errno -2]", "[errno -3]",
+# Signatures of a connectivity failure, split by what the user should actually
+# DO about it. urllib surfaces these inside the AdapterError message, e.g.
+# "<urlopen error [Errno -2] Name or service not known>" or "<urlopen error
+# timed out>". HTTP status errors ("OpenAI HTTP 429") intentionally match
+# neither — there the network is fine, the API just rejected the request.
+#
+# The distinction matters: a timeout on a working-but-slow phone hotspot used
+# to be announced as "tidak ada koneksi", which is simply false and sends the
+# user off to check a connection that was never down. A timeout means the link
+# is there and too slow — "koneksi lambat", try again — and only an unreachable
+# name/route/port means there is no connection at all.
+_NET_DOWN_SIGNS = (
+    "getaddrinfo", "name or service not known",
+    "temporary failure in name resolution", "connection refused",
+    "network is unreachable", "no route to host", "[errno -2]", "[errno -3]",
+)
+_NET_SLOW_SIGNS = (
+    "timed out", "timeout", "connection reset", "connection aborted",
+    "incompleteread", "connection broken",
 )
 
 
-def _is_network_error(exc) -> bool:
+def _net_failure_kind(exc):
+    """"down" | "slow" | None — which spoken cue this failure has earned."""
     s = str(exc).lower()
-    return any(sign in s for sign in _NET_ERR_SIGNS)
+    if any(sign in s for sign in _NET_DOWN_SIGNS):
+        return "down"
+    if any(sign in s for sign in _NET_SLOW_SIGNS):
+        return "slow"
+    # A bare "urlopen error" with nothing more specific: the request never got
+    # a reply, so the honest reading is "the link is not carrying us", which is
+    # the slow cue, not a claim that the network is missing.
+    return "slow" if "urlopen error" in s else None
+
+
+def _net_failure_cue(exc, fallback: str) -> str:
+    kind = _net_failure_kind(exc)
+    if kind == "down":
+        return "tidak_ada_koneksi"
+    if kind == "slow":
+        return "koneksi_lambat"
+    return fallback
 
 
 class AIEngine:
@@ -58,7 +82,11 @@ class AIEngine:
         self._detector:     object = None
         self._model_loaded: bool   = False
         self._last_frame:   object = None
-        self._lock = threading.Lock()
+        # RLock, not Lock: release() now holds the lock across release_model()
+        # so a model teardown and a camera close can never be split by another
+        # thread's reload_model(). Both take the same lock, so it must be
+        # re-entrant. See the freeze analysis on _init_model below.
+        self._lock = threading.RLock()
 
         # Gentle camera recovery: when the camera is down, retry at most once
         # per interval instead of letting the watchdog hammer reload() every
@@ -78,6 +106,15 @@ class AIEngine:
         # Last distance tier per label, so distance.band() can apply hysteresis
         # (stops an object on the near/far boundary flapping every frame).
         self._prev_tiers: dict = {}
+
+        # Camera orientation (cfg["camera_rotation"], persisted). _rot_software
+        # is the residual turn we still have to do ourselves after the sensor
+        # ISP took what it could — 0 whenever the hardware handled it all.
+        # _orientation_dirty makes a live change from POST /config land on THIS
+        # thread at the top of the next frame: every camera call has to stay on
+        # the AI loop, never on the HTTP thread mid-read.
+        self._rot_software: int  = 0
+        self._orientation_dirty  = False
 
         self._init_camera()
         self._init_model()
@@ -100,18 +137,126 @@ class AIEngine:
         except Exception as e:
             self.logger.error(f"Camera init failed: {e}", module="AIEngine")
             self._cam = None
+            return
+        self._apply_orientation()
+
+    # ─── Camera orientation ───────────────────────────────────────────────────
+
+    def request_orientation_reload(self):
+        """Ask the AI loop to re-read cfg["camera_rotation"] on its next frame.
+
+        Called from the web thread after POST /config so a mount change takes
+        effect immediately — the whole point of the setting is that the helper
+        re-clips the device and sees the preview come out the right way up
+        without a reboot. The actual camera calls happen on the AI thread.
+        """
+        self._orientation_dirty = True
+
+    def _apply_orientation(self):
+        """Split cfg["camera_rotation"] into a hardware half and a leftover.
+
+        A half turn is exactly hmirror+vflip, which the sensor ISP does for
+        free; taking it there keeps the 1-core CPU out of the 30fps frame path
+        entirely. Anything the ISP can't do (quarter turns, or a build with no
+        mirror/flip accessors) falls through to a software rotate. The explicit
+        clear on the non-180 branches matters: a camera object that is still
+        carrying a previous session's mirror would otherwise stack with the
+        software turn and land on the wrong orientation.
+        """
+        self._orientation_dirty = False
+        rot = cfg.CAMERA_ROTATION
+        if self._cam is None:
+            self._rot_software = rot
+            return
+        if rot == 180 and orientation.set_hw_flip(self._cam, True, True):
+            self._rot_software = 0
+            how = "sensor (hmirror+vflip)"
+        else:
+            orientation.set_hw_flip(self._cam, False, False)
+            self._rot_software = rot
+            how = "software" if rot else "sensor"
+        if rot:
+            self.logger.ok(
+                f"Camera rotation: {orientation.rotation_label(rot)} via {how}",
+                module="AIEngine",
+            )
+        else:
+            self.logger.info("Camera rotation: normal", module="AIEngine")
+
+    def frame_dims(self) -> tuple:
+        """(width, height) of the frame AS THE PIPELINE SEES IT.
+
+        A quarter turn swaps the axes, so every bbox normalization downstream
+        (position_from_bbox, area_ratio, the ground-contact hint) has to divide
+        by these, not by the configured capture size.
+        """
+        return orientation.rotated_dims(
+            cfg.INPUT_WIDTH, cfg.INPUT_HEIGHT, self._rot_software
+        )
 
     def _init_model(self):
+        """Load the NPU model. HOLDS _lock across the allocation.
+
+        The lock is not optional here. The allocation is a .mud parse plus an
+        NPU/ION reservation inside a C call, and the same object's release()
+        path closes the camera under the same lock. With the allocation left
+        outside the lock, a mode press could start a load while the AI thread
+        was tearing the engine down: the two C calls interleaved on one core
+        and the process wedged, holding the GIL, with nothing left able to run
+        (measured in the field — 24 loads against 20 releases over 92 mode
+        switches, then a hard freeze).
+
+        The publish of _detector/_model_loaded is under the same lock as the
+        reader in capture_and_infer, so a half-constructed detector is never
+        visible: previously the two fields could be written in either order
+        relative to the reader, leaving explorer mode silently blind.
+        """
         if not MAIX_AVAILABLE:
             self.logger.warn("MaixPy unavailable — model skipped", module="AIEngine")
             return
-        try:
-            self._detector    = nn.YOLO11(model=cfg.MODEL_PATH)
+        with self._lock:
+            try:
+                cls, cls_name  = self._detector_class(cfg.MODEL_PATH)
+                detector       = cls(model=cfg.MODEL_PATH)
+            except Exception as e:
+                self._detector     = None
+                self._model_loaded = False
+                self.logger.error(f"Model load failed: {e}", module="AIEngine")
+                return
+            self._detector     = detector
             self._model_loaded = True
-            self.logger.ok(f"YOLO11 loaded: {cfg.MODEL_PATH}", module="AIEngine")
-        except Exception as e:
-            self.logger.error(f"Model load failed: {e}", module="AIEngine")
-            self._model_loaded = False
+            self.logger.ok(f"{cls_name} loaded: {cfg.MODEL_PATH}", module="AIEngine")
+
+    @staticmethod
+    def _detector_class(model_path):
+        """Pick the maix.nn class that matches the .mud and exists in this build.
+
+        MaixPy 4.5.x ships YOLOv5/YOLOv8 only — `nn.YOLO11` was added later — so
+        hardcoding one class breaks on whichever image the unit happens to run.
+        The .mud's `model_type` is the source of truth; fall back to whatever the
+        build actually exposes.
+        """
+        wanted = ""
+        try:
+            with open(model_path) as f:
+                for line in f:
+                    if line.strip().startswith("model_type"):
+                        wanted = line.split("=", 1)[1].strip().lower()
+                        break
+        except Exception:
+            pass
+
+        preferred = {
+            "yolo11": ("YOLO11", "YOLOv8", "YOLOv5"),
+            "yolov8": ("YOLOv8", "YOLO11", "YOLOv5"),
+            "yolov5": ("YOLOv5", "YOLOv8", "YOLO11"),
+        }.get(wanted, ("YOLO11", "YOLOv8", "YOLOv5"))
+
+        for name in preferred:
+            cls = getattr(nn, name, None)
+            if cls is not None:
+                return cls, name
+        raise RuntimeError("maix.nn exposes no usable YOLO class")
 
     # ─── Resource management (called by Orchestrator on mode switch) ──────────
 
@@ -128,16 +273,29 @@ class AIEngine:
                 self.logger.info("YOLO model released (NPU free)", module="AIEngine")
 
     def reload_model(self):
-        """Reload YOLO. No-op if already loaded."""
+        """Reload YOLO. No-op if already loaded.
+
+        The check and the load are ONE critical section. Splitting them let two
+        callers both see "not loaded" and both allocate, and let a load start
+        while release() was closing the camera.
+        """
         with self._lock:
             if self._model_loaded:
                 return
-        self._init_model()
+            self._init_model()
 
     def release(self):
-        """Full teardown — camera + model. Called before watchdog restart."""
-        self.release_model()
+        """Full teardown — camera + model. Called before watchdog restart.
+
+        One lock span for the whole teardown: a reload_model() arriving from a
+        button thread mid-release used to slip between the model drop and the
+        camera close and allocate into an engine the orchestrator had already
+        let go of — an NPU allocation nobody held a reference to, leaked until
+        reboot. On a 128MB swapless board that leak is what turned a survivable
+        mode-mash into a probabilistic hard freeze.
+        """
         with self._lock:
+            self.release_model()
             if self._cam is not None:
                 try:
                     self._cam.close()
@@ -184,6 +342,11 @@ class AIEngine:
 
         t0 = time.time()
 
+        # Pick up a live camera_rotation change (POST /config) here, on the AI
+        # thread, before the read — never from the HTTP thread mid-frame.
+        if self._orientation_dirty:
+            self._apply_orientation()
+
         # ── Camera read with single auto-recover ──────────────────────────────
         try:
             frame = self._cam.read()
@@ -197,17 +360,42 @@ class AIEngine:
             time.sleep(0.3)
             try:
                 self._cam.open()
+                # A reopened sensor comes back with its ISP defaults, so the
+                # hardware half turn is gone. Without this, a device mounted
+                # upside down quietly rights itself after any camera hiccup —
+                # and every spoken "kiri"/"kanan" inverts with it.
+                self._apply_orientation()
                 frame = self._cam.read()
                 self.logger.ok("Camera recovered", module="AIEngine")
             except Exception as e2:
                 self.logger.error(f"Camera reopen failed: {e2}", module="AIEngine")
                 return None, [], {}
 
+        # Orientation correction happens HERE — before the snapshot, before
+        # inference, before the QR decode — so every consumer (web preview,
+        # YOLO, position/distance math, pairing scan) sees one frame the right
+        # way up. 0 returns the same object, so the common case costs nothing.
+        if self._rot_software:
+            frame = orientation.rotate_image(frame, self._rot_software)
+
         t_cam = (time.time() - t0) * 1000
         self._last_frame = frame
 
-        jpeg = frame.to_jpeg()
-        self.orch.snapshot = bytes(jpeg.to_bytes())
+        # ── Dashboard preview (only when it is actually wanted) ───────────────
+        # to_jpeg() is ~17 ms of an ~18 ms tick on this SoC — by far the most
+        # expensive thing here after inference — and for most of the device's
+        # life nobody has the page open. The orchestrator says whether anyone
+        # asked recently AND whether the thermal budget still allows it.
+        # Cloud captures (describe / QRIS) encode _last_frame on demand in
+        # _frame_jpeg(), so they are unaffected.
+        jpeg = None
+        if self.orch.wants_preview():
+            jpeg = frame.to_jpeg()
+            self.orch.snapshot = bytes(jpeg.to_bytes())
+        elif self.orch.snapshot is not None:
+            # Drop the old frame rather than serving one from hours ago: a
+            # stale preview is worse than none, because it looks live.
+            self.orch.snapshot = None
 
         # ── Inference ─────────────────────────────────────────────────────────
         t1         = time.time()
@@ -227,7 +415,8 @@ class AIEngine:
             t_infer = (time.time() - t1) * 1000
 
             t2         = time.time()
-            frame_area = cfg.INPUT_WIDTH * cfg.INPUT_HEIGHT
+            frame_w, frame_h = self.frame_dims()
+            frame_area = frame_w * frame_h
 
             for det in result:
                 label = COCO_LABEL_MAP.get(det.class_id, str(det.class_id))
@@ -243,11 +432,11 @@ class AIEngine:
                 # is_danger off it here to avoid changing existing behavior.
                 is_danger    = area_ratio > cfg.DANGER_AREA_THRESHOLD
                 pos          = position_from_bbox(
-                    x, y, w, h, cfg.INPUT_WIDTH, cfg.INPUT_HEIGHT
+                    x, y, w, h, frame_w, frame_h
                 )
                 # Coarse per-class distance tier with ground-contact hint +
                 # hysteresis (prev tier for this label stops boundary flapping).
-                bbox_bottom_norm = (y + h) / max(cfg.INPUT_HEIGHT, 1)
+                bbox_bottom_norm = (y + h) / max(frame_h, 1)
                 tier = distance.band(
                     label, area_ratio, bbox_bottom_norm,
                     prev_tier=self._prev_tiers.get(label), cfg=cfg,
@@ -310,8 +499,12 @@ class AIEngine:
             return detections
 
         max_move = float(cfg.get("detection_max_center_move", 0.25))
-        w = max(cfg.INPUT_WIDTH, 1)
-        h = max(cfg.INPUT_HEIGHT, 1)
+        # Effective (post-rotation) frame size: a quarter turn swaps the axes,
+        # and normalizing the box centre by the wrong one would distort the
+        # per-frame movement test that decides what counts as a phantom.
+        _fw, _fh = self.frame_dims()
+        w = max(_fw, 1)
+        h = max(_fh, 1)
 
         # Keep the highest-confidence box per label for this frame.
         best: dict = {}
@@ -453,15 +646,19 @@ class AIEngine:
         try:
             adapter = self._get_adapter()
 
-            # Measure the dominant stage (Gemini round-trip) for the device log.
-            # Audio rendering is delegated to AudioManager.speak_scene, which
-            # plays from the per-word cache (zero network) when the whole
-            # sentence is already cached, else speaks it via gTTS and warms the
-            # missing words in the background.
+            # Measure the dominant stage (AI vision round-trip) for the device
+            # log. Tagged with the active provider so [scene-timing]
+            # dominant=... reflects whichever one actually ran (openai/gemini/
+            # claude), not a stale "gemini" label from when that was the only
+            # option. Audio rendering is delegated to AudioManager.speak_scene,
+            # which plays from the per-word cache (zero network) when the
+            # whole sentence is already cached, else speaks it via gTTS and
+            # warms the missing words in the background.
             timer = StageTimer()
+            provider = cfg.AI_PROVIDER
 
             def _work():
-                with timer.stage("gemini"):
+                with timer.stage(provider):
                     return adapter.describe_scene(self._frame_jpeg(), cfg.PROMPT_SCENE)
 
             description = self._run_with_progress(_work)
@@ -470,26 +667,27 @@ class AIEngine:
             am.queue_cue("chime_success.wav")
             # Open a latency record for the /buttons dashboard; speak_scene fills
             # in how the audio was rendered (per-word cache vs whole synth).
+            # scene_metrics still stores this under its historical "gemini_ms"
+            # key regardless of provider (dashboard/tests key off that name).
             sid = scene_metrics.start_describe(
                 description,
                 cfg.get("scene_verbosity", "detail"),
-                timer.summary().get("gemini_ms", 0),
+                timer.summary().get(f"{provider}_ms", 0),
             )
             am.speak_scene(description, scene_id=sid)
         except AdapterError as e:
             self.logger.error(f"AI adapter error: {e}", module="AIEngine")
             am.queue_cue("chime_error.wav")
-            # Distinguish "no internet" from other failures so the user knows
-            # whether to check their connection or just retry.
-            am.queue_system("tidak_ada_koneksi" if _is_network_error(e)
-                            else "gagal_menganalisis")
+            # Say which of the three it actually was — no connection, a
+            # connection too slow to finish in time, or a failure on the far
+            # end — so the user knows whether to move, wait, or just retry.
+            am.queue_system(_net_failure_cue(e, "gagal_menganalisis"))
         except Exception as e:
             self.logger.exception(
                 f"Unexpected adapter error: {e}", module="AIEngine", exc=e,
             )
             am.queue_cue("chime_error.wav")
-            am.queue_system("tidak_ada_koneksi" if _is_network_error(e)
-                            else "gagal_menganalisis")
+            am.queue_system(_net_failure_cue(e, "gagal_menganalisis"))
 
     def trigger_qris_scan(self):
         """
@@ -565,13 +763,17 @@ class AIEngine:
         except AdapterError as e:
             self.logger.error(f"AI adapter error: {e}", module="AIEngine")
             self.orch.audio_manager.queue_cue("chime_error.wav")
-            self.orch.audio_manager.queue_system("gagal_memindai")
+            # Same distinction as a scene describe: "gagal memindai" tells the
+            # user to re-aim at the QR when the real problem was the link.
+            self.orch.audio_manager.queue_system(
+                _net_failure_cue(e, "gagal_memindai"))
         except Exception as e:
             self.logger.exception(
                 f"Unexpected adapter error: {e}", module="AIEngine", exc=e,
             )
             self.orch.audio_manager.queue_cue("chime_error.wav")
-            self.orch.audio_manager.queue_system("gagal_memindai")
+            self.orch.audio_manager.queue_system(
+                _net_failure_cue(e, "gagal_memindai"))
 
     def _qris_hybrid(self, jpeg: bytes):
         # 1) local decode (fast, offline)

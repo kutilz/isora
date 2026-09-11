@@ -583,6 +583,7 @@
           <div class="ai-set-row">
             <label class="ai-set-label">Model</label>
             <select class="ai-set-select" id="openaiModel">
+              <option value="gpt-5.6-terra">gpt-5.6-terra</option>
               <option value="gpt-4o-mini">gpt-4o-mini</option>
               <option value="gpt-4o">gpt-4o</option>
               <option value="gpt-4-turbo">gpt-4-turbo</option>
@@ -672,6 +673,22 @@
         <div class="ai-set-row" style="color:var(--text3);font-size:10px;margin-bottom:16px;">
           <label class="ai-set-label"></label>
           <span>Turunkan ke 0.35 di keramaian agar lebih sensitif; naikkan ke 0.7 di tempat sepi untuk kurangi false positive.</span>
+        </div>
+
+        <div class="ai-sec-title">Kamera</div>
+        <div class="ai-set-row">
+          <label class="ai-set-label" for="hwRotation">Rotasi Kamera</label>
+          <select class="ai-set-select" id="hwRotation" aria-describedby="hwRotationHint">
+            <option value="0">Normal (0°)</option>
+            <option value="90">Putar kanan (90°)</option>
+            <option value="180">Terbalik (180°)</option>
+            <option value="270">Putar kiri (270°)</option>
+          </select>
+          <span id="hwRotationHint" style="color:var(--text3);font-size:11px;">searah jarum jam</span>
+        </div>
+        <div class="ai-set-row" style="color:var(--text3);font-size:10px;margin-bottom:16px;">
+          <label class="ai-set-label"></label>
+          <span>Koreksi arah pemasangan perangkat. Frame diputar di sumbernya, jadi pratinjau, posisi kiri/kanan yang diucapkan, dan foto Mode Ambil Data ikut benar. Tersimpan permanen — tetap aktif setelah perangkat dimatikan.</span>
         </div>
 
         <div class="ai-sec-title">Audio</div>

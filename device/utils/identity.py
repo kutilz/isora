@@ -1,5 +1,5 @@
 """
-AuralAI — Per-device identity (multi-device safe).
+I-Sora — Per-device identity (multi-device safe).
 
 Single source of truth for how a unit names and announces itself so that 5
 devices on the same LAN never collide. Each unit derives a unique short id from
@@ -7,7 +7,7 @@ its own WiFi MAC; the friendly name and `.local` hostname follow from that.
 
 Public API (all pure-python, never raises):
   device_id(short)      → stable hex id, e.g. "bfe2"
-  default_device_name() → "aural-<id>"
+  default_device_name() → "isora-<id>"
   device_name()         → configured name if set & valid, else the default
   sanitize_name(s)      → DNS-label-safe form of a user-supplied name
   mdns_hostname()       → "<device_name>.local"
@@ -67,7 +67,7 @@ def device_id(short: bool = True) -> str:
 
 
 def default_device_name() -> str:
-    return f"aural-{device_id(short=True)}"
+    return f"isora-{device_id(short=True)}"
 
 
 def sanitize_name(name: str) -> str:
@@ -95,7 +95,7 @@ def mdns_hostname() -> str:
 
 def current_ip() -> str:
     """Best-effort current LAN IPv4 ('' if offline)."""
-    # 1. MaixPy WiFi API (matches wifi_connect.py / aural_maix.py usage).
+    # 1. MaixPy WiFi API (matches wifi_connect.py / isora_maix.py usage).
     try:
         from maix import network
         ip = (network.wifi.Wifi().get_ip() or "").strip()
@@ -145,7 +145,8 @@ def _spell_ip(ip: str) -> str:
 
 
 def _spoken_host(base_url: str) -> str:
-    """'https://isora.app' → 'isora titik app' (intelligible by ear)."""
+    """'https://isora-smartglasses.vercel.app' → 'isora strip smartglasses titik
+    vercel titik app' (intelligible by ear)."""
     host = (base_url or "").split("//")[-1].split("/")[0]
     host = host.split(":")[0]  # drop port
     return host.replace(".", " titik ").replace("-", " strip ")

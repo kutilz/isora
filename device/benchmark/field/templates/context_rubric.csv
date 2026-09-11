@@ -1,0 +1,13 @@
+scene,verbosity,gt_objects,transcript,n_key,n_named,n_halluc,pos_ok,useful,note
+# CARA ISI (hapus baris komentar ini sebelum analyze):
+#   scene       = nama/no scene (mis. meja-1)
+#   verbosity   = sedang | detail
+#   gt_objects  = objek yg BENAR ada (pisah ';') mis. botol;tas;laptop
+#   transcript  = deskripsi yg diucapkan device (auto: lihat marks.jsonl aksi describe, atau salin manual)
+#   n_key       = jumlah objek kunci yg seharusnya disebut (angka)
+#   n_named     = berapa dari objek kunci itu yg benar disebut device
+#   n_halluc    = berapa objek yg disebut device TAPI tidak ada (halusinasi)
+#   pos_ok      = 1 kalau posisi (kiri/kanan/depan) benar, 0 kalau salah
+#   useful      = nilai kegunaan utk navigasi tunanetra, 1..5
+#   note        = catatan bebas
+meja-1,detail,botol;tas;laptop,"di depan ada laptop, di kiri ada botol",3,2,0,1,4,contoh

@@ -1,5 +1,5 @@
 """
-AuralAI Runner — Deploy + jalankan mode di MaixCAM tanpa SSH manual.
+I-Sora Runner — Deploy + jalankan mode di MaixCAM tanpa SSH manual.
 Output di-stream langsung ke terminal PC. Ctrl+C menghentikan proses remote.
 
 Requires: pip install paramiko
@@ -19,7 +19,7 @@ Usage:
     python tools/run.py --extra "--dry-run"    # Argumen tambahan ke script target
 
   Autostart (boot otomatis):
-    python tools/run.py --autostart            # Set AuralAI sebagai app autostart saat boot
+    python tools/run.py --autostart            # Set I-Sora sebagai app autostart saat boot
     python tools/run.py --autostart-off        # Hapus autostart (boot ke launcher biasa)
     python tools/run.py --autostart-status     # Lihat app autostart saat ini
 """
@@ -43,13 +43,13 @@ if os.path.exists(_env_path):
 
 # ─── Konfigurasi default ──────────────────────────────────────────────────────
 
-DEFAULT_HOST = os.environ.get("AURAL_MAIX_HOST", "maixcam.local")
-DEFAULT_PORT = int(os.environ.get("AURAL_MAIX_PORT", "22"))
-DEFAULT_USER = os.environ.get("AURAL_MAIX_USER", "root")
-DEFAULT_PASS = os.environ.get("AURAL_MAIX_PASS", "root")
+DEFAULT_HOST = os.environ.get("ISORA_MAIX_HOST", "maixcam.local")
+DEFAULT_PORT = int(os.environ.get("ISORA_MAIX_PORT", "22"))
+DEFAULT_USER = os.environ.get("ISORA_MAIX_USER", "root")
+DEFAULT_PASS = os.environ.get("ISORA_MAIX_PASS", "root")
 
-REMOTE_BASE   = "/root/aural-ai"
-REMOTE_DEVICE = "/root/aural-ai"
+REMOTE_BASE   = "/root/isora"
+REMOTE_DEVICE = "/root/isora"
 REMOTE_AUDIO  = "/root/audio"
 
 PROJECT_ROOT  = os.path.join(os.path.dirname(__file__), "..")
@@ -62,11 +62,11 @@ EXCLUDE_PATTERNS = {"__pycache__", ".pyc", ".pyo", ".DS_Store", "node_modules", 
 
 MODES = {
     "main": {
-        "label":       "AuralAI SDK — Main",
+        "label":       "I-Sora SDK — Main",
         "cwd":         REMOTE_DEVICE,
         "script":      "main.py",
-        "pid_file":    "/tmp/aural_main.pid",
-        "log_file":    "/tmp/aural_main.log",
+        "pid_file":    "/tmp/isora_main.pid",
+        "log_file":    "/tmp/isora_main.log",
         "status_file": None,
         "url":         "http://{host}:8080",
         "url_note":    "Dashboard  → http://{host}:8080\n  Data Collect → http://{host}:8080/collect",
@@ -263,12 +263,12 @@ def run_background(client, mode_cfg, extra_args, host):
     """Jalankan script di background dengan nohup (aman dari disconnect)."""
     cwd      = mode_cfg["cwd"]
     script   = mode_cfg["script"]
-    pid_file = mode_cfg.get("pid_file") or f"/tmp/aural_{mode_cfg['script'].replace('.py','')}.pid"
-    log_file = mode_cfg.get("log_file") or f"/tmp/aural_{mode_cfg['script'].replace('.py','')}.log"
+    pid_file = mode_cfg.get("pid_file") or f"/tmp/isora_{mode_cfg['script'].replace('.py','')}.pid"
+    log_file = mode_cfg.get("log_file") or f"/tmp/isora_{mode_cfg['script'].replace('.py','')}.log"
 
     # A manual relaunch is NOT a fresh boot, so the boot-chime flag from the last
     # boot is stale (tmpfs /tmp survives an app restart, only a reboot clears it).
-    # Clear it so main.py's _boot_cue_fast replays "AuralAI menyala" on restart
+    # Clear it so main.py's _boot_cue_fast replays "I-Sora menyala" on restart
     # instead of skipping on the stale flag. Only main.py uses the flag; harmless
     # for other modes.
     clear_flag = "rm -f /tmp/.boot_chime_played; " if script == "main.py" else ""
@@ -398,25 +398,24 @@ def show_status(client, mode_cfg):
 # ─── Autostart helpers ────────────────────────────────────────────────────────
 
 # The MaixApp launcher (/maixapp/auto_start.txt) is a GUI app that needs the
-# LCD; on a screen-less AuralAI unit it dies at boot, so that mechanism never
+# LCD; on a screen-less I-Sora unit it dies at boot, so that mechanism never
 # fires. Autostart from /etc/rc.local instead — /etc/init.d/S99local runs it at
 # the end of boot (after network + avahi). Reliable for a headless camera app.
 RC_LOCAL = "/etc/rc.local"
-RC_BEGIN = "# >>> AuralAI autostart >>>"
-RC_END   = "# <<< AuralAI autostart <<<"
+RC_BEGIN = "# >>> I-Sora autostart >>>"
+RC_END   = "# <<< I-Sora autostart <<<"
 RC_BLOCK = (
     RC_BEGIN + "\n"
-    "# The boot chime now plays MUCH earlier via /etc/init.d/S00aauralchime\n"
-    "# (first init script, before module load + WiFi: ~2s vs ~16s) — see\n"
-    "# CHIME_INIT_SCRIPT below.\n"
-    "# rc.local (S99local, runs last) only launches the app. S00a sets the\n"
-    "# /tmp/.boot_chime_played flag, so main.py's _boot_cue_fast skips the cue.\n"
-    "# The 'sleep 1' is a small settle margin before the heavy app start.\n"
-    "# To revert chime-in-rc.local: use RC_BLOCK_LEGACY + remove the S00a script.\n"
-    "sleep 1\n"
-    "cd /root/aural-ai\n"
-    "nohup python3 /root/aural-ai/main.py >> /tmp/aural_main.log 2>&1 &\n"
-    "echo $! > /tmp/aural_main.pid\n"
+    "# Nothing launches from here any more, and that is the point: rc.local is\n"
+    "# S99local, dead-last in rcS — behind WiFi association, avahi, ssdpd and\n"
+    "# dnsmasq, none of which the app needs in order to start.\n"
+    "# The boot chime runs from /etc/init.d/S00aisorachime (first script, ~1.9s)\n"
+    "# and the app from /etc/init.d/S26isoraapp (right after the WiFi module,\n"
+    "# before association). Measured with tools/boot_timeline.py on isora-bfe2:\n"
+    "# app spawn 14.82s -> 8.95s, time-to-ready 22.00s -> 19.19s.\n"
+    "# The block is still written so --autostart-status has something to find\n"
+    "# and --autostart-off has something to strip.\n"
+    "# To revert: use RC_BLOCK_LEGACY and delete S26isoraapp.\n"
     + RC_END + "\n"
 )
 
@@ -426,9 +425,9 @@ RC_BLOCK = (
 RC_BLOCK_LEGACY = (
     RC_BEGIN + "\n"
     "sleep 5\n"
-    "cd /root/aural-ai\n"
-    "nohup python3 /root/aural-ai/main.py >> /tmp/aural_main.log 2>&1 &\n"
-    "echo $! > /tmp/aural_main.pid\n"
+    "cd /root/isora\n"
+    "nohup python3 /root/isora/main.py >> /tmp/isora_main.log 2>&1 &\n"
+    "echo $! > /tmp/isora_main.pid\n"
     + RC_END + "\n"
 )
 
@@ -438,7 +437,7 @@ RC_BLOCK_LEGACY = (
 # kernel-probed at ~0.78s and its playback node /dev/snd/pcmC1D0p is created by
 # devtmpfs right then, well before any init.d script runs. The chime uses the
 # i2s DAC, which is independent of the i2c bus that S00pmu/the sensor use, so it
-# does not contend with module loading. Measured: "AuralAI menyala" at ~2.0s vs
+# does not contend with module loading. Measured: "I-Sora menyala" at ~2.0s vs
 # ~16.4s when it lived in rc.local/S99local (dead-last, behind WiFi).
 #
 # Safety, by design — this must NEVER stall boot just to make a sound:
@@ -449,25 +448,86 @@ RC_BLOCK_LEGACY = (
 #     not ready yet, it does nothing and sets no flag — main.py's _boot_cue_fast
 #     then plays the cue later (the existing ~16s path). Self-adaptive fallback.
 #   • Always exits 0. Verified on-device: modules + camera still come up clean.
-CHIME_INIT_PATH = "/etc/init.d/S00aauralchime"
+CHIME_INIT_PATH = "/etc/init.d/S00aisorachime"
 CHIME_INIT_SCRIPT = (
     "#!/bin/sh\n"
-    "# >>> AuralAI early boot chime >>>\n"
+    "# >>> I-Sora early boot chime >>>\n"
     "# Auto-installed by tools/run.py --autostart. Runs first (before module\n"
     "# load + WiFi) so the power-on cue is heard ~2s after boot. Non-blocking +\n"
     "# self-adaptive: defers to main.py's _boot_cue_fast if audio isn't ready.\n"
-    "PCM=/root/audio/auralai_menyala.pcm\n"
+    "PCM=/root/audio/isora_menyala.pcm\n"
     "case \"$1\" in\n"
     "  start)\n"
     "    if [ -f \"$PCM\" ] && [ -e /dev/snd/pcmC1D0p ]; then\n"
     "      ( aplay -q -D hw:1,0 -t raw -f S16_LE -r 48000 -c 1 \"$PCM\" 2>/dev/null ) &\n"
-    "      touch /tmp/.boot_chime_played 2>/dev/null\n"
+    # The flag doubles as a boot-timing marker: its CONTENT is the uptime the
+    # cue fired at, which tools/boot_timeline.py scores. main.py only tests for
+    # existence, so carrying a value costs it nothing.
+    "      cut -d\" \" -f1 /proc/uptime > /tmp/.boot_chime_played 2>/dev/null\n"
     "    fi\n"
     "    ;;\n"
     "  stop|restart|reload) ;;\n"
     "esac\n"
     "exit 0\n"
 )
+
+
+# App autostart init script. Placed at S26 — immediately after S25wifimod loads
+# the WiFi driver, and before S30wifi associates. It used to launch from
+# rc.local (S99local), which runs dead-last: behind association, avahi, ssdpd
+# and dnsmasq, none of which the app needs in order to start. The web server
+# binds 0.0.0.0 so it serves the moment an interface appears, MdnsPublisher
+# retries on its own, and the cloud client is offline-safe.
+#
+# Measured on isora-bfe2 with tools/boot_timeline.py: spawn 14.82s -> 8.95s.
+# Time-to-ready gains less than that (22.00s -> 19.19s) because the app's
+# imports now run *concurrently* with association/avahi/dnsmasq and lose some
+# CPU to them — startup stretches 7.2s -> 10.2s. Still a net win, and it is
+# why the remaining boot cost now sits in the app-start window, not before it.
+#
+# Safety: the PID guard makes a double-start impossible if rc.local still
+# carries a legacy launch block, and the script always exits 0, so nothing here
+# can stall boot.
+APP_INIT_PATH = "/etc/init.d/S26isoraapp"
+
+# Nama era-AuralAI dari skrip init yang sama. Perangkat yang sudah pernah
+# di-deploy masih menyimpannya, dan nama lama + baru akan jalan berdampingan
+# (chime dobel, dua proses app). Setiap pemasangan/penghapusan ikut membuang
+# nama lama ini, jadi satu kali redeploy sudah membereskannya.
+LEGACY_INIT_PATHS = ("/etc/init.d/S00aauralchime", "/etc/init.d/S26auralapp")
+APP_INIT_SCRIPT = (
+    "#!/bin/sh\n"
+    "# >>> I-Sora app autostart >>>\n"
+    "# Auto-installed by tools/run.py --autostart. Starts the app right after\n"
+    "# the WiFi module loads, instead of dead-last from rc.local/S99local.\n"
+    "# To revert: delete this file and restore the launch block in /etc/rc.local\n"
+    "# (RC_BLOCK_LEGACY in tools/run.py).\n"
+    "case \"$1\" in\n"
+    "  start)\n"
+    "    if [ -f /tmp/isora_main.pid ] && "
+    "kill -0 \"$(cat /tmp/isora_main.pid)\" 2>/dev/null; then\n"
+    "      exit 0\n"
+    "    fi\n"
+    "    cd /root/isora\n"
+    "    nohup python3 /root/isora/main.py >> /tmp/isora_main.log 2>&1 &\n"
+    "    echo $! > /tmp/isora_main.pid\n"
+    "    ;;\n"
+    "  stop)\n"
+    "    if [ -f /tmp/isora_main.pid ]; then\n"
+    "      kill \"$(cat /tmp/isora_main.pid)\" 2>/dev/null\n"
+    "    fi\n"
+    "    ;;\n"
+    "esac\n"
+    "exit 0\n"
+)
+
+# S05tp insmods two touchscreen drivers picked from /boot/board's panel= line.
+# On a unit with no LCD both probe the i2c bus, retry and fail — the Goodix one
+# five times — spending ~2.3s of boot on hardware that is not there, and every
+# later init script inherits the delay. Renamed out of rcS's `S??*` glob rather
+# than deleted, so a unit that gets a panel back is one mv away from stock.
+TOUCH_INIT_PATH     = "/etc/init.d/S05tp"
+TOUCH_INIT_DISABLED = "/etc/init.d/.S05tp.disabled"
 
 
 def _ssh(client, cmd):
@@ -489,7 +549,7 @@ def _write_rc_local(client, content):
 
 
 def _strip_block(text):
-    """Buang blok autostart AuralAI lama dari isi rc.local."""
+    """Buang blok autostart I-Sora lama dari isi rc.local."""
     import re
     return re.sub(
         re.escape(RC_BEGIN) + r".*?" + re.escape(RC_END) + r"\n?",
@@ -505,7 +565,7 @@ def autostart_status(client):
 
     rc = _ssh(client, f"cat {RC_LOCAL} 2>/dev/null")
     if RC_BEGIN in rc:
-        ok(f"AuralAI autostart AKTIF di {RC_LOCAL}")
+        ok(f"I-Sora autostart AKTIF di {RC_LOCAL}")
     else:
         print(f"  {yellow('Belum di-set autostart')} — jalankan --autostart")
 
@@ -517,7 +577,7 @@ def autostart_status(client):
 
 def autostart_set(client, do_deploy=True):
     """
-    Deploy kode (opsional) lalu pasang blok autostart AuralAI ke /etc/rc.local.
+    Deploy kode (opsional) lalu pasang blok autostart I-Sora ke /etc/rc.local.
     Idempotent: blok lama di-refresh, bukan ditumpuk. Dipakai untuk device
     headless (layar dicopot) di mana launcher MaixApp tidak bisa jalan.
     """
@@ -540,6 +600,8 @@ def autostart_set(client, do_deploy=True):
 
     _write_rc_local(client, rc)
     _ssh(client, "rm -f /boot/rclocal.disable 2>/dev/null; sync")
+    # Buang skrip init era-AuralAI supaya tidak jalan berdampingan dengan yang baru.
+    _ssh(client, "rm -f %s 2>/dev/null" % " ".join(LEGACY_INIT_PATHS))
 
     # Install the early boot-chime init script (S15, before WiFi). Written via
     # base64 to avoid quoting/CRLF issues, then chmod +x. Safe + self-adaptive
@@ -557,6 +619,24 @@ def autostart_set(client, do_deploy=True):
     else:
         warn(f"Gagal memasang {CHIME_INIT_PATH} — chime jatuh ke jalur rc.local/python")
 
+    # The app launcher itself (S26 — before WiFi association).
+    _b = _b64.b64encode(APP_INIT_SCRIPT.encode("utf-8")).decode()
+    _ssh(
+        client,
+        "python3 -c \"import base64,sys;"
+        f"open('{APP_INIT_PATH}','wb').write(base64.b64decode(sys.argv[1]))\" '{_b}' "
+        f"&& chmod +x {APP_INIT_PATH} && sync",
+    )
+    if _ssh(client, f"test -x {APP_INIT_PATH} && echo ok"):
+        ok(f"App launcher dipasang di {APP_INIT_PATH} (~9s, sebelum WiFi assoc)")
+    else:
+        err(f"Gagal memasang {APP_INIT_PATH} — device TIDAK akan autostart")
+
+    # Headless unit: the touchscreen probe costs ~2.3s on absent hardware.
+    if _ssh(client, f"test -e {TOUCH_INIT_PATH} && echo yes") == "yes":
+        _ssh(client, f"mv {TOUCH_INIT_PATH} {TOUCH_INIT_DISABLED} && sync")
+        ok(f"Probe touchscreen dimatikan ({TOUCH_INIT_PATH})")
+
     check = _ssh(client, f"cat {RC_LOCAL} 2>/dev/null")
     if RC_BEGIN in check:
         ok(f"Autostart diset di {RC_LOCAL}")
@@ -570,23 +650,28 @@ def autostart_set(client, do_deploy=True):
 
 
 def autostart_clear(client):
-    """Hapus blok autostart AuralAI dari /etc/rc.local."""
+    """Hapus blok autostart I-Sora dari /etc/rc.local."""
     sep()
     print(f"  {bold('🗑')} Hapus Autostart (rc.local)")
     sep()
 
     rc = _ssh(client, f"cat {RC_LOCAL} 2>/dev/null")
     if RC_BEGIN not in rc:
-        warn("Tidak ada blok AuralAI di rc.local — tidak ada yang dihapus")
+        warn("Tidak ada blok I-Sora di rc.local — tidak ada yang dihapus")
         return
 
     _write_rc_local(client, _strip_block(rc))
-    # Also remove the early boot-chime init script so the device fully reverts.
-    _ssh(client, f"rm -f {CHIME_INIT_PATH} 2>/dev/null; sync")
+    # Also remove the early boot-chime + app init scripts, and hand the
+    # touchscreen probe back, so the device fully reverts to a stock boot.
+    _ssh(client, "rm -f %s %s %s 2>/dev/null"
+         % (CHIME_INIT_PATH, APP_INIT_PATH, " ".join(LEGACY_INIT_PATHS)))
+    _ssh(client, f"test -e {TOUCH_INIT_DISABLED} && "
+                 f"mv {TOUCH_INIT_DISABLED} {TOUCH_INIT_PATH}; sync")
     check = _ssh(client, f"cat {RC_LOCAL} 2>/dev/null")
     if RC_BEGIN not in check:
-        ok("Autostart AuralAI dihapus dari rc.local")
+        ok("Autostart I-Sora dihapus dari rc.local")
         ok(f"Early boot chime ({CHIME_INIT_PATH}) dihapus")
+        ok(f"App launcher ({APP_INIT_PATH}) dihapus — rc.local kembali dipakai")
     else:
         err("Gagal menghapus blok autostart")
     print()
@@ -603,7 +688,7 @@ def list_modes():
 
 def main():
     parser = argparse.ArgumentParser(
-        description="AuralAI Runner — deploy + run mode di MaixCAM",
+        description="I-Sora Runner — deploy + run mode di MaixCAM",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--host",       default=DEFAULT_HOST, help=f"IP MaixCAM (default: {DEFAULT_HOST})")
@@ -621,12 +706,12 @@ def main():
     parser.add_argument("--list",       action="store_true", help="Tampilkan daftar mode")
     parser.add_argument("--extra",           default="",    help='Argumen tambahan ke script, mis: "--dry-run"')
     # ── Autostart ──
-    parser.add_argument("--autostart",       action="store_true", help="Set AuralAI sebagai app autostart saat boot")
+    parser.add_argument("--autostart",       action="store_true", help="Set I-Sora sebagai app autostart saat boot")
     parser.add_argument("--autostart-off",   action="store_true", help="Hapus autostart")
     parser.add_argument("--autostart-status",action="store_true", help="Lihat app autostart saat ini")
     args = parser.parse_args()
 
-    print(bold("\n  AuralAI Runner"))
+    print(bold("\n  I-Sora Runner"))
 
     if args.list:
         list_modes()

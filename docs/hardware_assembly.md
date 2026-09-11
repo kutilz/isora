@@ -161,7 +161,7 @@ Karena tidak ada layar, **suara adalah satu-satunya output**. Suara terbagi dua:
 **Install sekali per device** (butuh internet):
 
 ```bash
-pip3 install -r /root/aural-ai/requirements_device.txt
+pip3 install -r /root/isora/requirements_device.txt
 # atau minimal:
 pip3 install gtts
 ```
@@ -176,9 +176,9 @@ pip3 install gtts
 Karena layar dilepas, alamat web ditemukan lewat **2 cara**:
 
 1. **Nama tetap (mDNS):** perangkat tampil sebagai
-   **`http://aural-bfe2.local:8080`** (nama unik dari MAC WiFi). Buka ini dari HP
+   **`http://isora-bfe2.local:8080`** (nama unik dari MAC WiFi). Buka ini dari HP
    pendamping yang **satu WiFi**. Nama ini tetap walau IP DHCP berubah.
-   - Untuk multi-device, tiap unit dapat nama beda otomatis (mis. `aural-1a2b`),
+   - Untuk multi-device, tiap unit dapat nama beda otomatis (mis. `isora-1a2b`),
      jadi **5 perangkat tidak bentrok**. Bisa di-rename di wizard setup
      (mis. `dapur.local`, `kamar-budi.local`).
 2. **Diucapkan speaker:** saat pertama nyala (dan setup belum selesai), perangkat
@@ -196,8 +196,8 @@ Karena layar dilepas, alamat web ditemukan lewat **2 cara**:
   > tidak bisa jalan**, jadi mekanisme `auto_start.txt` bawaan **tidak berfungsi**.
   > Tool ini otomatis pakai **`/etc/rc.local`** (dijalankan `/etc/init.d/S99local`
   > saat boot, setelah WiFi + avahi) — andal untuk app headless. Verifikasi: cabut-
-  > colok, lalu cek `http://aural-bfe2.local:8080` hidup sendiri.
-- **Setup pengguna baru:** buka `http://aural-bfe2.local:8080/setup`, isi WiFi +
+  > colok, lalu cek `http://isora-bfe2.local:8080` hidup sendiri.
+- **Setup pengguna baru:** buka `http://isora-bfe2.local:8080/setup`, isi WiFi +
   nama perangkat + API key AI, lalu "Selesai".
 - **Catatan RAM (128 MB):** RAM ketat. Autostart lewat rc.local sengaja TIDAK
   menjalankan launcher GUI, jadi RAM-nya untuk app + kamera + YOLO. Hindari

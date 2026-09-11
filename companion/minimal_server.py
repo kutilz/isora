@@ -8,8 +8,8 @@ PC:
   python companion/minimal_server.py 9000
 
 MaixCAM (WiFi sudah dapat IP):
-  export AURAL_PROBE_HOST=<IPv4 Wi-Fi PC, BUKAN 127.0.0.1>
-  export AURAL_PROBE_PORT=8765
+  export ISORA_PROBE_HOST=<IPv4 Wi-Fi PC, BUKAN 127.0.0.1>
+  export ISORA_PROBE_PORT=8765
   python device/network_probe.py
 
 Catatan: IP seperti 10.207.x.x sering dari WSL2 / virtual adapter — MaixCAM di WiFi
@@ -30,7 +30,7 @@ app = Flask(__name__)
 
 @app.get("/")
 def root():
-    return jsonify({"service": "aural-network-probe", "ok": True})
+    return jsonify({"service": "isora-network-probe", "ok": True})
 
 
 @app.get("/health")
@@ -103,7 +103,7 @@ def main():
     port = args.port
     lip = _guess_lan_ip()
     print("=" * 56)
-    print("  AuralAI — minimal probe server (Flask)")
+    print("  I-Sora — minimal probe server (Flask)")
     print(f"  Listen   : 0.0.0.0:{port}  (semua interface)")
     print(f"  IP perkiraan (rute ke 8.8.8.8): {lip}")
     if _likely_not_reachable_from_wifi_lan(lip):
@@ -111,13 +111,13 @@ def main():
         print("  *** PERINGATAN ***")
         print(f"  Alamat {lip} biasanya BUKAN jaringan Wi-Fi yang dipakai MaixCAM.")
         print("  Kalau MaixCAM error [Errno 101] Network unreachable → di MaixCAM set")
-        print("  AURAL_PROBE_HOST ke IPv4 adapter **Wi-Fi** PC (bukan IP ini).")
+        print("  ISORA_PROBE_HOST ke IPv4 adapter **Wi-Fi** PC (bukan IP ini).")
         _print_windows_ipconfig_ipv4_lines()
-        print('  Contoh benar: export AURAL_PROBE_HOST="192.168.1.5"')
+        print('  Contoh benar: export ISORA_PROBE_HOST="192.168.1.5"')
         print()
     print("  Di MaixCAM (hanya jika IP di atas = subnet yang sama dengan MaixCAM):")
-    print(f'    export AURAL_PROBE_HOST="{lip}"')
-    print(f"    export AURAL_PROBE_PORT={port}")
+    print(f'    export ISORA_PROBE_HOST="{lip}"')
+    print(f"    export ISORA_PROBE_PORT={port}")
     print("    python device/network_probe.py")
     print("  Uji dari browser PC: http://127.0.0.1:{}/health".format(port))
     print("=" * 56)

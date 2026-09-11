@@ -1,4 +1,4 @@
-# AuralAI SDK
+# I-Sora SDK
 
 > On-device development platform for AI-powered visual assistants running on the **Sipeed MaixCAM**.  
 > Designed to help visually impaired users recognize their surroundings via audio.
@@ -10,7 +10,7 @@
 | Phase  | Feature                                                                                    | Status                                  |
 | ------ | ------------------------------------------------------------------------------------------ | --------------------------------------- |
 | **0**  | Web Dashboard, Camera Preview, Log Stream                                                  | ✅ Ready                                 |
-| **0b** | Companion PC (MaixCAM + Flask, tested MVP)                                                 | ✅ `companion/` + `device/aural_maix.py` |
+| **0b** | Companion PC (MaixCAM + Flask, tested MVP)                                                 | ✅ `companion/` + `device/isora_maix.py` |
 | **1**  | Object Detection (YOLO11n COCO), Audio Output, Explorer Mode                               | ✅ Ready                                 |
 | **2**  | Scene Description (AI Vision), QRIS Verifier, Token Auth, Presets                          | ✅ Ready                                 |
 | **3**  | Hybrid TTS, Log Rotation, Benchmark Suite, Data Collection, Audio Progress                 | ✅ Ready                                 |
@@ -29,10 +29,10 @@ MaixCAM Device
 └── Thread 2 — Web Server   → HTTP Dashboard + Snapshot Endpoint
                                         │
                                Browser (Phone / Laptop)
-                               AuralAI Dev Dashboard
+                               I-Sora Dev Dashboard
 ```
 
-**Path B — Companion PC** (`device/aural_maix.py` + `companion/webserver.py`):
+**Path B — Companion PC** (`device/isora_maix.py` + `companion/webserver.py`):
 
 ```
 MaixCAM (Screen UI + Local YOLO) ──HTTP──► PC Flask (OpenAI Vision, MJPEG, Browser TTS)
@@ -46,11 +46,11 @@ For setup details, see the *Companion PC* and *Network Testing* sections in [doc
 ## Cloud Pairing & Web Hub (`web/`)
 
 First-time setup no longer depends on typing a `*.local` address. Once the device
-is on WiFi it registers with the **AuralAI web hub** (Next.js on Vercel). The
+is on WiFi it registers with the **I-Sora web hub** (Next.js on Vercel). The
 helper opens the web hub and pairs in one of two ways:
 
 - **Scan a QR with the camera** (fastest): the browser shows a signed, short-lived
-  QR; point the AuralAI camera at it and the device claims itself automatically.
+  QR; point the I-Sora camera at it and the device claims itself automatically.
 - **Type the spoken code**: the device speaks a short pairing code to enter.
 
 Then they configure the AI provider + API key and audio preferences from the web —
@@ -136,7 +136,7 @@ python companion/webserver.py
 python companion/run_desktop.py            # Optional: Simulate with webcam
 ```
 
-On your MaixCAM, set `AURAL_COMPANION_HOST` to your **PC's IPv4 address** (Wi‑Fi/Ethernet, not WSL IP), then run `python aural_maix.py` — see [docs/setup.md](docs/setup.md) for details.
+On your MaixCAM, set `ISORA_COMPANION_HOST` to your **PC's IPv4 address** (Wi‑Fi/Ethernet, not WSL IP), then run `python isora_maix.py` — see [docs/setup.md](docs/setup.md) for details.
 
 ---
 
@@ -151,8 +151,8 @@ aural-ai-sdk/
 │   └── .env.example
 ├── device/                   # Code for MaixCAM (Python/MaixPy)
 │   ├── main.py               # Main entry point
-│   ├── aural_maix.py         # Alternative entry: UI + YOLO + companion hub
-│   ├── wifi_connect.py       # WiFi helper (official MaixPy pattern, used by probe & aural_maix)
+│   ├── isora_maix.py         # Alternative entry: UI + YOLO + companion hub
+│   ├── wifi_connect.py       # WiFi helper (official MaixPy pattern, used by probe & isora_maix)
 │   ├── network_probe.py      # HTTP connection test to PC (used with minimal_server)
 │   ├── config.py             # Configuration constants
 │   ├── core/
@@ -178,7 +178,7 @@ aural-ai-sdk/
 │       ├── secure_keys.py    # API-key encryption at rest
 │       ├── crypto_box.py     # E2E keypair for cloud-pushed secrets (Phase 5)
 │       └── latency_tester.py
-├── web/                      # AuralAI web hub — Next.js on Vercel (Phase 5)
+├── web/                      # I-Sora web hub — Next.js on Vercel (Phase 5)
 │   ├── app/                  # Landing, /docs, /preview, /pair, /dashboard, /api/*
 │   ├── components/           # Nav, QrSetup, DeviceConfigForm, …
 │   ├── lib/                  # i18n, docs loader, supabase clients, e2e.ts

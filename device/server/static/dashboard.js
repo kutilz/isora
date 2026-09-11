@@ -1,5 +1,5 @@
 /**
- * AuralAI Dev Dashboard — dashboard.js
+ * I-Sora Dev Dashboard — dashboard.js
  * Live mode: connects to MaixCAM HTTP endpoints (same origin).
  * No simulation — semua data dari device.
  */
@@ -31,7 +31,7 @@ const state = {
   _lastAudioText: '',
   _seenLogLines:  new Set(),
   // Auth / settings flags
-  authToken:      localStorage.getItem('aural_token') || '',
+  authToken:      localStorage.getItem('isora_token') || '',
   authRequired:   true,
   autosave:       true,
   keysLocked:     false,
@@ -55,7 +55,7 @@ async function apiFetch(url, opts = {}) {
     );
     if (entered) {
       state.authToken = entered.trim();
-      localStorage.setItem('aural_token', state.authToken);
+      localStorage.setItem('isora_token', state.authToken);
       opts.headers['X-Auth-Token'] = state.authToken;
       return fetch(url, opts);
     }
@@ -80,7 +80,7 @@ async function initAuth() {
         const d = await r.json();
         if (d.token) {
           state.authToken = d.token;
-          localStorage.setItem('aural_token', state.authToken);
+          localStorage.setItem('isora_token', state.authToken);
         }
       }
     } catch (_) {}
@@ -286,6 +286,10 @@ async function pollStatus() {
     if (w && h && (w !== CAM_W || h !== CAM_H)) {
       CAM_W = w; CAM_H = h;
       if (canvas) { canvas.width = CAM_W; canvas.height = CAM_H; }
+      // Reshape the preview box to match. cam_w/cam_h are already the
+      // POST-rotation dimensions, so a 90/270 mount turns the box portrait
+      // instead of cropping the feed and misplacing the detection overlay.
+      document.documentElement.style.setProperty('--cam-ar', `${CAM_W} / ${CAM_H}`);
       document.getElementById('resLabel').textContent = `${CAM_W}×${CAM_H}`;
     }
 
@@ -914,7 +918,7 @@ function _qrisShowStats(activeConds) {
 }
 
 // ── Overnight Stress Tab (real — polls /stress/status) ─────────────────────────
-const STRESS_HISTORY_KEY = 'auralai_stress_history';
+const STRESS_HISTORY_KEY = 'isora_stress_history';
 
 function _stressLoadHistory() {
   try { return JSON.parse(localStorage.getItem(STRESS_HISTORY_KEY)) || []; }
@@ -1158,6 +1162,23 @@ function selectProvider(p) {
   });
 }
 
+// Assigning a value a <select> has no <option> for silently leaves the element
+// on "" and shows the first option instead — so merely OPENING the AI panel
+// used to rewrite the device's configured model on the next save. Keep whatever
+// the device actually reports, adding it to the list if it isn't a known one.
+function setSelectValue(id, value, fallback) {
+  const sel = document.getElementById(id);
+  if (!sel) return;
+  const want = value || fallback;
+  if (!Array.from(sel.options).some((o) => o.value === want)) {
+    const opt = document.createElement('option');
+    opt.value = want;
+    opt.textContent = want + ' (dari perangkat)';
+    sel.insertBefore(opt, sel.firstChild);
+  }
+  sel.value = want;
+}
+
 async function aiSettingsLoad() {
   try {
     const [rAI, rCfg, rPresets] = await Promise.all([
@@ -1172,9 +1193,9 @@ async function aiSettingsLoad() {
     // AI Vision tab
     selectProvider(d.ai_provider || 'openai');
     document.getElementById('aiTimeout').value     = d.ai_timeout_s  ?? 15;
-    document.getElementById('openaiModel').value   = d.openai_model  || 'gpt-4o-mini';
-    document.getElementById('geminiModel').value   = d.gemini_model  || 'gemini-1.5-flash';
-    document.getElementById('claudeModel').value   = d.claude_model  || 'claude-haiku-4-5-20251001';
+    setSelectValue('openaiModel', d.openai_model, 'gpt-5.6-terra');
+    setSelectValue('geminiModel', d.gemini_model, 'gemini-1.5-flash');
+    setSelectValue('claudeModel', d.claude_model, 'claude-haiku-4-5-20251001');
     document.getElementById('openaiKeyHint').textContent = d.openai_key_hint || '';
     document.getElementById('geminiKeyHint').textContent = d.gemini_key_hint || '';
     document.getElementById('claudeKeyHint').textContent = d.claude_key_hint || '';
@@ -1200,6 +1221,11 @@ async function aiSettingsLoad() {
     document.getElementById('hwConfSlider').value    = conf;
     document.getElementById('hwVolume').value        = vol;
     document.getElementById('hwVolumeSlider').value  = vol;
+
+    // Camera rotation. setSelectValue keeps whatever the device reports even if
+    // it is not one of our four options, so merely opening this panel can never
+    // silently re-orient the camera on the next save.
+    setSelectValue('hwRotation', String(cfg.camera_rotation ?? 0), '0');
 
     document.getElementById('hwConfThreshold').oninput = function() {
       document.getElementById('hwConfSlider').value = this.value;
@@ -1413,10 +1439,22 @@ async function aiSettingsSave(opts = {}) {
   }
 
   const qrisModeSel = document.getElementById('qrisModeSel');
+  // Parse explicitly: `parseInt(x) || 80` turns a legitimate volume of 0 (mute)
+  // into 80, and `|| 0.5` would do the same to a 0 threshold. Treat only
+  // non-finite (empty/NaN) input as "use default".
+  const _conf = parseFloat(document.getElementById('hwConfThreshold').value);
+  const _vol  = parseInt(document.getElementById('hwVolume').value, 10);
+  const _rot  = parseInt(document.getElementById('hwRotation').value, 10);
   const hwPayload = {
-    conf_threshold: parseFloat(document.getElementById('hwConfThreshold').value) || 0.5,
-    audio_volume:   parseInt(document.getElementById('hwVolume').value)           || 80,
+    conf_threshold: Number.isFinite(_conf) ? _conf : 0.5,
+    audio_volume:   Number.isFinite(_vol)  ? _vol  : 80,
   };
+  // Only send a rotation we actually recognise. The device rejects anything
+  // else with a 400, which would fail the whole hardware save (volume and
+  // threshold included) over a select that never had a valid value.
+  if ([0, 90, 180, 270].includes(_rot)) {
+    hwPayload.camera_rotation = _rot;
+  }
   if (qrisModeSel && qrisModeSel.value) {
     hwPayload.qris_mode = qrisModeSel.value;
   }
@@ -1435,7 +1473,13 @@ async function aiSettingsSave(opts = {}) {
       }),
     ]);
     const dAI = await rAI.json();
-    if (dAI.ok) {
+    // Check BOTH responses: the /config write (rHW) carries conf_threshold,
+    // audio_volume and qris_mode. Reporting success on dAI.ok alone hides a
+    // failed /config save (e.g. the phantom-'orang' conf_threshold fix silently
+    // not reaching the device) and wrongly clears the dirty flag.
+    let dHW = {}; try { dHW = await rHW.json(); } catch(_) {}
+    const hwOk = rHW.ok && dHW.error === undefined;
+    if (dAI.ok && hwOk) {
       state._dirty = false;
       _refreshSaveBtnVisibility();
       if (!silent) {
@@ -1450,7 +1494,10 @@ async function aiSettingsSave(opts = {}) {
         }
       }
     } else {
-      log('err', `Gagal simpan AI settings: ${dAI.error}`);
+      const errs = [];
+      if (!dAI.ok) errs.push(`AI: ${dAI.error || 'gagal'}`);
+      if (!hwOk)   errs.push(`config: ${dHW.error || ('HTTP ' + rHW.status)}`);
+      log('err', `Gagal simpan — ${errs.join(' · ')}`);
     }
   } catch(e) {
     log('err', `Save error: ${e}`);

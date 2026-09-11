@@ -12,7 +12,7 @@ Endpoint Map:
   POST /config      → Update config runtime
 """
 
-# Semua logika handler sudah ada di web_server.py (AuralAIHandler).
+# Semua logika handler sudah ada di web_server.py (IsoraHandler).
 # File ini berfungsi sebagai dokumentasi route map dan bisa dikembangkan
 # menjadi router terpisah jika server makin kompleks.
 

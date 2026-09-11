@@ -25,7 +25,7 @@ password). Pilih salah satu cara di bawah.
 
 Perangkat juga mengucapkan kalimat seperti:
 
-> "I-Sora siap. Buka I-Sora di ponsel, lalu masukkan kode: **A-3-F-7-C-1**."
+> "I-Sora siap. Buka isora di ponsel, lalu masukkan kode: **A-3-F-7-C-1**."
 
 1. Di halaman [Hubungkan](/pair), pilih tab **"Ketik kode suara"**.
 2. Masukkan kode yang diucapkan perangkat. Tekan tombol perangkat **sebentar**

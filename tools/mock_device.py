@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Mock AuralAI device — exercises the cloud relay end-to-end without hardware.
+Mock I-Sora device — exercises the cloud relay end-to-end without hardware.
 
 It mirrors what device/core/cloud.py will do:
   1. register (uploads a P-256 public key for E2E secrets)
@@ -110,7 +110,7 @@ def _req(method, url, headers=None, body=None, timeout=40):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--base-url", default=os.environ.get("AURAL_CLOUD_URL", "http://localhost:3000"))
+    ap.add_argument("--base-url", default=os.environ.get("ISORA_CLOUD_URL", "http://localhost:3000"))
     ap.add_argument("--reset", action="store_true", help="forget cached identity and re-register")
     args = ap.parse_args()
     base = args.base_url.rstrip("/")

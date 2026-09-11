@@ -46,7 +46,7 @@ class Logger:
 
             files = []
             for name in os.listdir(log_path):
-                if not name.startswith("aural_") or not name.endswith(".log"):
+                if not name.startswith("isora_") or not name.endswith(".log"):
                     continue
                 full = os.path.join(log_path, name)
                 try:
@@ -82,7 +82,7 @@ class Logger:
     def _init_file(self, log_path: str):
         try:
             os.makedirs(log_path, exist_ok=True)
-            name = f"aural_{time.strftime('%Y%m%d_%H%M%S')}.log"
+            name = f"isora_{time.strftime('%Y%m%d_%H%M%S')}.log"
             self._log_file = open(os.path.join(log_path, name), "a", encoding="utf-8")
         except Exception:
             self._log_file = None

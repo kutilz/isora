@@ -7,9 +7,9 @@
  */
 
 const KEYS = {
-  contrast: "auralai.a11y.contrast",
-  bigType:  "auralai.a11y.bigType",
-  motion:   "auralai.a11y.reduceMotion",
+  contrast: "isora.a11y.contrast",
+  bigType:  "isora.a11y.bigType",
+  motion:   "isora.a11y.reduceMotion",
 } as const;
 
 export interface A11yState {

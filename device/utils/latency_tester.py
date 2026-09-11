@@ -1,5 +1,5 @@
 """
-Latency Tester — Benchmark semua subsistem AuralAI.
+Latency Tester — Benchmark semua subsistem I-Sora.
 Bisa dipanggil dari Web UI atau dijalankan manual.
 """
 

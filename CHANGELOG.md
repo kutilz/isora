@@ -1,10 +1,10 @@
-# AuralAI SDK — Changelog
+# I-Sora SDK — Changelog
 
 ---
 
 ## [Phase 4 — Companion Redesign] — 2026-05-21
 
-Implements the `design_handoff_auralai_redesign/` package: split the operator
+Implements the `design_handoff_isora_redesign/` package: split the operator
 dashboard into three audience-specific interfaces plus a first-time setup
 wizard, all WCAG 2.1 AA compliant.
 
@@ -98,7 +98,7 @@ wizard, all WCAG 2.1 AA compliant.
 - `device/server/static/tokens.css` (new)
 - `device/server/static/app/` (new — built artifact)
 - `device/server/src/` (new — Preact source)
-- `design_handoff_auralai_redesign/` (vendored handoff package)
+- `design_handoff_isora_redesign/` (vendored handoff package)
 
 ---
 

@@ -50,7 +50,7 @@ def get_token() -> str:
 
 def env_override() -> str:
     """Env-var override (handy for dev / CI)."""
-    return os.environ.get("AURAL_DEVICE_TOKEN", "")
+    return os.environ.get("ISORA_DEVICE_TOKEN", "")
 
 
 def verify(presented: str) -> bool:

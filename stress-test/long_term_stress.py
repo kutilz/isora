@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-AuralAI Long-Term Stress Test v1
+I-Sora Long-Term Stress Test v1
 =================================
 Schedule : 3 jam/hari × 5 hari = 15 jam total
-Pipeline : Camera → YOLO → Annotate → JPEG encode (full AuralAI Explorer loop)
+Pipeline : Camera → YOLO → Annotate → JPEG encode (full I-Sora Explorer loop)
 
 State disimpan ke long_term_state.json → resume otomatis jika diinterupsi.
 Log per hari ke logs/day_NN_YYYY-MM-DD.csv (15-menit interval).
@@ -401,7 +401,7 @@ def run_day(day_num, state):
 # FINAL REPORT
 # ─────────────────────────────────────────────────────────
 def print_report(state):
-    psec("LAPORAN AKHIR — AuralAI Long-Term Stress Test")
+    psec("LAPORAN AKHIR — I-Sora Long-Term Stress Test")
 
     days = state.get("days_completed", [])
     if not days:
@@ -451,7 +451,7 @@ def print_report(state):
 # MAIN
 # ─────────────────────────────────────────────────────────
 def main():
-    parser = argparse.ArgumentParser(description="AuralAI Long-Term Stress Test")
+    parser = argparse.ArgumentParser(description="I-Sora Long-Term Stress Test")
     parser.add_argument("--report", action="store_true",
                         help="Tampilkan laporan tanpa menjalankan tes")
     parser.add_argument("--reset",  action="store_true",
@@ -474,7 +474,7 @@ def main():
     if state["start_date"] is None:
         state["start_date"] = now_str()
 
-    psec("AuralAI Long-Term Stress Test v1")
+    psec("I-Sora Long-Term Stress Test v1")
     pr("Schedule",    f"{HOURS_PER_DAY} jam/hari × {TOTAL_DAYS} hari = {HOURS_PER_DAY*TOTAL_DAYS} jam total")
     pr("State file",  CHECKPOINT_FILE)
     pr("Log dir",     LOG_DIR)

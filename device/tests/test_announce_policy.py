@@ -95,7 +95,7 @@ def test_cooldown_suppresses_rapid_changes():
     assert ann == []
 
 
-def test_per_tick_cap_limits_announcements_but_records_all_state():
+def test_per_tick_cap_limits_announcements_this_tick():
     cfg = _cfg(announce_max_per_tick=2)
     dets = [
         _det("person", tier="near", is_danger=True, conf=0.9),
@@ -103,6 +103,41 @@ def test_per_tick_cap_limits_announcements_but_records_all_state():
         _det("bottle", tier="far", conf=0.7),
     ]
     ann, state = decide({}, dets, now=10.0, cfg=cfg)
-    assert len(ann) == 2                       # capped
+    assert len(ann) == 2                       # capped this tick
     assert ann[0]["label"] == "person"         # danger ranked first
-    assert set(state) == {"person", "chair", "bottle"}  # all tracked
+    # The two that spoke are tracked; the capped one is intentionally NOT
+    # recorded as announced (see next test) so it isn't silenced forever.
+    assert "person" in state and "chair" in state
+
+
+def test_capped_new_object_is_announced_on_a_later_tick():
+    # SAFETY: a brand-new object suppressed by the per-tick cap must NOT be
+    # recorded as already-announced — otherwise a non-danger obstacle that
+    # appeared in a busy frame would go silent forever. It has to get its word
+    # on a later frame once the cap has room.
+    cfg = _cfg(announce_max_per_tick=2)
+    dets = [
+        _det("person", tier="near", is_danger=True, conf=0.9),
+        _det("chair", tier="far", conf=0.8),
+        _det("bottle", tier="far", conf=0.7),
+    ]
+    ann1, s1 = decide({}, dets, now=10.0, cfg=cfg)
+    assert "bottle" not in [a["label"] for a in ann1]   # capped this tick
+    # Next tick: person (danger, still inside remind window) and chair are quiet,
+    # so the cap has room and the previously-capped bottle finally speaks.
+    ann2, _ = decide(s1, dets, now=10.5, cfg=cfg)
+    assert "bottle" in [a["label"] for a in ann2]
+
+
+def test_suppressed_cell_change_is_announced_after_cooldown():
+    # SAFETY: an object that moves during the cooldown must not be recorded at
+    # its new cell as "already announced" — the move has to be spoken once the
+    # cooldown clears.
+    cfg = _cfg(announce_cooldown_s=1.5)
+    _, s1 = decide({}, [_det("chair", "kiri", "far")], now=10.0, cfg=cfg)
+    # Moves kiri -> tengah 0.5s later: inside cooldown -> suppressed this tick.
+    ann_quiet, s2 = decide(s1, [_det("chair", "tengah", "far")], now=10.5, cfg=cfg)
+    assert ann_quiet == []
+    # After the cooldown, still at the new cell: the move is finally announced.
+    ann_late, _ = decide(s2, [_det("chair", "tengah", "far")], now=12.0, cfg=cfg)
+    assert [a["label"] for a in ann_late] == ["chair"]

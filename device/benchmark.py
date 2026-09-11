@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AuralAI Benchmark Suite — jalankan di MaixCAM.
+I-Sora Benchmark Suite — jalankan di MaixCAM.
 Output line-by-line, progress ditulis ke /tmp/benchmark_progress.json.
 Jalankan: python3 benchmark.py [--section N]
 """

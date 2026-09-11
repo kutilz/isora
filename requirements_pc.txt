@@ -1,4 +1,4 @@
-# AuralAI SDK — PC/Laptop dependencies
+# I-Sora SDK — PC/Laptop dependencies
 # Install dengan: pip install -r requirements_pc.txt
 
 # Audio generation (generate_audio.py)

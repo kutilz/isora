@@ -148,8 +148,7 @@ class OnboardingAnnouncer:
         elif am is not None:
             am.queue_cue("chime_ready.wav")
             am.queue("Isora siap digunakan.", priority=NORMAL,
-                     label="boot_ready", cooldown=0,
-                     wav_name="auralai_siap_digunakan.wav")
+                     label="boot_ready", cooldown=0)
 
     # ─── readiness helpers ────────────────────────────────────────────────────
 

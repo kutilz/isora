@@ -1,1 +1,1 @@
-# AuralAI Standardized Benchmark Suite
+# I-Sora Standardized Benchmark Suite

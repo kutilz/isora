@@ -120,7 +120,7 @@ function AdminApp() {
 
         <span class="app-header__spacer" />
 
-        <a href="/" class="btn btn--ghost" style={{ minHeight: 40 }}>
+        <a href="/companion" class="btn btn--ghost" style={{ minHeight: 40 }}>
           {t("nav.companion")}
         </a>
         <a href="/admin/legacy" class="btn btn--ghost" style={{ minHeight: 40 }}>
