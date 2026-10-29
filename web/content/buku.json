@@ -1,0 +1,390 @@
+{
+  "_comment": "Versi digital Manual Book I-SORA (cetak 24 hlm, 27 Okt 2026). Sumber tunggal untuk /buku DAN audionya: setelah mengubah teks di sini, jalankan `python tools/generate_buku_audio.py` agar MP3 + penanda bab ikut berubah. Nomor bab sama dengan Daftar Isi buku cetak.",
+  "title": "Manual Book I-SORA",
+  "subtitle": "Kacamata pintar dual-mode AI yang membantu penyandang tunanetra bermobilitas dan bertransaksi secara mandiri.",
+  "parts": [
+    { "id": "mengenal", "title": "Mengenal I-SORA", "from": 1, "to": 9 },
+    { "id": "panduan", "title": "Panduan Pemakaian", "from": 10, "to": 17 }
+  ],
+  "chapters": [
+    {
+      "id": "kata-pengantar",
+      "num": 1,
+      "title": "Kata Pengantar",
+      "blocks": [
+        { "p": "Terima kasih telah memilih I-SORA sebagai pendamping aktivitas harian Anda." },
+        { "p": "Kami memahami bahwa setiap langkah membutuhkan rasa aman dan setiap transaksi membutuhkan rasa percaya. I-SORA hadir sebagai perpanjangan indra Anda: kamera di bingkai kacamata yang mengenali sekitar lalu mengabarkannya lewat suara, dengan kecerdasan buatan yang tetap bekerja tanpa internet dan menjadi lebih cerdas saat terhubung." },
+        { "p": "Buku ini merangkum cara mengenal, memakai, dan merawat I-SORA. Bagi pendamping dan keluarga, kami menganjurkan untuk turut membacanya agar dapat membantu proses adaptasi." },
+        { "p": "Kami terus menyempurnakan I-SORA. Masukan dan pengalaman Anda sangat berarti bagi kami." },
+        { "p": "Selamat menggunakan I-SORA, karena melihat dunia adalah hak setiap orang." },
+        { "p": "Bandung, 2026. Tim I-SORA, Universitas Pendidikan Indonesia." },
+        { "note": "PENTING: I-SORA adalah alat bantu tambahan, bukan pengganti tongkat putih, keterampilan orientasi mobilitas, maupun pendamping." }
+      ]
+    },
+    {
+      "id": "tentang-produk",
+      "num": 2,
+      "title": "Tentang Produk",
+      "blocks": [
+        { "p": "I-SORA adalah kacamata pintar asistif yang dirancang khusus untuk membantu penyandang tunanetra menjalani aktivitas sehari-hari secara lebih mandiri. Dilengkapi sistem kecerdasan buatan ganda (dual-mode AI), I-SORA mampu mengenali lingkungan sekitar serta mengidentifikasi nominal uang kertas, lalu menyampaikan informasi tersebut kepada pengguna melalui suara, langsung dari kacamata yang dikenakan." },
+        { "h": "Tujuan" },
+        { "p": "I-SORA diciptakan dengan satu tujuan utama: meningkatkan kemandirian penyandang tunanetra dalam dua aspek paling krusial di kehidupan sehari-hari, yaitu orientasi mobilitas dan keamanan transaksi konvensional." },
+        { "h": "Tiga peran utama I-SORA" },
+        { "dl": [
+          ["Menjadi mata kedua saat bermobilitas", "Mendeteksi rintangan di sekitar pengguna, seperti orang, kendaraan, kursi, atau sepeda di jalur Anda, lalu memberikan peringatan suara secara langsung, bahkan tanpa koneksi internet."],
+          ["Menjamin keamanan transaksi tunai", "Mengenali nominal uang kertas Rupiah, termasuk uang yang sudah lusuh dan kehilangan fitur taktilnya (blind code)."],
+          ["Menjembatani pengenalan lingkungan yang lebih dalam", "Saat terhubung ke internet, I-SORA dapat menjawab pertanyaan kontekstual seperti “Apa yang ada di depan saya?” atau “Apa isi tulisan di papan itu?” melalui teknologi cloud AI."]
+        ] }
+      ]
+    },
+    {
+      "id": "manfaat",
+      "num": 3,
+      "title": "Manfaat",
+      "blocks": [
+        { "p": "I-SORA memberi nilai tambah, tidak hanya bagi pengguna tunanetra, tetapi juga bagi pendamping dan keluarga." },
+        { "h": "Bagi pengguna" },
+        { "dl": [
+          ["Mobilitas mandiri", "Bergerak lebih percaya diri tanpa bergantung sepenuhnya pada pendamping."],
+          ["Informasi visual", "Mendapatkan informasi visual tentang lingkungan kapan saja dibutuhkan."],
+          ["Verifikasi uang mandiri", "Tidak perlu lagi bertanya atau memercayakan nominal uang kepada orang lain."],
+          ["Tetap percaya diri", "I-SORA berbentuk kacamata biasa yang stylish sehingga tidak mencolok."]
+        ] },
+        { "h": "Bagi pendamping" },
+        { "dl": [
+          ["Lebih sedikit kekhawatiran", "Mengurangi rasa khawatir saat pengguna beraktivitas mandiri di luar ruangan."],
+          ["Lapisan keamanan tambahan", "Merasa tenang karena pengguna memiliki perlindungan ekstra saat di luar rumah."],
+          ["Mendukung pelatihan", "Membantu proses adaptasi dan pelatihan mobilitas dengan alat bantu yang lebih modern."],
+          ["Investasi terjangkau", "Investasi jangka panjang yang jauh lebih terjangkau dibandingkan produk impor sejenis."]
+        ] }
+      ]
+    },
+    {
+      "id": "mengapa-berbeda",
+      "num": 4,
+      "title": "Mengapa I-SORA Berbeda?",
+      "blocks": [
+        { "p": "Empat alasan I-SORA menjadi pilihan yang tepat bagi penyandang tunanetra di Indonesia." },
+        { "dl": [
+          ["Dioptimasi untuk Indonesia", "Model AI dilatih secara khusus untuk mengenali uang Rupiah, bukan sekadar adaptasi dari sistem global."],
+          ["Dapat bekerja tanpa internet", "Fungsi utama, yaitu deteksi rintangan dan pengenalan uang, berjalan sepenuhnya di dalam perangkat. Hasil deteksi juga dapat dipantau melalui website I-SORA."],
+          ["Privasi terjaga", "Dalam mode offline, gambar diproses secara lokal dan tidak dikirimkan ke internet."],
+          ["Harga yang terjangkau", "I-SORA hadir dengan harga yang jauh lebih ekonomis dibanding produk sejenis dari luar negeri."]
+        ] },
+        { "h": "Perbandingan harga" },
+        { "table": {
+          "head": ["Produk", "Harga"],
+          "rows": [
+            ["Produk impor sejenis", "Rp50–70 juta"],
+            ["I-SORA", "± Rp2 juta"]
+          ]
+        } },
+        { "p": "Hingga 35× lebih terjangkau dibanding produk impor sejenis, tanpa mengorbankan fitur utama." }
+      ]
+    },
+    {
+      "id": "produk-kami",
+      "num": 5,
+      "title": "Produk Kami",
+      "blocks": [
+        { "h": "Gambaran umum" },
+        { "p": "I-SORA adalah kacamata pintar asistif untuk penyandang tunanetra yang mengintegrasikan dual-mode AI: Edge AI untuk kecepatan dan privasi, serta Cloud AI untuk pemahaman konteks yang mendalam. Dilengkapi deteksi objek real-time, pengenalan uang Rupiah, pembacaan teks (OCR), serta keluaran suara melalui speaker atau earphone TWS. Rangka modul dicetak dari resin SLA ABS-like; cellulose acetate menjadi target versi berikutnya." },
+        { "dl": [
+          ["Mode offline: Edge AI", "Deteksi instan langsung di perangkat, cepat dan menjaga privasi, tanpa perlu internet."],
+          ["Mode online: Cloud AI", "Saat WiFi tersedia, sistem beralih otomatis untuk analisis konteks yang lebih mendalam."]
+        ] },
+        { "h": "Sistem & firmware" },
+        { "p": "I-SORA berjalan di atas firmware Linux minimal pada prosesor RISC-V 64-bit dengan akselerator NPU. Sistem secara otomatis beralih antara mode offline dan online sesuai ketersediaan WiFi. Output suara disampaikan melalui speaker atau TWS sehingga pendengaran terhadap lingkungan tetap terbuka, hal yang krusial bagi keselamatan tunanetra di jalan." }
+      ]
+    },
+    {
+      "id": "spesifikasi",
+      "num": 6,
+      "title": "Spesifikasi & Desain",
+      "blocks": [
+        { "h": "Spesifikasi teknis" },
+        { "table": {
+          "head": ["Komponen", "Spesifikasi"],
+          "rows": [
+            ["Prosesor / SoC", "Sipeed MaixCAM (SOPHGO SG2002), RISC-V 64-bit + NPU 1 TOPS"],
+            ["Kamera", "GC4653, antarmuka MIPI"],
+            ["Konektivitas", "WiFi 6 / BLE 5.0"],
+            ["Audio output", "Speaker + TWS"],
+            ["Input", "3 tombol taktil (Power, Capture, Mode)"],
+            ["Baterai", "LiPo 3,7 V 1000 mAh dengan BMS"],
+            ["Durasi baterai", "> 4 jam pemakaian aktif"],
+            ["Waktu pengisian", "± 1 jam 25 menit"],
+            ["Port pengisian", "USB Type-C, adaptor 5 V 3 A"],
+            ["Mode operasi", "Offline & Online (WiFi)"]
+          ]
+        } },
+        { "h": "Desain perangkat" },
+        { "dl": [
+          ["Rangka resin SLA", "Resin ABS-like presisi tinggi; versi berikutnya memakai cellulose acetate."],
+          ["Modul kamera magnetic snap", "Modul I-SORA Cam terpasang di gagang frame dan terkunci otomatis pada posisi yang tepat."],
+          ["3 tombol taktil", "Tombol Power, Mode, dan Capture yang mudah dikenali hanya dengan sentuhan."]
+        ] }
+      ]
+    },
+    {
+      "id": "inovasi",
+      "num": 7,
+      "title": "Tingkat Inovasi Produk",
+      "blocks": [
+        { "p": "I-SORA hadir sebagai solusi asistif yang memadukan keterjangkauan harga dengan AI kelas dunia yang berjalan sepenuhnya on-device. Berikut perbandingan I-SORA dengan produk sejenis di pasar global." },
+        { "table": {
+          "head": ["Aspek", "I-SORA (PKM-KI UPI)", "OrCam MyEye 3 Pro", "Envision Glasses"],
+          "rows": [
+            ["Harga", "± Rp2.000.000", "± Rp50–70 juta (25–35× lebih mahal)", "± Rp30–50 juta (15–25× lebih mahal)"],
+            ["Deteksi objek & rintangan", "Ya", "Ya", "Ya"],
+            ["Baca teks", "Ya", "Ya", "Ya"],
+            ["Pengenalan mata uang", "Ya", "Ya", "Ya"],
+            ["Audio output", "Speaker + TWS", "Speaker mini + Bluetooth", "Directional mono speaker"],
+            ["Daya tahan baterai", "4 jam 42 menit (hybrid aktif-offline: 5 jam 40 menit; standby: 18 jam 20 menit)", "± 1,5–2 jam aktif (trade-off desain ultra-kompak)", "4–6 jam aktif"],
+            ["Waktu pengisian", "1 jam 25 menit (USB-C 5 V/1 A universal)", "± 2 jam (charging stand + kabel proprietary)", "± 2 jam (USB-C)"]
+          ]
+        } },
+        { "h": "Keunggulan I-SORA" },
+        { "ul": [
+          "Dikembangkan di Indonesia dengan optimasi konteks lokal: mengenali uang Rupiah dan lingkungan sehari-hari di Indonesia.",
+          "Berjalan 100% on-device tanpa cloud, sehingga privasi pengguna terjaga penuh dalam mode offline.",
+          "Harga hingga 35× lebih terjangkau dibanding OrCam MyEye 3 Pro tanpa mengorbankan fitur utama.",
+          "Terintegrasi dengan platform web monitoring yang memudahkan pendamping dan keluarga.",
+          "Dikembangkan dengan pendekatan co-design bersama pengguna tunanetra melalui mahasiswa Pendidikan Khusus UPI, SLB A Citeureup, dan SLB A Pajajaran."
+        ] }
+      ]
+    },
+    {
+      "id": "uji-validasi",
+      "num": 8,
+      "title": "Uji Validasi Produk",
+      "blocks": [
+        { "p": "Validasi I-SORA dilakukan melalui serangkaian uji coba terstruktur untuk memastikan performa dan keandalan setiap fitur sebelum perangkat diserahkan kepada pengguna akhir." },
+        { "p": "Hasilnya: 120 total pengujian, 115 uji berhasil, akurasi rata-rata 95,8%, dan 4 mode atau fitur diuji." },
+        { "table": {
+          "head": ["Mode / Fitur", "Uji coba", "Berhasil", "Akurasi"],
+          "rows": [
+            ["Mode Explore: deteksi objek & orang", "30", "29", "96,7%"],
+            ["Mode Context: baca teks (OCR)", "30", "29", "96,7%"],
+            ["Mode Context: deskripsi warna & objek", "30", "28", "93,3%"],
+            ["Mode Transaksi: pengenalan uang kertas", "30", "29", "96,7%"],
+            ["Total / rata-rata", "120", "115", "95,8%"]
+          ]
+        } },
+        { "h": "Metode pengujian" },
+        { "ul": [
+          "Pengujian dilakukan pada kondisi pencahayaan dan lingkungan yang bervariasi (dalam ruangan, luar ruangan, cahaya rendah).",
+          "Pengguna uji mencakup penyandang tunanetra total dan low vision.",
+          "Setiap sesi uji dicatat dan dievaluasi oleh anggota tim berlatar belakang Pendidikan Khusus.",
+          "Validasi menggunakan pendekatan kuantitatif (akurasi deteksi) dan kualitatif (kepuasan pengguna)."
+        ] },
+        { "p": "Kesimpulan: dengan akurasi rata-rata 95,8% dari 120 kali pengujian, I-SORA dinyatakan layak digunakan sebagai alat bantu asistif harian. Hasil ini membuktikan bahwa sistem AI yang berjalan sepenuhnya on-device pada Sipeed MaixCAM mampu memberikan performa andal tanpa ketergantungan pada koneksi internet." }
+      ]
+    },
+    {
+      "id": "produksi",
+      "num": 9,
+      "title": "Produksi Produk",
+      "blocks": [
+        { "p": "Tujuh tahap pengembangan I-SORA, dari riset kebutuhan pengguna hingga produk siap pakai." },
+        { "ol": [
+          ["Asesmen kebutuhan pengguna", "Tahap awal dimulai dengan wawancara langsung kepada 3 calon pengguna tunanetra pada Juni 2026 untuk mengidentifikasi kendala utama dalam mobilitas dan transaksi sehari-hari."],
+          ["Desain CAD & spesifikasi teknis", "Mencakup perancangan skematik elektronik, desain PCB, dan desain mekanik frame dengan pendekatan user-centered design yang melibatkan calon pengguna tunanetra dalam proses ideasi."],
+          ["Perakitan hardware", "Board MaixCAM (SG2002) dengan kamera GC4653 dan WiFi/BLE bawaan, speaker, serta baterai LiPo dirakit di laboratorium FPTI UPI, mulai dari penyolderan, pengkabelan, hingga pemasangan ke rangka resin."],
+          ["Pengembangan firmware & AI", "Model AI untuk deteksi objek, OCR, pengenalan warna, dan identifikasi uang dikembangkan lalu di-deploy ke NPU MaixCAM. Firmware pengelola mode, audio, dan WiFi dibangun dengan MaixPy SDK."],
+          ["Pengembangan website", "Platform web dikembangkan sebagai antarmuka monitoring dan kontrol yang terhubung ke perangkat melalui WiFi 6, menampilkan feed kamera real-time, status mode, dan riwayat deteksi."],
+          ["Pengujian & validasi", "Setelah integrasi hardware dan software selesai, perangkat menjalani 30 sesi pengujian per fitur. Hasilnya dicatat, dianalisis, dan dijadikan dasar perbaikan iteratif."],
+          ["Finalisasi & packaging", "Produk final dikemas bersama panduan singkat (quick guide) dan aksesori pengisian daya. Kemasan dirancang ramah tunanetra dengan label bertekstur."]
+        ] }
+      ]
+    },
+    {
+      "id": "keselamatan",
+      "num": 10,
+      "title": "Keselamatan & Batasan",
+      "blocks": [
+        { "p": "Baca bagian ini sebelum memakai I-SORA di luar rumah." },
+        { "note": "I-SORA adalah alat bantu tambahan, bukan pengganti tongkat putih, keterampilan orientasi mobilitas, maupun pendamping. Bila ragu, berhenti dan minta bantuan." },
+        { "h": "Saat berjalan" },
+        { "ul": [
+          "Atur volume secukupnya dan jangan menutup kedua telinga.",
+          "Berhenti di tempat aman sebelum menekan tombol atau mendengarkan penjelasan panjang.",
+          "Jangan jadikan I-SORA satu-satunya sumber informasi."
+        ] },
+        { "h": "Batas deteksi" },
+        { "ul": [
+          "Yang disebut: orang, kendaraan, sepeda, hewan, kursi, botol, dan tas.",
+          "Lubang, tiang, tangga, dan genangan tidak dikenali saat luring.",
+          "Jarak tidak disebut dalam meter; kata “dekat” ditambahkan bila benda sudah dekat.",
+          "Gelap, silau, atau lensa kotor menurunkan ketepatan."
+        ] },
+        { "h": "Uang & QRIS" },
+        { "ul": [
+          "Mengenali tujuh pecahan uang kertas Rupiah emisi 2022.",
+          "Pecahan Rp50.000 paling sering keliru. Bila ragu, ulangi atau minta orang tepercaya memeriksa.",
+          "Dengarkan nama penjual dan nominal QRIS sebelum membayar di aplikasi Anda."
+        ] },
+        { "h": "Teks & privasi" },
+        { "ul": [
+          "Hasil baca teks bisa keliru; jangan diandalkan untuk label obat, dosis, atau tanggal kedaluwarsa.",
+          "Saat luring, gambar diolah di dalam alat dan tidak dikirim.",
+          "Fungsi daring mengirim foto ke layanan AI di internet. Hindari memotret PIN, kartu bank, atau dokumen identitas."
+        ] },
+        { "p": "Modul terasa hangat saat bekerja, dan itu normal: I-SORA mengurangi kerjanya sendiri bila panas. Bila terasa panas di kulit, lepas dan istirahatkan beberapa menit." }
+      ]
+    },
+    {
+      "id": "petunjuk",
+      "num": 11,
+      "title": "Petunjuk Penggunaan Alat",
+      "blocks": [
+        { "p": "Ikuti empat langkah berikut untuk mulai menggunakan I-SORA." },
+        { "ol": [
+          ["Pasangkan", "Tempelkan magnetic snap di gagang frame kacamata, lalu dekatkan modul I-SORA Cam ke frame. Sistem magnetik akan otomatis menarik dan menguncinya pada posisi yang tepat."],
+          ["Aktifkan", "Tekan tombol power di sisi luar modul untuk menghidupkan I-SORA. Tunggu suara konfirmasi dari speaker atau TWS."],
+          ["Pilih mode", "Tekan tombol mode di bagian atas modul untuk berpindah: Diam, Penjelajah, Konteks, Scan bayar. I-SORA menyebut nama modenya."],
+          ["Capture", "Tekan tombol capture untuk mengaktifkan pemrosesan AI. I-SORA akan menganalisis lalu menyampaikan hasilnya melalui audio."]
+        ] }
+      ]
+    },
+    {
+      "id": "tombol-mode",
+      "num": 12,
+      "title": "Tombol & Mode",
+      "blocks": [
+        { "p": "Semua fungsi dijalankan dengan tiga tombol berbentuk berbeda, jadi bisa dikenali dengan meraba. Setiap tekanan dijawab bunyi singkat." },
+        { "dl": [
+          ["DAYA: bulat, di sisi luar modul", "Tekan untuk menyalakan. Tunggu suara “Isora siap digunakan.”"],
+          ["MODE: segitiga, di atas modul", "Tekan: ganti mode. Tekan lama: I-SORA mengucapkan alamat web."],
+          ["AKSI: kotak, di sisi luar modul", "Tekan: jalankan fungsi mode. Tekan lama: ulangi hasil terakhir."]
+        ] },
+        { "note": "Volume: tahan MODE dan AKSI bersamaan sekitar 1 detik. Setelah itu MODE = lebih pelan, AKSI = lebih keras. Kembali biasa sendiri setelah beberapa detik." },
+        { "h": "Empat mode, berurutan setiap MODE ditekan" },
+        { "dl": [
+          ["Diam (luring)", "Diucapkan “mode diam”. Kamera beristirahat; paling hemat daya."],
+          ["Penjelajah / Explore (luring; AKSI daring)", "Diucapkan “mode penjelajah aktif”. Menyebut orang, kendaraan, dan benda di depan beserta arahnya. AKSI: navigasi daring nyala atau mati (memotret berkala, membacakan jalur, tangga, pintu, dan tulisan)."],
+          ["Konteks / Context (perlu internet)", "Diucapkan “mode konteks aktif”. AKSI: memotret, lalu menjelaskan sekitar atau membaca tulisan."],
+          ["Scan bayar / Transaksi (luring)", "Diucapkan “mode scan bayar aktif”. Menyebut nominal uang kertas yang dipegang di depan kamera dan membacakan kode QRIS. AKSI: pindai QRIS lebih teliti."]
+        ] }
+      ]
+    },
+    {
+      "id": "aplikasi-web",
+      "num": 13,
+      "title": "Aplikasi Web Pendamping (opsional)",
+      "blocks": [
+        { "note": "Opsional: fitur tambahan, tidak wajib dipakai. Semua fungsi utama I-SORA berjalan dari tombol di kacamata, tanpa ponsel." },
+        { "p": "Halaman kontrol web hanya membantu pendamping memantau dan mengatur alat dari ponsel yang tersambung ke WiFi yang sama." },
+        { "ol": [
+          ["Satu jaringan", "Sambungkan I-SORA dan ponsel ke WiFi atau hotspot yang sama."],
+          ["Buka alamatnya", "Tekan lama tombol MODE: I-SORA mengucapkan alamat web. Ketik alamat itu di browser ponsel."],
+          ["Pantau & atur", "Lihat status, atur volume, atau tekan tombol MODE dan AKSI dari layar."]
+        ] },
+        { "h": "Yang bisa dilakukan" },
+        { "dl": [
+          ["Status perangkat", "Mode aktif, suhu, dan kalimat terakhir yang diucapkan."],
+          ["Tombol di layar", "Sama dengan tombol MODE dan AKSI di kacamata."],
+          ["Volume & dengar lewat HP", "Atur suara, atau putar lewat earphone ponsel."],
+          ["Pratinjau kamera", "Membantu pendamping mengarahkan kamera."]
+        ] }
+      ]
+    },
+    {
+      "id": "mengisi-daya",
+      "num": 14,
+      "title": "Mengisi Daya & Perawatan",
+      "blocks": [
+        { "p": "Sekitar 1 jam 25 menit sampai penuh. Sekitar 4 jam 42 menit aktif terus-menerus. Baterai LiPo 3,7 V 1000 mAh." },
+        { "h": "Cara mengisi daya" },
+        { "ol": [
+          ["Matikan", "Matikan I-SORA, letakkan di tempat datar dan kering."],
+          ["Colokkan", "Colokkan kabel USB Type-C ke port di modul."],
+          ["Sambungkan", "Sambungkan ke adaptor 5 V, lalu ke stopkontak."],
+          ["Cabut", "Cabut setelah sekitar 1 jam 25 menit."]
+        ] },
+        { "note": "Catatan: I-SORA belum bisa mengabarkan sisa baterai. Isi penuh sebelum dipakai keluar rumah." },
+        { "h": "Hindari" },
+        { "ul": [
+          "Memakai I-SORA sambil diisi daya.",
+          "Mengisi di tempat basah, lembap, panas, atau sambil ditutupi.",
+          "Memakai kabel atau adaptor yang rusak.",
+          "Memasukkan benda lain ke port."
+        ] },
+        { "h": "Perawatan" },
+        { "ul": [
+          "Lap lensa kamera dengan kain mikrofiber kering.",
+          "Jangan menyemprot cairan atau merendam alat.",
+          "Simpan di kotaknya. Jangan tinggalkan di mobil yang terjemur: rangka resin melunak di atas sekitar 60 °C (spesifikasi produsen).",
+          "Lepas modul dari kacamata bila disimpan lama."
+        ] }
+      ]
+    },
+    {
+      "id": "masalah",
+      "num": 15,
+      "title": "Kalau Ada Masalah",
+      "blocks": [
+        { "p": "Coba langkah berikut. Jangan membongkar perangkat." },
+        { "table": {
+          "head": ["Masalah", "Coba ini"],
+          "rows": [
+            ["Tidak menyala", "Isi daya dulu, lalu tekan DAYA dan tunggu “Isora siap digunakan.”"],
+            ["Tidak ada suara", "Naikkan volume: tahan MODE dan AKSI, lalu tekan AKSI. Bila memakai Dengar lewat HP, pastikan halamannya masih terbuka; speaker kacamata menyala lagi bila ponsel berhenti."],
+            ["Terdengar “tidak ada koneksi internet”", "Fungsi daring butuh WiFi yang tersambung ke internet. Mode penjelajah dan scan bayar tetap jalan tanpa internet."],
+            ["Benda atau uang tidak dikenali", "Bersihkan lensa, cari cahaya cukup, dan hadapkan kamera lurus. Pegang uang rata dan jangan tertutup jari."],
+            ["Lupa alamat web", "Tekan lama MODE; I-SORA mengucapkan alamatnya."],
+            ["Modul lepas atau goyang", "Pasang ulang di dudukan magnet sampai terdengar “klik”."],
+            ["Terasa panas", "Lepas dan istirahatkan beberapa menit. Panas ringan saat bekerja itu normal."]
+          ]
+        } },
+        { "h": "Masih bermasalah? Hubungi Tim I-SORA" },
+        { "contact": true },
+        { "p": "Sebutkan masalahnya, mode yang dipakai, dan langkah yang sudah dicoba." }
+      ]
+    },
+    {
+      "id": "ringkasan",
+      "num": 16,
+      "title": "Ringkasan Cepat",
+      "blocks": [
+        { "p": "Satu halaman untuk diingat." },
+        { "table": {
+          "head": ["Untuk", "Caranya"],
+          "rows": [
+            ["Menyalakan", "Tekan DAYA (bulat)."],
+            ["Ganti mode", "Tekan MODE (segitiga)."],
+            ["Jalankan fungsi", "Tekan AKSI (kotak)."],
+            ["Ulangi hasil", "Tekan lama AKSI."],
+            ["Alamat web", "Tekan lama MODE."],
+            ["Volume", "Tahan MODE dan AKSI sekitar 1 detik."],
+            ["Mengisi daya", "USB Type-C, sekitar 1 jam 25 menit."]
+          ]
+        } },
+        { "p": "Urutan mode setiap MODE ditekan: Diam, lalu Penjelajah, lalu Konteks, lalu Scan bayar." },
+        { "p": "Tanpa internet: mode penjelajah (orang & kendaraan) dan scan bayar (uang kertas & QRIS). Perlu internet: mode konteks dan navigasi daring." },
+        { "note": "PENTING: alat bantu, bukan pengganti tongkat putih." }
+      ]
+    },
+    {
+      "id": "tim",
+      "num": 17,
+      "title": "Tim Kami",
+      "blocks": [
+        { "p": "Tim mahasiswa lintas disiplin Universitas Pendidikan Indonesia di balik I-SORA." },
+        { "dl": [
+          ["Panji Akbar", "Pendidikan Teknik Otomasi Industri dan Robotika"],
+          ["Muhammad Adzi Putra R.", "Pendidikan Teknik Otomasi Industri dan Robotika"],
+          ["Ilyasa Nafan Faza", "Pendidikan Teknik Otomasi Industri dan Robotika"],
+          ["Ragilita Arifah Ambarwati", "Pendidikan Khusus"],
+          ["Nenden Endah Wening Galih", "Pendidikan Ekonomi"]
+        ] },
+        { "p": "Melihat dunia adalah hak setiap orang." }
+      ]
+    }
+  ],
+  "contact": {
+    "email": "isoraotwpimnas26@gmail.com",
+    "instagram": "isora_smartglasses",
+    "youtube": "isora_smartglasses"
+  }
+}

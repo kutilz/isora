@@ -1,0 +1,97 @@
+{
+  "_comment": "Dibuat oleh tools/generate_buku_audio.py — jangan disunting tangan.",
+  "src": "/buku-audio/manual-book-isora.mp3?v=460e75532e",
+  "duration": 1611.96,
+  "markers": [
+    {
+      "id": "intro",
+      "title": "Pembuka",
+      "start": 0.0
+    },
+    {
+      "id": "kata-pengantar",
+      "title": "Kata Pengantar",
+      "start": 22.26
+    },
+    {
+      "id": "tentang-produk",
+      "title": "Tentang Produk",
+      "start": 96.29
+    },
+    {
+      "id": "manfaat",
+      "title": "Manfaat",
+      "start": 191.85
+    },
+    {
+      "id": "mengapa-berbeda",
+      "title": "Mengapa I-SORA Berbeda?",
+      "start": 262.5
+    },
+    {
+      "id": "produk-kami",
+      "title": "Produk Kami",
+      "start": 330.38
+    },
+    {
+      "id": "spesifikasi",
+      "title": "Spesifikasi & Desain",
+      "start": 417.56
+    },
+    {
+      "id": "inovasi",
+      "title": "Tingkat Inovasi Produk",
+      "start": 505.36
+    },
+    {
+      "id": "uji-validasi",
+      "title": "Uji Validasi Produk",
+      "start": 685.43
+    },
+    {
+      "id": "produksi",
+      "title": "Produksi Produk",
+      "start": 833.55
+    },
+    {
+      "id": "keselamatan",
+      "title": "Keselamatan & Batasan",
+      "start": 971.25
+    },
+    {
+      "id": "petunjuk",
+      "title": "Petunjuk Penggunaan Alat",
+      "start": 1091.69
+    },
+    {
+      "id": "tombol-mode",
+      "title": "Tombol & Mode",
+      "start": 1149.57
+    },
+    {
+      "id": "aplikasi-web",
+      "title": "Aplikasi Web Pendamping (opsional)",
+      "start": 1263.09
+    },
+    {
+      "id": "mengisi-daya",
+      "title": "Mengisi Daya & Perawatan",
+      "start": 1338.24
+    },
+    {
+      "id": "masalah",
+      "title": "Kalau Ada Masalah",
+      "start": 1427.3
+    },
+    {
+      "id": "ringkasan",
+      "title": "Ringkasan Cepat",
+      "start": 1516.65
+    },
+    {
+      "id": "tim",
+      "title": "Tim Kami",
+      "start": 1574.54
+    }
+  ]
+}
