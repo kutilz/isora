@@ -63,3 +63,6 @@ maix-docs/
 maix_docs/
 .gstack/
 .clone/
+
+# Hardware (PCB/KiCad) disimpan lokal, belum dipublikasikan
+hardware/
