@@ -1,15 +1,15 @@
-import { Suspense } from "react";
-import PairClient from "./PairClient";
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Hubungkan perangkat — I-Sora",
-  description: "Masukkan kode yang diucapkan perangkat untuk menautkannya ke akunmu.",
-};
-
-export default function PairPage() {
-  return (
-    <Suspense fallback={<div className="container section">Memuat…</div>}>
-      <PairClient />
-    </Suspense>
-  );
+/**
+ * Legacy entry point. The device's spoken sentence and the printed docs point
+ * at /pair, and the old typed-code deep link carried ?code=… — keep both
+ * working by forwarding into the app's "Tambah perangkat" screen.
+ */
+export default async function LegacyPairPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ code?: string }>;
+}) {
+  const { code } = await searchParams;
+  redirect(code ? `/app/tambah?code=${encodeURIComponent(code)}` : "/app/tambah");
 }

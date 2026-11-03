@@ -10,6 +10,7 @@ export default function Footer() {
           {t.footer.made}
         </p>
         <p style={{ margin: "8px 0 0" }}>{t.footer.offline}</p>
+        <p style={{ margin: "8px 0 0" }}>{t.footer.wcag}</p>
       </div>
     </footer>
   );

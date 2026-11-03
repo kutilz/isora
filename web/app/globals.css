@@ -12,7 +12,7 @@
 
   --ink:          #11142E;   /* Tinta */
   --ink-2:        #42466A;   /* Tinta-70 */
-  --ink-3:        #6A6E90;
+  --ink-3:        #606486;
   --ink-inverse:  #FFFFFF;
 
   --border:       #E6DFD3;   /* Line */
@@ -73,6 +73,9 @@ body {
 
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
+/* A link inside a sentence must not be told apart by colour alone (WCAG 1.4.1). */
+p a:not(.btn), li a:not(.btn) { text-decoration: underline; }
+.wcag-note { margin: var(--s-6) 0 0; padding: 0 var(--s-4) var(--s-6); color: var(--ink-3); font-size: var(--t-sm); }
 
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
   outline: 3px solid var(--focus);
@@ -111,10 +114,10 @@ a:hover { text-decoration: underline; }
   display: flex; align-items: center; gap: var(--s-4);
   min-height: 64px;
 }
-.brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: var(--t-lg); color: var(--ink); letter-spacing: -.02em; }
+.brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: var(--t-lg); color: var(--ink); letter-spacing: -.02em; flex-shrink: 0; white-space: nowrap; }
 .brand:hover { text-decoration: none; }
 .brand-wm span { color: var(--amber); }
-.site-nav { display: flex; gap: var(--s-2); margin-left: auto; flex-wrap: wrap; }
+.site-nav { display: flex; gap: var(--s-2); margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
 .site-nav a {
   color: var(--ink-2); font-weight: 600; padding: 8px 12px; border-radius: var(--r-md);
   display: inline-flex; align-items: center; min-height: var(--hit);
@@ -228,6 +231,217 @@ a:hover { text-decoration: underline; }
 .audio-card { display: flex; flex-direction: column; gap: var(--s-2); }
 .audio-card .label { font-weight: 700; }
 .audio-card .desc { color: var(--ink-3); font-size: var(--t-sm); }
+
+/* ───────────────────────────────────────────────────────────────────────────
+   App shell — the installed-PWA "Settings" surface (app/(app)/…).
+   Deliberately plainer than the marketing pages: grouped rows, big hit areas,
+   one clear action per row. Reads well with TalkBack/VoiceOver because every
+   row is a single link or button with its label and value in one place.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.app-shell { min-height: 100dvh; background: var(--bg); padding-bottom: var(--s-12); }
+
+.app-bar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: var(--s-3);
+  min-height: 60px; padding: var(--s-2) var(--s-4);
+  padding-top: calc(var(--s-2) + env(safe-area-inset-top));
+  background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.app-bar h1 { margin: 0; font-size: var(--t-lg); letter-spacing: -.02em; }
+.app-bar__back {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 44px; min-height: 44px; margin-left: -6px;
+  border-radius: var(--r-md); color: var(--accent); font-size: var(--t-lg); font-weight: 700;
+}
+.app-bar__back:hover { background: var(--accent-soft); }
+.app-bar__trail { margin-left: auto; display: flex; gap: var(--s-2); align-items: center; }
+
+.app-body { max-width: 640px; margin: 0 auto; padding: var(--s-5) var(--s-4) 0; display: grid; gap: var(--s-6); }
+
+.sgroup { display: grid; gap: var(--s-2); }
+.sgroup__title {
+  margin: 0; padding: 0 var(--s-2);
+  font-size: var(--t-xs); font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+.sgroup__note { margin: var(--s-1) var(--s-2) 0; font-size: var(--t-sm); color: var(--ink-3); }
+.sgroup__list {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.sgroup__list > * + * { border-top: 1px solid var(--border); }
+
+.srow {
+  display: flex; align-items: center; gap: var(--s-4);
+  width: 100%; min-height: var(--hit); padding: var(--s-4);
+  background: none; border: 0; text-align: left; color: var(--ink);
+  font: inherit; font-size: var(--t-base);
+}
+a.srow, button.srow { cursor: pointer; }
+a.srow:hover, button.srow:hover { background: var(--surface-2); }
+a.srow:focus-visible, button.srow:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+.srow__main { display: grid; gap: 2px; min-width: 0; }
+.srow__label { font-weight: 600; }
+.srow__sub { font-size: var(--t-sm); color: var(--ink-3); }
+.srow__value { margin-left: auto; color: var(--ink-2); text-align: right; font-variant-numeric: tabular-nums; }
+.srow__chev { color: var(--ink-3); font-size: var(--t-md); flex: none; }
+.srow--danger .srow__label { color: var(--danger); }
+.srow--field { display: grid; gap: 6px; align-items: stretch; }
+.srow--field .field { margin-bottom: 0; }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: var(--r-pill);
+  font-size: var(--t-xs); font-weight: 700; white-space: nowrap;
+}
+.pill--ok { background: var(--ok-soft); color: var(--ok); }
+.pill--off { background: var(--surface-3); color: var(--ink-2); }
+.pill--warn { background: var(--warn-soft); color: var(--warn); }
+
+.install-card { display: grid; gap: var(--s-4); }
+
+.empty {
+  display: grid; gap: var(--s-4); justify-items: start;
+  padding: var(--s-6); background: var(--surface);
+  border: 1px dashed var(--border-strong); border-radius: var(--r-lg);
+}
+
+/* ─── Simulator ──────────────────────────────────────────────────────────── */
+
+.sim-stage {
+  position: relative; width: 100%; aspect-ratio: 3 / 4; max-height: 62dvh; min-height: 240px;
+  background: #0B0E2A; border-radius: var(--r-lg); overflow: hidden;
+  display: grid; place-items: center;
+}
+.sim-stage video, .sim-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.sim-stage__idle { position: relative; color: #fff; text-align: center; padding: var(--s-6); max-width: 30ch; }
+.sim-grid { position: absolute; inset: 0; pointer-events: none; }
+.sim-stage__badge {
+  position: absolute; left: var(--s-3); right: var(--s-3); bottom: var(--s-3);
+  padding: var(--s-2) var(--s-3); border-radius: var(--r-md);
+  background: rgba(11, 14, 42, .82); color: #fff; font-size: var(--t-sm); text-align: center;
+}
+.sim-guide {
+  position: absolute; left: var(--s-3); right: var(--s-3); bottom: var(--s-3);
+  padding: var(--s-3) var(--s-4); border-radius: var(--r-md);
+  background: rgba(11, 14, 42, .88); color: #fff;
+}
+.sim-guide__status { margin: 0; font-size: var(--t-xs); color: #C9CEEA; }
+.sim-guide__bar {
+  height: 3px; margin: var(--s-2) 0 var(--s-3); overflow: hidden;
+  border-radius: var(--r-pill); background: rgba(255, 255, 255, .18);
+}
+.sim-guide__bar span {
+  display: block; width: 40%; height: 100%; border-radius: inherit; background: var(--amber);
+  animation: sim-guide-bar 1.4s ease-in-out infinite;
+}
+/* Tall enough for the longest line, so the box does not jump between lines. */
+.sim-guide__step {
+  margin: 0; min-height: 5.6em; font-size: var(--t-sm); line-height: 1.4;
+  animation: sim-guide-step .35s ease-out both;
+}
+.sim-guide__step b { display: block; font-size: var(--t-xs); font-weight: 700; color: var(--amber); }
+@keyframes sim-guide-bar {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(250%); }
+}
+@keyframes sim-guide-step {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sim-guide__bar span { width: 100%; opacity: .5; animation: none; }
+  .sim-guide__step { animation: none; }
+}
+.sim-stage__tap {
+  position: absolute; inset: 0; width: 100%; border: 0; padding: var(--s-6);
+  background: rgba(11, 14, 42, .82); color: #fff;
+  font: inherit; font-size: var(--t-md); font-weight: 700; cursor: pointer;
+}
+
+.sim-button {
+  width: 100%; min-height: 88px; border-radius: var(--r-lg);
+  background: var(--accent); color: var(--ink-inverse); border: 0;
+  font: inherit; font-size: var(--t-md); font-weight: 700; cursor: pointer;
+  touch-action: manipulation; user-select: none; -webkit-user-select: none;
+}
+.sim-button:active { background: var(--accent-hover); }
+.sim-button[data-holding="true"] { background: var(--amber); color: var(--amber-ink); }
+.sim-button:disabled { background: var(--surface-3); color: var(--ink-3); cursor: default; }
+
+.sim-log {
+  display: grid; gap: var(--s-2); margin: 0; padding: 0; list-style: none;
+  max-height: 220px; overflow-y: auto;
+}
+.sim-log li {
+  display: flex; gap: var(--s-3); align-items: baseline;
+  padding: var(--s-2) var(--s-3); border-radius: var(--r-sm); background: var(--surface-2);
+  font-size: var(--t-sm);
+}
+.sim-log time { font-family: var(--font-mono); font-size: var(--t-xs); color: var(--ink-3); flex: none; }
+.sim-log li[data-kind="near"] { background: var(--warn-soft); color: var(--warn); }
+.sim-log li[data-kind="system"] { background: var(--accent-soft); color: var(--accent-ink); }
+
+.sim-debug {
+  font-family: var(--font-mono); font-size: var(--t-xs); line-height: 1.6;
+  background: var(--accent-ink); color: #D8DDF5;
+  padding: var(--s-3); border-radius: var(--r-md); overflow-x: auto; margin: 0;
+}
+.sim-chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.sim-chip {
+  padding: 4px 10px; border-radius: var(--r-pill); background: var(--surface-2);
+  font-size: var(--t-xs); font-weight: 600; font-family: var(--font-mono);
+}
+
+@media (max-width: 520px) {
+  .app-body { padding-left: var(--s-3); padding-right: var(--s-3); }
+}
+
+/* Expandable row: <details> whose <summary> is itself a settings row. */
+.sgroup__list details > summary { list-style: none; cursor: pointer; }
+.sgroup__list details > summary::-webkit-details-marker { display: none; }
+.sgroup__list details > summary::after {
+  content: "›"; margin-left: auto; color: var(--ink-3); font-size: var(--t-md);
+  transition: transform .15s ease;
+}
+.sgroup__list details[open] > summary::after { transform: rotate(90deg); }
+.sgroup__list details[open] > summary { border-bottom: 1px solid var(--border); }
+.sgroup__list details > summary:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+
+/* ─── First-setup welcome ────────────────────────────────────────────────── */
+/* The hand-off from "I just saved my settings" to "this is my device screen".
+   Dark block, so the amber mark and an amber button are the right contrast
+   pair here (indigo-on-navy would not be). */
+.welcome {
+  position: fixed; inset: 0; z-index: 100;
+  display: grid; place-items: center;
+  padding: calc(var(--s-6) + env(safe-area-inset-top)) var(--s-5) var(--s-6);
+  background: var(--accent-ink); color: var(--ink-inverse);
+  animation: welcome-in .35s ease both;
+}
+.welcome__card {
+  display: grid; gap: var(--s-4); justify-items: center;
+  text-align: center; max-width: 34ch; width: 100%;
+}
+.welcome__ring { display: inline-flex; animation: welcome-glow 2.6s ease-in-out infinite; }
+.welcome__eyebrow {
+  margin: 0; color: var(--glow); font-size: var(--t-xs);
+  font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+}
+.welcome h2 { margin: 0; font-size: var(--t-2xl); letter-spacing: -.03em; }
+.welcome__name { margin: 0; font-size: var(--t-md); color: #D8DDF5; }
+.welcome__status { margin: 0; min-height: 3em; color: var(--glow); font-weight: 600; font-size: var(--t-sm); }
+.welcome .btn--primary {
+  width: 100%; background: var(--amber); border-color: var(--amber); color: var(--amber-ink);
+}
+.welcome .btn--primary:hover { background: var(--glow); border-color: var(--glow); }
+
+@keyframes welcome-in { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes welcome-glow { 0%, 100% { opacity: .8; } 50% { opacity: 1; transform: scale(1.06); } }
+
+/* Amber dot: "linked, but not finished" — neither green nor an error. */
+.dot--warn { background: var(--amber); }
 
 /* ─── /buku: versi digital + buku audio Manual Book (tujuan QR di buku cetak) ── */
 /* Read by blind users with a screen reader AND by a sighted companion, so: real

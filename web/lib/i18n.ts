@@ -9,36 +9,37 @@ export const t = {
   tagline: "Melihat dengan Suara",
   nav: {
     home: "Beranda",
-    pair: "Hubungkan",
+    app: "Aplikasi",
+    sim: "Simulasi",
     docs: "Panduan",
     preview: "Coba suara",
-    dashboard: "Perangkat saya",
   },
   hero: {
-    badge: "Setup tanpa ribet",
-    title: "Hubungkan I-Sora cukup dengan satu kode suara",
+    badge: "Bisa dicoba tanpa perangkat",
+    title: "Melihat dengan suara — coba dulu dari kamera ponselmu",
     lead:
-      "Perangkat menyebutkan sebuah kode singkat. Buka halaman ini, masukkan kodenya, lalu atur semuanya dari ponsel — tanpa perlu mengeja alamat IP.",
-    cta_pair: "Hubungkan perangkat",
+      "Arahkan kamera HP ke sekitarmu dan dengarkan apa yang akan dikatakan I-Sora. Sudah punya perangkatnya? Pasang aplikasi ini untuk menghubungkan dan mengaturnya.",
+    cta_sim: "Coba simulasi kamera",
+    cta_app: "Buka aplikasi",
     cta_docs: "Baca panduan",
   },
   features: {
-    title: "Kenapa lewat web ini?",
+    title: "Apa yang bisa dilakukan di sini",
     items: [
       {
-        title: "Pairing dengan kode suara",
+        title: "Simulasi kamera HP",
         body:
-          "Perangkat mengucapkan kode unik. Masukkan di sini untuk menautkannya ke akunmu — aman dan singkat.",
+          "Deteksi objek, chime berarah, dan suara Indonesia — berjalan sepenuhnya di ponsel. Setelah dibuka sekali, jalan tanpa internet.",
       },
       {
-        title: "Atur dari mana saja",
+        title: "Aplikasi yang bisa dipasang",
         body:
-          "Pilih layanan AI, masukkan API key, dan sesuaikan suara langsung dari halaman ini. Perubahan terdorong otomatis ke perangkat.",
+          "Pasang di layar utama, lalu buka langsung dari ikon. Menghubungkan perangkat cukup sekali tekan tombol — tanpa mengetik alamat atau kode.",
       },
       {
-        title: "Panduan & contoh suara",
+        title: "Banyak perangkat, tanpa daftar akun",
         body:
-          "Pelajari cara memakai I-Sora dan dengarkan contoh chime sebelum perangkat tiba — semuanya online, bukan cuma di perangkat.",
+          "Buka aplikasinya dan langsung pakai — tidak ada pendaftaran. Lihat status tiap perangkat, atur layanan AI dan preferensi suaranya, dan buka kendali lokalnya saat kamu berada di WiFi yang sama.",
       },
     ],
   },
@@ -46,18 +47,21 @@ export const t = {
     title: "Tiga langkah menghubungkan",
     steps: [
       "Nyalakan perangkat dan sambungkan ke WiFi rumah (lihat panduan).",
-      "Dengarkan kode yang diucapkan perangkat, lalu masukkan di halaman Hubungkan.",
-      "Atur layanan AI dan preferensi suara — perangkat langsung menerima pengaturannya.",
+      "Buka aplikasi di ponsel, pilih Tambah perangkat — tanpa daftar akun.",
+      "Tekan tombol aksi pada perangkat sekali. Selesai; lalu atur layanan AI dan preferensi suara.",
     ],
+    fallback:
+      "Tombolnya berlaku di jaringan mana pun. Kalau ponsel dan perangkat satu WiFi, perangkat juga muncul sendiri di daftar dan cukup diketuk.",
   },
   privacy: {
     title: "Privasi tetap dijaga",
     body:
-      "API key dienkripsi di browser dan hanya bisa dibuka oleh perangkatmu — server kami tidak pernah melihat key aslinya. Kamera tidak pernah dialirkan ke cloud; hanya status ringkas (online, baterai, mode) yang dikirim.",
+      "API key dienkripsi di browser dan hanya bisa dibuka oleh perangkatmu — server kami tidak pernah melihat key aslinya. Kamera tidak pernah dialirkan ke cloud; hanya status ringkas (online, baterai, mode) yang dikirim, plus sidik ringkas jaringan agar aplikasi tahu kapan kamu berada di WiFi yang sama.",
   },
   footer: {
     made: "I-Sora — Melihat dengan Suara. Teknologi asistif berbasis suara untuk teman netra di Indonesia.",
-    offline: "Perangkat tetap berfungsi penuh secara offline; web ini hanya untuk setup & pemantauan.",
+    offline: "Perangkat tetap berfungsi penuh secara offline; web ini hanya untuk setup, pemantauan, dan simulasi.",
+    wcag: "Tampilan web ini sengaja sederhana dan kontras tinggi, mengikuti pedoman aksesibilitas WCAG 2.1 tingkat AA, supaya nyaman bagi pengguna low vision dan pembaca layar.",
   },
 };
 

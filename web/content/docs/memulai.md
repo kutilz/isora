@@ -27,8 +27,8 @@ dilakukan tanpa melihat layar: cukup **suara dari speaker** dan **satu tombol**.
 1. **Rakit & nyalakan** perangkat — lihat [Merakit & menyalakan](/docs/perangkat-keras).
 2. **Sambungkan ke WiFi** rumah agar perangkat bisa terhubung ke internet.
 3. **Hubungkan dengan kode** — perangkat akan menyebutkan sebuah kode singkat;
-   masukkan di halaman [Hubungkan](/pair). Lihat [Menghubungkan dengan kode](/docs/menghubungkan).
+   tambahkan lewat [aplikasi I-Sora](/app). Lihat [Menghubungkan perangkat](/docs/menghubungkan).
 4. **Atur layanan AI & suara** dari halaman web — pengaturan terdorong otomatis ke perangkat.
 
 Setelah terhubung, kamu bisa memantau dan mengatur perangkat kapan saja dari
-halaman [Perangkat saya](/dashboard).
+[aplikasi I-Sora](/app).

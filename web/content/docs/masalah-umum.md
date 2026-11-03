@@ -1,6 +1,6 @@
 ---
 title: Masalah umum
-order: 4
+order: 6
 summary: Solusi cepat untuk kendala saat setup dan pemakaian.
 ---
 
@@ -23,7 +23,7 @@ summary: Solusi cepat untuk kendala saat setup dan pemakaian.
 ## Layanan AI tidak bekerja
 
 - Pastikan API key benar dan masih punya kuota di penyedia layanan.
-- Coba uji koneksi dari halaman [Perangkat saya](/dashboard).
+- Coba uji koneksi dari [aplikasi I-Sora](/app).
 - Deteksi objek dasar tetap bekerja tanpa AI — ini hanya memengaruhi
   "Deskripsi pemandangan" dan QRIS online.
 
