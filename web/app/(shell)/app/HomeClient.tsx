@@ -105,7 +105,7 @@ function LiveHome() {
           ) : devices === null ? (
             <SettingsItem label="Memuat…" />
           ) : devices.length === 0 ? (
-            <SettingsItem label="Belum ada perangkat" sub="Tambahkan I-Sora pertamamu di bawah." />
+            <SettingsItem label="Belum ada perangkat" sub="Tambahkan I-Sora pertama di bawah." />
           ) : (
             devices.map((d) => (
               <SettingsLink
@@ -140,7 +140,7 @@ function LiveHome() {
           <SettingsLink
             href="/simulasi"
             label="Simulasi kamera"
-            sub="Pakai kamera HP seolah-olah kamu memakai I-Sora"
+            sub="Pakai kamera HP seolah-olah sedang memakai I-Sora"
           />
           <SettingsLink href="/preview" label="Coba suara" sub="Dengarkan chime dan sapaan" />
           <SettingsLink href="/docs" label="Panduan" sub="Cara pakai, pemasangan, masalah umum" />
@@ -155,7 +155,7 @@ function LiveHome() {
           title="Cadangan"
           note={
             ready && session.anonymous
-              ? "Perangkatmu tersimpan di ponsel ini. Tambahkan email kalau ingin membukanya dari ponsel lain — atau supaya tidak hilang kalau data peramban dihapus."
+              ? "Perangkat tersimpan di ponsel ini. Tambahkan email kalau ingin membukanya dari ponsel lain — atau supaya tidak hilang kalau data peramban dihapus."
               : undefined
           }
         >

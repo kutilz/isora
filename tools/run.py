@@ -190,6 +190,11 @@ def deploy(client, audio=False):
     print(f"\n  {cyan('⟶')} Upload device/ → {REMOTE_DEVICE}")
     upload_dir(DEVICE_DIR, REMOTE_DEVICE)
     print()
+    # A dev build only gives way to a release NEWER than the one it was built
+    # on — otherwise the auto-updater would overwrite work in progress.
+    from release import dev_version
+    with sftp.open(REMOTE_DEVICE + "/VERSION", "w") as f:
+        f.write(dev_version() + "\n")
 
     if audio:
         wav_files = [f for f in os.listdir(AUDIO_DIR) if f.endswith(".wav")]
@@ -277,6 +282,14 @@ def run_background(client, mode_cfg, extra_args, host):
         f"nohup python {script} {extra_args} > {log_file} 2>&1 & "
         f"echo $! > {pid_file} && echo $!"
     )
+    if script == "main.py" and not extra_args:
+        # A unit with the supervised init script: (re)start through it, so the
+        # app stays supervised and no second copy runs beside a respawned one.
+        cmd = (
+            f"if [ -f {SUPERVISOR_PATH} ] && [ -x {APP_INIT_PATH} ]; then "
+            f"{clear_flag}setsid {APP_INIT_PATH} restart </dev/null >/dev/null 2>&1; "
+            f"sleep 2; cat {pid_file}; else {cmd}; fi"
+        )
 
     sep()
     print(f"  {bold('▶')} {mode_cfg['label']} {yellow('[background]')}")
@@ -314,6 +327,10 @@ def stop_process(client, mode_cfg):
         f"  rm -f {pid_file}; "
         f"else echo nopid; fi"
     )
+    if mode_cfg.get("script") == "main.py":
+        # Stop the supervisor too, or it would start the app again.
+        cmd = (f"if [ -x {APP_INIT_PATH} ]; then pid=$(cat {pid_file} 2>/dev/null); "
+               f"{APP_INIT_PATH} stop; echo killed:${{pid:-?}}; else {cmd}; fi")
     _, stdout, _ = client.exec_command(cmd)
     result = stdout.read().decode().strip()
 
@@ -404,6 +421,16 @@ def show_status(client, mode_cfg):
 RC_LOCAL = "/etc/rc.local"
 RC_BEGIN = "# >>> I-Sora autostart >>>"
 RC_END   = "# <<< I-Sora autostart <<<"
+
+# Marker era-AuralAI dari blok yang sama. Perangkat yang di-flash sebelum
+# rebrand masih memuatnya, dan blok itu meluncurkan /root/aural-ai/main.py
+# dari rc.local (S99local). Membuangnya BUKAN kosmetik: S26isoraapp menjaga
+# dirinya lewat /tmp/isora_main.pid sedangkan blok lama menulis
+# /tmp/aural_main.pid — PID guard-nya tidak cocok, jadi kalau blok ini
+# dibiarkan, dua instance app jalan berbarengan dan berebut kamera + audio.
+# Pasangan masalah yang sama di sisi init.d: LEGACY_INIT_PATHS.
+RC_BEGIN_LEGACY = "# >>> AuralAI autostart >>>"
+RC_END_LEGACY   = "# <<< AuralAI autostart <<<"
 RC_BLOCK = (
     RC_BEGIN + "\n"
     "# Nothing launches from here any more, and that is the point: rc.local is\n"
@@ -425,8 +452,12 @@ RC_BLOCK = (
 RC_BLOCK_LEGACY = (
     RC_BEGIN + "\n"
     "sleep 5\n"
+    # Same MaixPy 4.5.1 override as APP_INIT_SCRIPT — the revert path has
+    # to carry it too, or reverting turns a working unit into a crash loop.
+    "[ -d /root/t451 ] && export PYTHONPATH=/root/t451 \\\n"
+    "  LD_LIBRARY_PATH=/root/t451/lib\n"
     "cd /root/isora\n"
-    "nohup python3 /root/isora/main.py >> /tmp/isora_main.log 2>&1 &\n"
+    "nohup python3 -u /root/isora/main.py >> /tmp/isora_main.log 2>&1 &\n"
     "echo $! > /tmp/isora_main.pid\n"
     + RC_END + "\n"
 )
@@ -458,7 +489,7 @@ CHIME_INIT_SCRIPT = (
     "PCM=/root/audio/isora_menyala.pcm\n"
     "case \"$1\" in\n"
     "  start)\n"
-    "    if [ -f \"$PCM\" ] && [ -e /dev/snd/pcmC1D0p ]; then\n"
+    "    if [ -s \"$PCM\" ] && [ -e /dev/snd/pcmC1D0p ]; then\n"
     "      ( aplay -q -D hw:1,0 -t raw -f S16_LE -r 48000 -c 1 \"$PCM\" 2>/dev/null ) &\n"
     # The flag doubles as a boot-timing marker: its CONTENT is the uptime the
     # cue fired at, which tools/boot_timeline.py scores. main.py only tests for
@@ -502,24 +533,123 @@ APP_INIT_SCRIPT = (
     "# the WiFi module loads, instead of dead-last from rc.local/S99local.\n"
     "# To revert: delete this file and restore the launch block in /etc/rc.local\n"
     "# (RC_BLOCK_LEGACY in tools/run.py).\n"
+    "R=/root/isora-releases\n"
+    "H=/etc/isora/release.py\n"
+    "S=/etc/isora/supervise.sh\n"
+    "SUP=/tmp/isora_supervisor.pid\n"
+    "alive() { [ -f \"$1\" ] && kill -0 \"$(cat \"$1\")\" 2>/dev/null; }\n"
     "case \"$1\" in\n"
     "  start)\n"
-    "    if [ -f /tmp/isora_main.pid ] && "
-    "kill -0 \"$(cat /tmp/isora_main.pid)\" 2>/dev/null; then\n"
+    "    if alive $SUP || alive /tmp/isora_main.pid; then\n"
     "      exit 0\n"
     "    fi\n"
+    # Supervised start (device/system/supervise.sh): a crashed app comes back
+    # by itself, a wedged one is killed and started again. It runs the release
+    # switch and the trial guard on every start itself.
+    "    if [ -f \"$S\" ]; then\n"
+    "      rm -f /tmp/isora_stop\n"
+    "      sh \"$S\" </dev/null >/dev/null 2>&1 &\n"
+    "      echo $! > $SUP\n"
+    "      exit 0\n"
+    "    fi\n"
+    # Unsupervised start: a unit whose /etc predates the supervisor.
+    # Release switch + rollback (device/system/release.py, fed by
+    # core/updater.py). Only pays for a python3 start when there is something
+    # to do: a staged update, a release on trial, or no startable app at all.
+    "    if [ -f \"$H\" ] && { [ -e \"$R/pending\" ] || [ -e \"$R/trial\" ] "
+    "|| [ ! -f /root/isora/main.py ]; }; then\n"
+    "      python3 \"$H\" boot >/dev/null 2>&1\n"
+    "    fi\n"
+    # MaixPy userspace override. On the MaixCAM Lite every MaixPy from
+    # 4.10.3 up SIGSEGVs inside NN model load (a /dev/mem register poke),
+    # so a working 4.5.1 tree is kept in /root/t451 and must precede the
+    # image's own on both paths. Before the rebrand this lived ONLY in the
+    # hand-edited rc.local block, so a device migrated without it boots
+    # into a crash loop. Guarded by -d, hence a no-op on units whose
+    # shipped MaixPy works.
+    "    if [ -d /root/t451 ]; then\n"
+    "      export PYTHONPATH=/root/t451\n"
+    "      export LD_LIBRARY_PATH=/root/t451/lib\n"
+    "    fi\n"
     "    cd /root/isora\n"
-    "    nohup python3 /root/isora/main.py >> /tmp/isora_main.log 2>&1 &\n"
+    "    nohup python3 -u /root/isora/main.py >> /tmp/isora_main.log 2>&1 &\n"
     "    echo $! > /tmp/isora_main.pid\n"
+    # A release on trial must confirm itself healthy (core/updater.py,
+    # confirm_when_healthy) within this window, or it is rolled back here —
+    # also when it crashed before it could arm the hardware watchdog.
+    # The guard carries the trial as it reads NOW, so if the app is restarted
+    # while it sleeps it leaves the next start (with its own guard) alone.
+    "    if [ -f \"$H\" ] && [ -e \"$R/trial\" ]; then\n"
+    "      T=$(tr '\\n' ' ' < \"$R/trial\")\n"
+    "      ( sleep 240; python3 \"$H\" guard \"$T\" >/dev/null 2>&1; "
+    "[ $? -eq 3 ] && \"$0\" restart ) </dev/null >/dev/null 2>&1 &\n"
+    "    fi\n"
     "    ;;\n"
     "  stop)\n"
+    # Supervisor first, so it cannot start the app again behind our back.
+    "    touch /tmp/isora_stop\n"
+    "    alive $SUP && kill \"$(cat $SUP)\" 2>/dev/null\n"
+    "    rm -f $SUP\n"
     "    if [ -f /tmp/isora_main.pid ]; then\n"
     "      kill \"$(cat /tmp/isora_main.pid)\" 2>/dev/null\n"
     "    fi\n"
     "    ;;\n"
+    "  restart)\n"
+    "    \"$0\" stop\n"
+    # SIGTERM makes the app release the camera/NPU first; starting before it
+    # has gone would trip the PID guard above or fight over the sensor.
+    "    i=0\n"
+    "    while alive /tmp/isora_main.pid && [ $i -lt 20 ]; do\n"
+    "      sleep 1; i=$((i+1))\n"
+    "    done\n"
+    "    sleep 3\n"
+    "    \"$0\" start\n"
+    "    ;;\n"
     "esac\n"
     "exit 0\n"
 )
+
+# Files from device/system/ that live OUTSIDE the app tree (see the package
+# docstring there). Remote path → (source file, mode). The release helper is
+# deliberately not part of what the auto-updater replaces: it is the way back
+# from a bad update, so it only changes when this script is re-run.
+SYSTEM_DIR = os.path.join(os.path.dirname(__file__), "..", "device", "system")
+SUPERVISOR_PATH = "/etc/isora/supervise.sh"
+SYSTEM_FILES = {
+    "/etc/isora/release.py":    ("release.py",     0o644),
+    SUPERVISOR_PATH:            ("supervise.sh",   0o755),
+    "/etc/wifi_roam.sh":        ("wifi_roam.sh",   0o755),
+    "/etc/wifi_prefer.sh":      ("wifi_prefer.sh", 0o755),
+    "/etc/init.d/S31wifiroam":  ("S31wifiroam",    0o755),
+    "/etc/init.d/S03isoraclock": ("S03isoraclock", 0o755),
+}
+
+
+def install_system_files(client):
+    """Copy device/system/* to /etc (LF endings, atomic per file) and restart
+    the WiFi helpers so the new roam hook is live without a reboot."""
+    import base64
+    for remote, (name, mode) in SYSTEM_FILES.items():
+        with open(os.path.join(SYSTEM_DIR, name), "rb") as f:
+            data = f.read().replace(b"\r\n", b"\n")
+        b64 = base64.b64encode(data).decode()
+        _ssh(client,
+             "mkdir -p %s && python3 -c \"import base64,os,sys;"
+             "p=sys.argv[1];t=p+'.new';open(t,'wb').write(base64.b64decode(sys.argv[2]));"
+             "os.chmod(t,%d);os.replace(t,p)\" '%s' '%s' && sync"
+             % (os.path.dirname(remote), mode, remote, b64))
+        if _ssh(client, "test -f %s && echo ok" % remote):
+            ok("%s dipasang" % remote)
+        else:
+            err("Gagal memasang %s" % remote)
+    # setsid: the respawn loop must outlive this SSH session. `stop` also
+    # kills the pre-repo version's wpa_cli daemon (killall wpa_cli).
+    _ssh(client, "setsid /etc/init.d/S31wifiroam restart </dev/null >/dev/null 2>&1 &")
+    ok("Hook WiFi dijalankan ulang")
+    # Clock keeper: stop (saves the clock right now) then start the saver loop.
+    _ssh(client, "/etc/init.d/S03isoraclock stop; "
+                 "setsid /etc/init.d/S03isoraclock start </dev/null >/dev/null 2>&1 &")
+    ok("Penyimpan jam dijalankan (/root/.isora_clock)")
 
 # S05tp insmods two touchscreen drivers picked from /boot/board's panel= line.
 # On a unit with no LCD both probe the i2c bus, retry and fail — the Goodix one
@@ -549,12 +679,14 @@ def _write_rc_local(client, content):
 
 
 def _strip_block(text):
-    """Buang blok autostart I-Sora lama dari isi rc.local."""
+    """Buang blok autostart I-Sora (dan pendahulunya, AuralAI) dari rc.local."""
     import re
-    return re.sub(
-        re.escape(RC_BEGIN) + r".*?" + re.escape(RC_END) + r"\n?",
-        "", text, flags=re.S,
-    )
+    for begin, end in ((RC_BEGIN, RC_END), (RC_BEGIN_LEGACY, RC_END_LEGACY)):
+        text = re.sub(
+            re.escape(begin) + r".*?" + re.escape(end) + r"\n?",
+            "", text, flags=re.S,
+        )
+    return text
 
 
 def autostart_status(client):
@@ -564,7 +696,7 @@ def autostart_status(client):
     sep()
 
     rc = _ssh(client, f"cat {RC_LOCAL} 2>/dev/null")
-    if RC_BEGIN in rc:
+    if RC_BEGIN in rc or RC_BEGIN_LEGACY in rc:
         ok(f"I-Sora autostart AKTIF di {RC_LOCAL}")
     else:
         print(f"  {yellow('Belum di-set autostart')} — jalankan --autostart")
@@ -632,6 +764,9 @@ def autostart_set(client, do_deploy=True):
     else:
         err(f"Gagal memasang {APP_INIT_PATH} — device TIDAK akan autostart")
 
+    # Release helper (auto-update switch + rollback) and the WiFi roam hook.
+    install_system_files(client)
+
     # Headless unit: the touchscreen probe costs ~2.3s on absent hardware.
     if _ssh(client, f"test -e {TOUCH_INIT_PATH} && echo yes") == "yes":
         _ssh(client, f"mv {TOUCH_INIT_PATH} {TOUCH_INIT_DISABLED} && sync")
@@ -656,7 +791,7 @@ def autostart_clear(client):
     sep()
 
     rc = _ssh(client, f"cat {RC_LOCAL} 2>/dev/null")
-    if RC_BEGIN not in rc:
+    if RC_BEGIN not in rc and RC_BEGIN_LEGACY not in rc:
         warn("Tidak ada blok I-Sora di rc.local — tidak ada yang dihapus")
         return
 

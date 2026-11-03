@@ -125,8 +125,8 @@ export default function DeviceSettingsForm({
         title="Pengaturan"
         note={
           firstSetup
-            ? "Pengaturan ini dikirim ke perangkat lewat koneksi aman begitu kamu menyimpannya."
-            : "Hanya kolom yang kamu ubah yang akan dikirim ke perangkat."
+            ? "Pengaturan ini dikirim ke perangkat lewat koneksi aman begitu disimpan."
+            : "Hanya kolom yang diubah yang akan dikirim ke perangkat."
         }
       >
         <SettingsField>
@@ -180,7 +180,7 @@ export default function DeviceSettingsForm({
               autoComplete="off"
             />
             <span className="hint">
-              Dienkripsi di browser ke perangkatmu — server kami tidak melihat key aslinya.
+              Dienkripsi di browser ke perangkat ini — server kami tidak melihat key aslinya.
               Kosongkan bila tak ingin mengubahnya.
             </span>
           </div>

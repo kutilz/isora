@@ -159,7 +159,8 @@ def run_s3():
         kv('Model', MODEL_PATH)
         kv('Input', f'{INPUT_WIDTH}×{INPUT_HEIGHT}  FMT_RGB888')
 
-        detector = nn.YOLO11(model=MODEL_PATH)
+        from utils.nn_compat import load_detector
+        detector, det_name = load_detector(MODEL_PATH)
         cam = camera.Camera(INPUT_WIDTH, INPUT_HEIGHT, mi.Format.FMT_RGB888)
         cam.open()
         frame = cam.read()
@@ -211,7 +212,8 @@ def run_s4():
         from maix import camera, nn, image as mi
         from config import MODEL_PATH, CONF_THRESHOLD, IOU_THRESHOLD, INPUT_WIDTH, INPUT_HEIGHT
 
-        detector = nn.YOLO11(model=MODEL_PATH)
+        from utils.nn_compat import load_detector
+        detector, det_name = load_detector(MODEL_PATH)
         cam = camera.Camera(INPUT_WIDTH, INPUT_HEIGHT, mi.Format.FMT_RGB888)
         cam.open()
 
@@ -252,7 +254,8 @@ def run_s5():
         from maix import camera, nn, image as mi
         from config import MODEL_PATH, CONF_THRESHOLD, IOU_THRESHOLD, INPUT_WIDTH, INPUT_HEIGHT
 
-        detector = nn.YOLO11(model=MODEL_PATH)
+        from utils.nn_compat import load_detector
+        detector, det_name = load_detector(MODEL_PATH)
         cam = camera.Camera(INPUT_WIDTH, INPUT_HEIGHT, mi.Format.FMT_RGB888)
         cam.open()
 
@@ -305,7 +308,8 @@ def run_s6():
         from config import MODEL_PATH, CONF_THRESHOLD, IOU_THRESHOLD, INPUT_WIDTH, INPUT_HEIGHT
         from utils.health import _thermals
 
-        detector = nn.YOLO11(model=MODEL_PATH)
+        from utils.nn_compat import load_detector
+        detector, det_name = load_detector(MODEL_PATH)
         cam = camera.Camera(INPUT_WIDTH, INPUT_HEIGHT, mi.Format.FMT_RGB888)
         cam.open()
 

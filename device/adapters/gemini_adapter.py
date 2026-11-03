@@ -5,8 +5,11 @@ Supports gemini-1.5-flash, gemini-1.5-pro, gemini-2.0-flash, etc.
 
 import base64
 import json
+import time
 import urllib.request
 import urllib.error
+
+from utils import diag
 
 from .base import AIAdapter, AdapterError
 
@@ -93,18 +96,22 @@ class GeminiAdapter(AIAdapter):
             headers={"Content-Type": "application/json"},
             method="POST",
         )
+        started = time.monotonic()
         try:
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 data = json.loads(resp.read())
-            return (
-                data["candidates"][0]["content"]["parts"][0]["text"].strip()
-            )
+            text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+            diag.ai_call("gemini", started, True)
+            return text
         except urllib.error.HTTPError as e:
             body = e.read().decode(errors="replace")[:200]
+            diag.ai_call("gemini", started, False, err=f"HTTP {e.code}")
             raise AdapterError(f"Gemini HTTP {e.code}: {body}") from e
         except (KeyError, IndexError) as e:
+            diag.ai_call("gemini", started, False, err="response shape")
             raise AdapterError(f"Unexpected Gemini response shape: {e}") from e
         except Exception as e:
+            diag.ai_call("gemini", started, False, err=e)
             raise AdapterError(str(e)) from e
 
     # Thinking is off (see _call), so the cap only needs to cover the actual

@@ -295,7 +295,11 @@ class DataCollector:
         # Init camera di dalam thread
         if MAIX_OK:
             try:
-                self._cam = camera.Camera(640, 480)
+                # Take the speaker's slot for the open: the multimedia init
+                # drops whatever is playing ("Mode ambil data aktif" here).
+                from core.audio_manager import _codec
+                with _codec():
+                    self._cam = camera.Camera(640, 480)
                 self._apply_orientation()
                 self._info("Camera OK (640×480)")
             except Exception as ex:

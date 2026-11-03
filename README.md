@@ -62,7 +62,7 @@ Device (MaixCAM)                Web hub (Vercel + Supabase)            Browser
   speaks code    ── code ─────►  /api/pair/code            ◄─ enter code ─ /pair
   long-poll      ◄─ config ───   /api/poll  ◄─ push config ─ /api/devices/:id/config
   apply + ACK    ── ack ──────►  /api/ack
-  heartbeat      ── status ───►  /api/heartbeat            ─► /dashboard
+  heartbeat      ── status ───►  /api/heartbeat            ─► /app
 ```
 
 Key properties:
@@ -93,7 +93,7 @@ and enabling email magic-link auth. Deploy to Vercel with root directory `web`.
 ```bash
 pip install cryptography
 python tools/mock_device.py --base-url http://localhost:3000
-# prints a PAIRING CODE → open http://localhost:3000/pair, sign in, enter the code,
+# prints a PAIRING CODE → open http://localhost:3000/app/tambah, sign in, enter the code,
 # set an API key → the mock device prints the DECRYPTED key (E2E verified) and ACKs.
 ```
 
@@ -179,7 +179,7 @@ aural-ai-sdk/
 │       ├── crypto_box.py     # E2E keypair for cloud-pushed secrets (Phase 5)
 │       └── latency_tester.py
 ├── web/                      # I-Sora web hub — Next.js on Vercel (Phase 5)
-│   ├── app/                  # Landing, /docs, /preview, /pair, /dashboard, /api/*
+│   ├── app/                  # Landing, /docs, /preview, /simulasi, /app, /api/*
 │   ├── components/           # Nav, QrSetup, DeviceConfigForm, …
 │   ├── lib/                  # i18n, docs loader, supabase clients, e2e.ts
 │   ├── content/docs/         # Markdown source for the public /docs pages

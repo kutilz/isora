@@ -5,14 +5,19 @@ Web UI stream via get_recent().
 Adds:
   - exception(msg, module, exc=None) — error log with full traceback
   - log rotation at init: prunes files >7 days OR total dir >100MB
+  - one file per start, numbered (isora_00042_<date>_<time>.log)
+  - fsync to the SD card every SYNC_INTERVAL_S
 """
 
 import os
+import re
 import json
 import time
 import threading
 import traceback
 from collections import deque
+
+_SEQ_NAME = re.compile(r"^isora_(\d{5})_\d{8}_\d{6}\.log$")
 
 
 class Logger:
@@ -23,15 +28,27 @@ class Logger:
     MAX_AGE_DAYS  = 7
     MAX_TOTAL_MB  = 100
 
+    # The device is switched off by pulling power, and the hardware watchdog
+    # resets it the same way, so whatever the kernel still holds in its page
+    # cache (up to ~30 s) never reaches the SD card — and the last lines
+    # before a restart are the ones a diagnosis needs. fsync this often.
+    SYNC_INTERVAL_S = 10.0
+
     def __init__(self, log_path: str = "/root/logs",
-                 max_lines: int = 500, min_level: str = "info"):
+                 max_lines: int = 500, min_level: str = "info",
+                 sync_interval_s: float = SYNC_INTERVAL_S):
         self._lock = threading.Lock()
         self._buffer: deque = deque(maxlen=max_lines)
         self._log_file = None
+        self._dirty = False
+        self._closed = threading.Event()
         self._min_level = self.LEVELS.get(min_level, 1)
         self._log_path = log_path
         self._rotate_old_logs(log_path)
         self._init_file(log_path)
+        if self._log_file and sync_interval_s > 0:
+            threading.Thread(target=self._sync_loop, args=(sync_interval_s,),
+                             daemon=True, name="LogSync").start()
 
     # ─── Log rotation (CG-5) ──────────────────────────────────────────────────
 
@@ -82,10 +99,36 @@ class Logger:
     def _init_file(self, log_path: str):
         try:
             os.makedirs(log_path, exist_ok=True)
-            name = f"isora_{time.strftime('%Y%m%d_%H%M%S')}.log"
+            # Numbered, not just timestamped: before NTP the clock reads 1970
+            # and the app always starts at the same uptime, so every start
+            # used to append to the same isora_19700101_000018.log — 80 boots
+            # in one file on isora-iiot.
+            name = (f"isora_{self._next_seq(log_path):05d}_"
+                    f"{time.strftime('%Y%m%d_%H%M%S')}.log")
             self._log_file = open(os.path.join(log_path, name), "a", encoding="utf-8")
         except Exception:
             self._log_file = None
+
+    @staticmethod
+    def _next_seq(log_path: str) -> int:
+        seqs = [int(m.group(1)) for m in map(_SEQ_NAME.match, os.listdir(log_path)) if m]
+        return (max(seqs) + 1) % 100000 if seqs else 1
+
+    def _sync_loop(self, interval_s: float):
+        while not self._closed.wait(interval_s):
+            self.sync()
+
+    def sync(self):
+        """Push everything written so far onto the SD card."""
+        with self._lock:
+            if not (self._dirty and self._log_file):
+                return
+            self._dirty = False
+            fd = self._log_file.fileno()
+        try:
+            os.fsync(fd)   # outside the lock: an SD fsync can take a while
+        except Exception:
+            pass
 
     def _log(self, level: str, msg: str, module: str = "", **extra):
         if self.LEVELS.get(level, 0) < self._min_level:
@@ -93,6 +136,8 @@ class Logger:
 
         entry = {
             "ts":     time.strftime("%Y-%m-%dT%H:%M:%S"),
+            # Seconds since boot: still meaningful while "ts" reads 1970.
+            "up":     round(time.monotonic(), 1),
             "level":  level,
             "module": module,
             "msg":    msg,
@@ -106,6 +151,7 @@ class Logger:
                 try:
                     self._log_file.write(line + "\n")
                     self._log_file.flush()
+                    self._dirty = True
                 except Exception:
                     pass
 
@@ -140,6 +186,7 @@ class Logger:
             return list(self._buffer)[-n:]
 
     def __del__(self):
+        self._closed.set()
         if self._log_file:
             try:
                 self._log_file.close()

@@ -5,8 +5,11 @@ Supports claude-haiku-4-5, claude-sonnet-4-6, claude-opus-4-7, etc.
 
 import base64
 import json
+import time
 import urllib.request
 import urllib.error
+
+from utils import diag
 
 from .base import AIAdapter, AdapterError
 
@@ -60,16 +63,22 @@ class ClaudeAdapter(AIAdapter):
             },
             method="POST",
         )
+        started = time.monotonic()
         try:
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 data = json.loads(resp.read())
-            return data["content"][0]["text"].strip()
+            text = data["content"][0]["text"].strip()
+            diag.ai_call("claude", started, True)
+            return text
         except urllib.error.HTTPError as e:
             body = e.read().decode(errors="replace")[:200]
+            diag.ai_call("claude", started, False, err=f"HTTP {e.code}")
             raise AdapterError(f"Claude HTTP {e.code}: {body}") from e
         except (KeyError, IndexError) as e:
+            diag.ai_call("claude", started, False, err="response shape")
             raise AdapterError(f"Unexpected Claude response shape: {e}") from e
         except Exception as e:
+            diag.ai_call("claude", started, False, err=e)
             raise AdapterError(str(e)) from e
 
     # Matches the OpenAI/Gemini budget: the structured prompt allows up to

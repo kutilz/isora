@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Same tokens as web/app/globals.css. Amber (#F4A23B) lives only in the icon:
+         it is too low-contrast on white for text. -->
+    <color name="isora_indigo">#2C3680</color>
+    <color name="ink">#1A1D2E</color>
+    <color name="ink_2">#4A4F66</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_2">#F3F4F8</color>
+    <color name="border">#D9DCE6</color>
+    <color name="danger">#B3261E</color>
+</resources>

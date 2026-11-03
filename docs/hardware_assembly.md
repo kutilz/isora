@@ -107,11 +107,14 @@ ground yang sama.
 | Kondisi | Tekan sebentar | Tekan agak lama (≥1 dtk) |
 |---|---|---|
 | **Setup pertama** (URL belum di-ack) | — (nonaktif) | — (nonaktif) |
-| **Mode Jelajah / Deskripsi** | Jelaskan apa yang di depan (1 tekan = 1 panggilan API) | Ucapkan ulang hasil terakhir |
+| **Mode Jelajah (penjelajah)** | Nyalakan / matikan **navigasi daring** ("navigasi daring aktif / mati") | Ucapkan ulang hasil terakhir |
+| **Mode Deskripsi (konteks)** | Jelaskan apa yang di depan (1 tekan = 1 panggilan API) | Ucapkan ulang hasil terakhir |
 | **Mode QRIS** | Pindai kode pembayaran | Ucapkan ulang hasil terakhir |
 
-> Hemat token: gambar **hanya dikirim saat tombol AKSI ditekan** — tidak pernah
-> streaming terus-menerus.
+> Hemat token: di luar navigasi daring, gambar **hanya dikirim saat tombol AKSI
+> ditekan**. Navigasi daring memotret berkala (default tiap 8 detik, bisa diatur
+> 3–60 detik dari `/buttons` atau app) — 1 foto = 1 panggilan API, jadi biayanya
+> berjalan selama ia menyala. Mati sendiri saat mode diganti.
 
 **Fungsi tombol MODE:**
 

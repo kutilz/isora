@@ -1,0 +1,9 @@
+# Files that run on the MaixCAM's busybox shell must keep LF endings: with
+# core.autocrlf=true a Windows checkout would otherwise turn "#!/bin/sh" into
+# "#!/bin/sh\r" and every init script would fail to start.
+device/system/** text eol=lf
+*.sh text eol=lf
+# Gradle wrapper: the Unix script must stay LF to run, the batch file CRLF.
+android/gradlew text eol=lf
+*.bat text eol=crlf
+*.jar binary

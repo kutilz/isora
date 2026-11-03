@@ -332,3 +332,42 @@ def test_warm_speech_stack_never_renders_on_the_paid_backend(am, monkeypatch):
 
     am.warm_speech_stack()
     time.sleep(0.2)
+
+
+# ─── A chunk the network gave up on ───────────────────────────────────────────
+
+def test_a_failed_chunk_is_spoken_from_the_word_cache_when_it_can_be(am, monkeypatch):
+    """Mobile data: chunk 1 spoken, chunk 2's render timed out. If its words
+    are all cached, splice them now rather than leave the description cut."""
+    tasks = []
+    monkeypatch.setattr(am, "_render_pcm",
+                        lambda text: None if text.startswith("Di depannya")
+                        else "/tmp/one.pcm")
+    monkeypatch.setattr(am, "_concat_if_cached",
+                        lambda text: b"\x00\x01" * 100)
+    monkeypatch.setattr(am, "_play_task", lambda task: tasks.append(task))
+
+    am.speak_scene(TWO_SENTENCES)
+
+    assert _wait(lambda: len(tasks) == 2), [t.text for t in tasks]
+    assert tasks[0].pcm_path == "/tmp/one.pcm"
+    assert tasks[1].text == "Di depannya ada meja komputer."
+    assert tasks[1].pcm_bytes, "the failed chunk was not spoken from the cache"
+
+
+def test_a_failed_chunk_with_uncached_words_still_goes_to_the_play_loop(am, monkeypatch):
+    tasks = []
+    monkeypatch.setattr(am, "_render_pcm",
+                        lambda text: None if text.startswith("Di depannya")
+                        else "/tmp/one.pcm")
+    monkeypatch.setattr(am, "_concat_if_cached", lambda text: None)
+    monkeypatch.setattr(am, "_play_task", lambda task: tasks.append(task))
+
+    am.speak_scene(TWO_SENTENCES)
+
+    assert _wait(lambda: len(tasks) == 2)
+    assert tasks[1].pcm_path is None and tasks[1].pcm_bytes is None
+
+
+def test_concat_if_cached_refuses_a_sentence_with_a_hole(am):
+    assert am._concat_if_cached("kata yang belum pernah disimpan") is None

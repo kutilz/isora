@@ -81,7 +81,7 @@ export async function POST(req: Request) {
   const { net, rows } = await candidates(req);
   if (!net) {
     return NextResponse.json(
-      { error: "jaringanmu tidak bisa dikenali — pakai QR atau kode suara" },
+      { error: "jaringan ini tidak bisa dikenali — pakai QR atau kode suara" },
       { status: 400 }
     );
   }

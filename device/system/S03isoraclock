@@ -1,0 +1,66 @@
+#!/bin/sh
+# I-Sora: keep the wall clock across restarts (a fake-hwclock). Installed to
+# /etc/init.d/S03isoraclock by `tools/run.py --autostart`; source of truth is
+# device/system/S03isoraclock in the repo.
+#
+# The MaixCAM has no RTC battery, so every boot starts in 1970 until NTP
+# answers - 30+ s after WiFi is up (time_sync_daemon waits that long), and
+# never on a hotspot without internet. Until then every HTTPS request fails
+# with "certificate is not yet valid", which the device speaks as a connection
+# failure; a user who restarts because of it lands in 1970 again. Seen on
+# isora-iiot on a phone hotspot, 22 Oct 2026.
+#
+#   start    before WiFi and NTP: if the clock is clearly unset, set it to the
+#            last time saved here; then keep saving it (see keeper). NTP still
+#            corrects it whenever it answers.
+#   stop     save once more.
+#   restore / save   the two halves, on their own.
+F=${ISORA_CLOCK_FILE:-/root/.isora_clock}
+PIDF=/run/isora_clock.pid
+MIN=1735689600      # 2025-01-01 UTC: anything earlier means "never set"
+
+restore() {
+    now=$(date +%s)
+    saved=$(cat "$F" 2>/dev/null)
+    case "$saved" in ''|*[!0-9]*) return 0 ;; esac
+    if [ "$now" -lt "$MIN" ] && [ "$saved" -ge "$MIN" ]; then
+        date -s "@$saved" >/dev/null 2>&1
+    fi
+}
+
+# Only a plausible clock is worth keeping. A restored-but-never-synced clock
+# counts: it still moves forward, so the saved time never goes backwards.
+save() {
+    now=$(date +%s)
+    [ "$now" -ge "$MIN" ] || return 1
+    echo "$now" > "$F.tmp" && mv "$F.tmp" "$F" && sync
+}
+
+# Save as soon as the clock is plausible (a session can be shorter than the
+# interval), then every 10 minutes: the SD card does not need more.
+keeper() {
+    last=0
+    while :; do
+        sleep 60
+        up=$(cut -d. -f1 /proc/uptime)
+        if [ "$last" -eq 0 ] || [ $((up - last)) -ge 600 ]; then
+            save && last=$up
+        fi
+    done
+}
+
+case "$1" in
+    start)
+        restore
+        keeper </dev/null >/dev/null 2>&1 &
+        echo $! > $PIDF
+        ;;
+    stop)
+        [ -f $PIDF ] && kill "$(cat $PIDF)" 2>/dev/null
+        rm -f $PIDF
+        save
+        ;;
+    restore) restore ;;
+    save)    save ;;
+esac
+exit 0

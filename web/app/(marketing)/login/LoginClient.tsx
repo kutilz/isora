@@ -80,8 +80,8 @@ export default function LoginClient() {
       <h1 style={{ fontSize: "var(--t-2xl)", letterSpacing: "-.02em" }}>Cadangkan ke email</h1>
       <p className="sub">
         {upgrading
-          ? "Perangkatmu sudah tersimpan di ponsel ini. Tambahkan email supaya bisa dibuka dari ponsel lain — dan tidak hilang kalau data peramban dihapus."
-          : "Masukkan email yang sama dengan yang kamu pakai di ponsel lain. Kami kirim tautan ajaib — tanpa password."}
+          ? "Perangkat sudah tersimpan di ponsel ini. Tambahkan email supaya bisa dibuka dari ponsel lain — dan tidak hilang kalau data peramban dihapus."
+          : "Masukkan email yang sama dengan yang dipakai di ponsel lain. Kami kirim tautan ajaib — tanpa password."}
       </p>
 
       {alreadyLinked ? (
@@ -105,7 +105,7 @@ export default function LoginClient() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="kamu@contoh.com"
+              placeholder="nama@contoh.com"
               autoComplete="email"
             />
           </div>

@@ -9,8 +9,8 @@ summary: Tiga cara menautkan perangkat — otomatis lewat WiFi, pindai QR, atau 
 Setelah perangkat tersambung ke WiFi, buka aplikasi I-Sora di ponsel — halaman
 **[I-Sora](/app)** — lalu pilih **Tambah perangkat**.
 
-**Tidak ada pendaftaran.** Aplikasi langsung bisa dipakai; perangkat yang kamu
-hubungkan tersimpan di ponsel itu. Email hanya ditawarkan belakangan, dan
+**Tidak ada pendaftaran.** Aplikasi langsung bisa dipakai; perangkat yang
+dihubungkan tersimpan di ponsel itu. Email hanya ditawarkan belakangan, dan
 sifatnya opsional — lihat [Memakai di ponsel lain](#memakai-di-ponsel-lain).
 
 Ada beberapa cara, diurutkan dari yang paling sedikit usahanya.
@@ -27,9 +27,9 @@ mengucapkan:
 Tekan tombol **ACTION** sekali. Selesai — tanpa mengetik, tanpa melihat layar,
 tanpa perlu orang lain membacakan apa pun.
 
-Perangkat langsung menjawab suara supaya kamu tahu hasilnya:
+Perangkat langsung menjawab dengan suara supaya hasilnya langsung diketahui:
 
-| Yang kamu dengar | Artinya |
+| Yang terdengar | Artinya |
 |---|---|
 | "Perangkat sudah terhubung." | Berhasil |
 | "Belum ada ponsel yang menunggu…" | Halaman Tambah perangkat belum terbuka |
@@ -40,7 +40,7 @@ Perangkat langsung menjawab suara supaya kamu tahu hasilnya:
 > alatnya — itu bukti kepemilikan yang lebih kuat daripada sekadar "satu WiFi",
 > dan tidak menuntut apa pun dari orang yang tidak bisa melihat layar.
 
-Berlaku di jaringan mana pun; perangkat tidak harus satu WiFi dengan ponselmu.
+Berlaku di jaringan mana pun; perangkat tidak harus satu WiFi dengan ponsel.
 
 ## Cara 2 — Ketuk dari daftar (kalau satu WiFi)
 
@@ -48,22 +48,22 @@ Kalau ponsel dan perangkat tersambung ke **WiFi yang sama**, perangkat baru juga
 muncul sendiri di halaman itu. Ketuk **"Hubungkan perangkat ini"** — sedikit
 lebih cepat daripada menekan tombol, karena namanya sudah terlihat.
 
-> **Kenapa bisa tahu?** Perangkat dan ponselmu keluar ke internet lewat router
+> **Kenapa bisa tahu?** Perangkat dan ponsel keluar ke internet lewat router
 > yang sama, jadi keduanya terlihat dari alamat publik yang sama. Server hanya
 > menyimpan sidik ringkasnya, bukan alamatnya.
 
 Kalau di jaringan itu ada **lebih dari satu** perangkat baru sekaligus (misalnya
 di kelas atau kantor), daftar ini sengaja tidak muncul — kami tidak bisa menebak
-mana milikmu. Tombolnya tetap jalan; tekan saja.
+mana yang dimaksud. Tombolnya tetap jalan; tekan saja.
 
 ## Cara 3 — Pindai QR dengan kamera perangkat
 
 Cadangan kalau tombol ACTION rusak.
 
 1. Buka **Tambah perangkat → Pindai QR dengan kamera perangkat**.
-2. Sebuah kode QR muncul di layar ponselmu.
+2. Sebuah kode QR muncul di layar ponsel.
 3. **Arahkan kamera perangkat I-Sora ke layar itu**, sekitar sejengkal jauhnya.
-4. Perangkat menautkan dirinya sendiri — kamu akan mendengar
+4. Perangkat menautkan dirinya sendiri, lalu terdengar
    "Perangkat sudah terhubung".
 
 > Kode QR berisi token yang **kedaluwarsa dalam beberapa menit** dan hanya
@@ -104,7 +104,7 @@ Begitu tertaut, layar pengaturan perangkat terbuka:
 - **Layanan AI** — OpenAI, Gemini, atau Claude, lalu API key-nya.
 - **Cara mendengar** — chime saja, bicara saja, atau keduanya.
 - **Kendali lokal** — tautan ke panel tombol di perangkat, muncul ketika
-  ponselmu berada di WiFi yang sama.
+  ponsel berada di WiFi yang sama.
 
 Tekan **Simpan & selesai**. Layar sambutan I-Sora muncul dan memberi tahu
 keadaannya: *"Mengirim pengaturan ke perangkat…"* lalu *"Pengaturan sudah
@@ -114,7 +114,7 @@ adanya — pengaturan tetap tersimpan dan masuk sendiri begitu perangkat
 tersambung lagi.
 
 > **Privasi:** API key dienkripsi di browser dan hanya bisa dibuka oleh
-> perangkatmu. Server kami tidak pernah menyimpan key asli.
+> perangkat tersebut. Server kami tidak pernah menyimpan key asli.
 
 ### Kalau halaman penyiapan keburu tertutup
 
@@ -138,8 +138,8 @@ nama itu juga yang dipakai sebagai alamat lokalnya.
 
 ## Memakai di ponsel lain
 
-Daftar perangkatmu tersimpan di peramban ponsel ini. Kalau kamu menghapus data
-peramban, atau ingin membuka perangkat yang sama dari ponsel/laptop lain,
+Daftar perangkat tersimpan di peramban ponsel ini. Kalau data peramban
+dihapus, atau ingin membuka perangkat yang sama dari ponsel/laptop lain,
 tambahkan email sekali:
 
 1. Buka **I-Sora → Cadangan → Tambahkan email**.

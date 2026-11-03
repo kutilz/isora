@@ -60,7 +60,7 @@ function LinkedDevices() {
   return (
     <SettingsGroup
       title={pending.length > 0 ? "Lanjutkan penyiapan" : "Sudah tertaut"}
-      note="Perangkat yang sudah tertaut ke ponsel ini. Kalau tadi kamu sudah menekan tombolnya, perangkatmu ada di sini."
+      note="Perangkat yang sudah tertaut ke ponsel ini. Kalau tombolnya sudah ditekan tadi, perangkatnya ada di sini."
     >
       {devices.map((d) => (
         <SettingsLink
@@ -148,7 +148,7 @@ function ButtonPair({ onPaired }: { onPaired: (id: string) => void }) {
       title="Tekan tombol perangkat"
       note={
         <>
-          Berlaku di jaringan mana pun — perangkat tidak harus satu WiFi dengan ponselmu. Kalau
+          Berlaku di jaringan mana pun — perangkat tidak harus satu WiFi dengan ponsel. Kalau
           perangkat menjawab <em>“sudah terhubung”</em>, ia masih tertaut ke ponsel lain: lepaskan
           dulu dari sana, atau lihat daftar di atas.
         </>
@@ -248,7 +248,7 @@ function AutoPair({ onPaired }: { onPaired: (id: string) => void }) {
   if (state.kind !== "one") return null;
 
   return (
-    <SettingsGroup title="Atau ketuk saja" note="Perangkat ini terlihat di WiFi yang sama denganmu.">
+    <SettingsGroup title="Atau ketuk saja" note="Perangkat ini terlihat di WiFi yang sama dengan ponsel ini.">
       <SettingsItem
         lead={<span className="dot dot--ok" aria-hidden="true" />}
         label={deviceLabel(state.device)}
@@ -448,7 +448,7 @@ export default function AddClient() {
         <div className="app-body">
           <SettingsGroup
             title="Belum bisa menghubungkan"
-            note="Pairing butuh koneksi ke relay I-Sora. Perangkatmu sendiri tetap berfungsi penuh tanpa ini."
+            note="Pairing butuh koneksi ke relay I-Sora. Perangkatnya sendiri tetap berfungsi penuh tanpa ini."
           >
             <SettingsItem label="Relay tidak bisa dihubungi" sub={session.reason} />
             <SettingsLink href="/docs/masalah-umum" label="Masalah umum" />
@@ -474,7 +474,7 @@ export default function AddClient() {
             <summary className="srow">
               <span className="srow__main">
                 <span className="srow__label">Pindai QR dengan kamera perangkat</span>
-                <span className="srow__sub">Tanpa mengetik — perangkat yang membaca layarmu</span>
+                <span className="srow__sub">Tanpa mengetik — perangkat yang membaca layar ponsel</span>
               </span>
             </summary>
             <QrPair onPaired={onPaired} />

@@ -24,6 +24,12 @@ def run_explorer_tick(orch):
     orch.detections = detections
     orch.latency    = latency
 
+    # Online navigation, when ACTION switched it on. Before the early return
+    # below: an empty frame is exactly when the narrator still has to run.
+    scan = getattr(orch, "scan", None)
+    if scan is not None:
+        scan.step()
+
     if not detections or orch.audio_manager is None:
         return
 
@@ -36,7 +42,10 @@ def run_explorer_tick(orch):
     # is deliberately fiddling with the device, not watching where they are
     # going, was also the state where a car or a staircase went unannounced.
     # Convenience may be silenced; a hazard may not.
-    if orch.detection_audio_suppressed():
+    #
+    # The same holds while an online narration is playing: a LOW sentence is
+    # cut off by any HIGH alert, so a busy street would never let one finish.
+    if orch.detection_audio_suppressed() or (scan is not None and scan.holds_floor()):
         detections = [d for d in detections if is_danger(d)]
         if not detections:
             return

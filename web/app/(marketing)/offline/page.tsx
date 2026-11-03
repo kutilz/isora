@@ -10,8 +10,8 @@ export default function OfflinePage() {
     <div className="container section" style={{ maxWidth: 560 }}>
       <h1 style={{ fontSize: "var(--t-2xl)", letterSpacing: "-.02em" }}>Tidak ada koneksi</h1>
       <p className="sub">
-        Halaman yang kamu buka butuh internet. Status dan pengaturan perangkat akan muncul
-        lagi begitu ponselmu tersambung.
+        Halaman ini butuh internet. Status dan pengaturan perangkat akan muncul
+        lagi begitu ponsel tersambung.
       </p>
       <div className="card">
         <p style={{ margin: 0 }}>

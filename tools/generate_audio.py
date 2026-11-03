@@ -67,6 +67,11 @@ SYSTEM_EVENTS = {
     "mode_explorer":                "mode penjelajah aktif",
     "mode_context":                 "mode konteks aktif",
     "mode_qris":                    "mode scan bayar aktif",
+    # ACTION in explorer: online navigation on/off (orchestrator.toggle_scan).
+    # "navigasi", not "mode": it is a switch inside the explorer mode, and a
+    # second "mode ..." phrase would sound like the MODE button had cycled.
+    "navigasi_daring_aktif":        "navigasi daring aktif",
+    "navigasi_daring_mati":         "navigasi daring mati",
     "sedang_menganalisis":          "sedang menganalisis",
     "masih_memproses":              "masih memproses",
     # Cause-aware wait/failure cues. "koneksi_lambat" replaces "masih_memproses"
@@ -75,6 +80,31 @@ SYSTEM_EVENTS = {
     "koneksi_lambat":               "koneksi internet lambat",
     "tidak_ada_koneksi":            "tidak ada koneksi internet",
     "memindai_kode_pembayaran":     "memindai kode pembayaran",
+    # Mode scan bayar (modes/pay_mode.py): one fixed phrase per banknote, keyed
+    # by utils/money.cue_key, so naming a note never waits on the network.
+    "seribu_rupiah":                "seribu rupiah",
+    "dua_ribu_rupiah":              "dua ribu rupiah",
+    "lima_ribu_rupiah":             "lima ribu rupiah",
+    "sepuluh_ribu_rupiah":          "sepuluh ribu rupiah",
+    "dua_puluh_ribu_rupiah":        "dua puluh ribu rupiah",
+    "lima_puluh_ribu_rupiah":       "lima puluh ribu rupiah",
+    "seratus_ribu_rupiah":          "seratus ribu rupiah",
+    # A QR that is not QRIS (a URL, a menu link) held up in scan bayar.
+    "bukan_kode_pembayaran":        "bukan kode pembayaran",
+    # Panduan arah ke kode QR (utils/qr_guide.py): where the code is, so the head
+    # can be turned towards it, all offline. Same keys as qr_guide.ALL_CUES.
+    "kode_di_kiri_atas":            "kode di kiri atas",
+    "kode_di_atas":                 "kode di atas",
+    "kode_di_kanan_atas":           "kode di kanan atas",
+    "kode_di_kiri":                 "kode di kiri",
+    "kode_di_kanan":                "kode di kanan",
+    "kode_di_kiri_bawah":           "kode di kiri bawah",
+    "kode_di_bawah":                "kode di bawah",
+    "kode_di_kanan_bawah":          "kode di kanan bawah",
+    "dekati_kode":                  "dekati kode",
+    "kode_pas_pindai_sekarang":     "kode pas, pindai sekarang",
+    "kode_hilang":                  "kode hilang",
+    "belum_ada_kode_terlihat":      "belum ada kode terlihat",
     "selesai":                      "selesai",
     "koneksi_gagal":                "koneksi gagal",
     "baterai_lemah":                "baterai lemah",
@@ -82,6 +112,26 @@ SYSTEM_EVENTS = {
     "api_tidak_tersedia":           "API tidak tersedia",
     "gagal_menganalisis":           "gagal menganalisis",
     "gagal_memindai":               "gagal memindai, coba lagi",
+    # Answers to an ACTION press while the device is still unpaired (see
+    # core/onboarding.OnboardingAnnouncer.PAIR_REPLIES). Pre-generated for the
+    # same reason as the connection cues above: "belum ada internet" is exactly
+    # the moment gTTS cannot be reached, and the rest need to land instantly so
+    # the press feels answered rather than ignored.
+    "belum_ada_internet_sambungkan_perangkat_ke_wifi_dulu":
+        "Belum ada internet. Sambungkan perangkat ke WiFi dulu.",
+    "belum_ada_ponsel_yang_menunggu_buka_halaman_tambah_perangkat_dulu_lalu_tekan_lagi":
+        "Belum ada ponsel yang menunggu. Buka halaman tambah perangkat dulu, lalu tekan lagi.",
+    "ada_lebih_dari_satu_ponsel_yang_menunggu_tutup_salah_satunya_lalu_tekan_lagi":
+        "Ada lebih dari satu ponsel yang menunggu. Tutup salah satunya, lalu tekan lagi.",
+    "perangkat_ini_sudah_terhubung":
+        "Perangkat ini sudah terhubung.",
+    "gagal_menghubungkan_coba_tekan_lagi":
+        "Gagal menghubungkan. Coba tekan lagi.",
+    # onboarding.announce_paired — the moment a pairing demo is judged on.
+    "perangkat_sudah_terhubung":    "Perangkat sudah terhubung.",
+    # orchestrator: ACTION pressed while the camera is closed (idle mode).
+    "kamera_belum_aktif_tekan_mode_dulu":
+        "Kamera belum aktif. Tekan tombol mode dulu.",
 }
 
 

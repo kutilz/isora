@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mode PIMNAS — I-Sora</title>
+<link rel="stylesheet" href="/tokens.css">
+<style>
+  /* Operator page for a live demo: one person in the audience, on the phone
+     that is also the device's hotspot. Plain HTTP on the LAN — it keeps
+     working when the venue's internet does not. Built on tokens.css like
+     /buttons; targets ≥ 48px. */
+  body { padding: 0; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: var(--s-4) var(--s-4) var(--s-12); }
+  header.top { display:flex; justify-content:space-between; align-items:center; gap:var(--s-3); margin-bottom:var(--s-4); flex-wrap:wrap; }
+  header.top h1 { font-size:var(--t-xl); margin:0; line-height:1.1; }
+  header.top .sub { color:var(--ink-2); font-size:var(--t-sm); margin:4px 0 0; }
+  .conn { display:flex; align-items:center; gap:var(--s-2); font-size:var(--t-sm); color:var(--ink-2); font-weight:600; white-space:nowrap; }
+
+  section.card { padding:var(--s-4); margin-bottom:var(--s-4); }
+  section.card > h2 { font-size:var(--t-sm); text-transform:uppercase; letter-spacing:.5px; color:var(--ink-3); margin:0 0 var(--s-3); font-weight:700; }
+
+  .switch { display:flex; align-items:center; justify-content:space-between; gap:var(--s-3); }
+  .switch p { margin:0; color:var(--ink-2); font-size:var(--t-sm); line-height:1.45; }
+  .switch .btn { min-width:120px; min-height:56px; font-weight:800; }
+  .switch .btn[aria-pressed="true"] { background:var(--ok); border-color:var(--ok); color:#fff; }
+
+  .statrow { display:flex; flex-wrap:wrap; gap:var(--s-2); }
+  .chip { flex:1 1 140px; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-md); padding:var(--s-2) var(--s-3); }
+  .chip b { display:block; color:var(--ink-3); font-size:var(--t-xs); text-transform:uppercase; letter-spacing:.4px; font-weight:700; margin-bottom:3px; }
+  .chip .v { font-size:var(--t-md); font-weight:700; }
+  .v--warn { color:var(--warn); } .v--danger { color:var(--danger); } .v--ok { color:var(--ok); }
+  .caption { margin-top:var(--s-3); background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-md); padding:var(--s-3); }
+  .caption .lbl { display:block; color:var(--ink-3); font-size:var(--t-xs); text-transform:uppercase; letter-spacing:.4px; font-weight:700; margin-bottom:4px; }
+  .caption .val { font-size:var(--t-md); line-height:1.35; }
+  #press { margin-top:var(--s-2); font-size:var(--t-sm); color:var(--ink-2); min-height:1.4em; }
+  #press.fresh { color:var(--warn); font-weight:700; }
+
+  .grid4 { display:grid; grid-template-columns:1fr 1fr; gap:var(--s-2); }
+  .grid4 .btn { min-height:64px; font-weight:800; }
+  .grid4 .btn[aria-current="true"] { background:var(--info); border-color:var(--info); color:#fff; }
+  .row { display:flex; gap:var(--s-2); margin-top:var(--s-2); flex-wrap:wrap; }
+  .row .btn { flex:1 1 0; min-height:56px; font-weight:700; }
+  .btn--act { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .vol { display:flex; align-items:center; gap:var(--s-2); }
+  .vol .num { min-width:64px; text-align:center; font-weight:800; font-size:var(--t-lg); }
+
+  textarea { width:100%; box-sizing:border-box; min-height:88px; font:inherit; font-size:var(--t-md); padding:var(--s-3); border:1px solid var(--border-strong); border-radius:var(--r-md); background:var(--surface); color:var(--ink); resize:vertical; }
+  .count { font-size:var(--t-xs); color:var(--ink-3); text-align:right; }
+  #addMsg { font-size:var(--t-sm); margin-top:var(--s-2); min-height:1.4em; line-height:1.45; }
+  .plist { display:flex; flex-direction:column; gap:var(--s-2); margin-top:var(--s-3); }
+  .preset { display:flex; gap:var(--s-2); align-items:stretch; }
+  .preset .play { flex:1 1 auto; justify-content:flex-start; text-align:left; min-height:64px; padding:var(--s-3); line-height:1.35; font-weight:700; white-space:normal; }
+  .preset .play small { display:block; font-weight:600; color:inherit; opacity:.75; font-size:var(--t-xs); margin-top:2px; }
+  .preset .play.playing { background:var(--accent); border-color:var(--accent); color:#fff; }
+  /* Reorder / delete stay hidden until "Atur": during the demo every tap on
+     this list should play something, never delete it. */
+  .preset .tools { display:none; flex-direction:column; gap:4px; }
+  .editing .preset .tools { display:flex; }
+  .preset .tools .btn { min-height:30px; min-width:44px; padding:0 var(--s-2); font-size:var(--t-sm); }
+  .empty { color:var(--ink-3); font-size:var(--t-sm); }
+
+  .checks { list-style:none; padding:0; margin:var(--s-3) 0 0; display:flex; flex-direction:column; gap:6px; }
+  .checks li { display:flex; gap:var(--s-2); align-items:baseline; font-size:var(--t-sm); line-height:1.4; }
+  .checks .mk { flex:0 0 1.6em; font-weight:800; text-align:center; }
+  .checks .d { color:var(--ink-2); }
+
+  #cam { width:100%; border-radius:var(--r-md); background:#000; display:none; margin-top:var(--s-3); aspect-ratio: 4 / 3; object-fit:contain; }
+  .note { color:var(--ink-2); font-size:var(--t-sm); line-height:1.5; margin:var(--s-2) 0 0; }
+  #toast { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:var(--ink); color:var(--ink-inverse); padding:var(--s-2) var(--s-4); border-radius:var(--r-pill); font-size:var(--t-sm); font-weight:600; opacity:0; transition:opacity .2s; pointer-events:none; max-width:calc(100% - 32px); }
+  #toast.show { opacity:1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Mode PIMNAS</h1>
+      <p class="sub">Kontrol cadangan presentasi, jalan tanpa internet</p>
+    </div>
+    <div class="conn"><span class="dot" id="connDot"></span><span id="connTxt">menghubungkan…</span></div>
+  </header>
+
+  <section class="card">
+    <div class="switch">
+      <p><b>Profil acara.</b> Kunci auto-update &amp; alat dev, deskripsi menyerah lebih cepat, dan kalau internet gagal alat membacakan hasil deteksi luring.</p>
+      <button class="btn" id="eventBtn" aria-pressed="false" onclick="toggleEvent()">MATI</button>
+    </div>
+  </section>
+
+  <section class="card" aria-live="polite">
+    <h2>Keadaan alat</h2>
+    <div class="statrow">
+      <div class="chip"><b>Mode</b><span class="v" id="sMode">—</span></div>
+      <div class="chip"><b>Baterai</b><span class="v" id="sBat">—</span></div>
+      <div class="chip"><b>Suhu</b><span class="v" id="sTemp">—</span></div>
+      <div class="chip"><b>WiFi</b><span class="v" id="sWifi">—</span></div>
+    </div>
+    <div class="caption"><span class="lbl">Terakhir diucapkan</span><span class="val" id="sSaid">—</span></div>
+    <div id="press"></div>
+  </section>
+
+  <section class="card">
+    <h2>Kendali</h2>
+    <div class="grid4" id="modes">
+      <button class="btn" data-mode="idle" onclick="setMode('idle')">Diam</button>
+      <button class="btn" data-mode="explorer" onclick="setMode('explorer')">Penjelajah</button>
+      <button class="btn" data-mode="context" onclick="setMode('context')">Konteks</button>
+      <button class="btn" data-mode="qris" onclick="setMode('qris')">Scan bayar</button>
+    </div>
+    <div class="row">
+      <button class="btn btn--act" onclick="press('action')">ACTION</button>
+      <button class="btn" onclick="post('/pimnas/describe').then(()=>toast('Deskripsi diminta'))">Deskripsikan</button>
+    </div>
+    <div class="row">
+      <button class="btn btn--danger" onclick="post('/pimnas/hush').then(()=>toast('Suara dihentikan'))">Hentikan suara</button>
+      <button class="btn" onclick="post('/pimnas/test-sound')">Tes suara</button>
+    </div>
+    <div class="row vol">
+      <button class="btn" onclick="vol(-10)" aria-label="Perkecil volume">− Volume</button>
+      <span class="num" id="sVol">—</span>
+      <button class="btn" onclick="vol(10)" aria-label="Perbesar volume">+ Volume</button>
+    </div>
+  </section>
+
+  <section class="card" id="presetCard">
+    <h2>Tombol suara</h2>
+    <label for="ptext" class="sr-only">Kalimat yang akan diucapkan alat</label>
+    <textarea id="ptext" maxlength="300" placeholder="Ketik kalimat yang mau dibacakan alat…" oninput="count()"></textarea>
+    <div class="count"><span id="pcount">0</span>/300</div>
+    <div class="row">
+      <button class="btn btn--primary" id="addBtn" onclick="addPreset()">Buat tombol</button>
+      <button class="btn btn--ghost" id="editBtn" aria-pressed="false" onclick="toggleEdit()">Atur</button>
+    </div>
+    <div id="addMsg"></div>
+    <p class="note">Membuat tombol butuh internet (sekali saja). Setelah jadi, suaranya tersimpan di alat dan bisa diputar kapan saja <b>tanpa internet</b>.</p>
+    <div class="plist" id="plist"><span class="empty">Belum ada tombol.</span></div>
+  </section>
+
+  <section class="card">
+    <h2>Cek sebelum tampil</h2>
+    <button class="btn btn--lg" id="checkBtn" onclick="runCheck()" style="width:100%">Jalankan cek</button>
+    <ul class="checks" id="checks"></ul>
+  </section>
+
+  <section class="card">
+    <h2>Kamera</h2>
+    <button class="btn" id="camBtn" aria-pressed="false" onclick="toggleCam()" style="width:100%">Lihat kamera</button>
+    <p class="note">Menampilkan kamera membuat alat bekerja lebih berat dan bisa memperlambat deskripsi daring. Nyalakan sebentar saja.</p>
+    <img id="cam" alt="Gambar kamera alat">
+  </section>
+</div>
+<div id="toast" role="status"></div>
+
+<script>
+const MODE_NAMES = {idle:'Diam', explorer:'Penjelajah', context:'Konteks', qris:'Scan bayar'};
+let eventOn = false, curVol = null, camTimer = null, lastOk = 0;
+
+function tfetch(url, opts, ms){
+  opts = opts || {};
+  ms = ms || 4000;
+  if (typeof AbortController === 'function'){
+    const ac = new AbortController();
+    opts.signal = ac.signal;
+    const t = setTimeout(() => ac.abort(), ms);
+    return fetch(url, opts).finally(() => clearTimeout(t));
+  }
+  return fetch(url, opts);
+}
+async function post(path, body, ms){
+  try{
+    const r = await tfetch(path, {method:'POST', headers:{'Content-Type':'application/json'},
+                                  body: JSON.stringify(body || {})}, ms || 5000);
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok && d.error) toast(d.error);
+    return d;
+  }catch(e){
+    toast('Alat tidak menjawab');
+    return {};
+  }
+}
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2600);
+}
+function setText(id, txt, cls){
+  const el = document.getElementById(id);
+  el.textContent = txt;
+  el.className = 'v' + (cls ? ' v--' + cls : '');
+}
+
+// ── status ───────────────────────────────────────────────────────────────────
+function ago(t){
+  const s = Math.max(0, Math.round(Date.now()/1000 - t));
+  return s < 60 ? s + ' dtk lalu' : Math.round(s/60) + ' mnt lalu';
+}
+function render(s){
+  eventOn = !!s.event_mode;
+  const eb = document.getElementById('eventBtn');
+  eb.setAttribute('aria-pressed', eventOn ? 'true' : 'false');
+  eb.textContent = eventOn ? 'AKTIF' : 'MATI';
+
+  setText('sMode', MODE_NAMES[s.mode] || s.mode || '—');
+  document.querySelectorAll('#modes .btn').forEach(b =>
+    b.setAttribute('aria-current', b.dataset.mode === s.mode ? 'true' : 'false'));
+  if (typeof s.battery === 'number')
+    setText('sBat', s.battery + '%', s.battery < 20 ? 'danger' : s.battery < 40 ? 'warn' : '');
+  if (typeof s.temperature === 'number')
+    setText('sTemp', Math.round(s.temperature) + ' °C', s.temperature >= 75 ? 'danger' : s.temperature >= 65 ? 'warn' : '');
+  setText('sWifi', s.wifi_ssid ? s.wifi_ssid + (s.wifi_signal != null ? ' · ' + s.wifi_signal : '') : '—');
+  if (typeof s.audio_volume === 'number'){ curVol = s.audio_volume; document.getElementById('sVol').textContent = curVol + '%'; }
+
+  const said = s.audio_text || (s.last_caption && s.last_caption.text) || '—';
+  document.getElementById('sSaid').textContent = said;
+
+  const p = s.last_press, pe = document.getElementById('press');
+  if (p && p.t){
+    const who = p.source === 'tombol' ? 'Tombol di alat' : 'Ponsel';
+    const what = String(p.button || '').toUpperCase() + (p.long ? ' (tahan)' : '');
+    pe.textContent = who + ' menekan ' + what + ' · ' + ago(p.t);
+    pe.className = (Date.now()/1000 - p.t) < 5 ? 'fresh' : '';
+  } else {
+    pe.textContent = '';
+  }
+}
+async function poll(){
+  try{
+    const r = await tfetch('/status', {}, 6000);
+    render(await r.json());
+    lastOk = Date.now();
+  }catch(e){}
+  const fresh = Date.now() - lastOk < 8000;
+  document.getElementById('connDot').className = 'dot ' + (fresh ? 'dot--ok' : 'dot--danger');
+  document.getElementById('connTxt').textContent = fresh ? 'terhubung' : 'terputus — cek hotspot';
+  setTimeout(poll, 2000);
+}
+
+// ── controls ─────────────────────────────────────────────────────────────────
+async function toggleEvent(){
+  const want = !eventOn;
+  if (!want && !confirm('Matikan Mode PIMNAS? Auto-update dan alat dev akan terbuka lagi.')) return;
+  const d = await post('/pimnas/event', {on: want});
+  if (d.ok){ eventOn = d.event_mode; toast(eventOn ? 'Mode PIMNAS aktif' : 'Mode PIMNAS mati'); }
+}
+async function setMode(m){
+  const d = await post('/pimnas/mode', {mode: m});
+  if (d.ok) toast('Pindah ke ' + MODE_NAMES[m]);
+}
+async function press(which){
+  const d = await post('/button', {button: which, long: false});
+  if (d.ok) toast(which.toUpperCase() + ' ditekan');
+}
+async function vol(delta){
+  const d = await post('/pimnas/volume', {delta: delta});
+  if (d.ok){ curVol = d.audio_volume; document.getElementById('sVol').textContent = curVol + '%'; }
+}
+
+// ── speech presets ───────────────────────────────────────────────────────────
+function count(){ document.getElementById('pcount').textContent = document.getElementById('ptext').value.length; }
+function toggleEdit(){
+  const card = document.getElementById('presetCard');
+  const on = !card.classList.contains('editing');
+  card.classList.toggle('editing', on);
+  document.getElementById('editBtn').setAttribute('aria-pressed', on ? 'true' : 'false');
+  document.getElementById('editBtn').textContent = on ? 'Selesai' : 'Atur';
+}
+function renderPresets(list){
+  const box = document.getElementById('plist');
+  box.textContent = '';
+  if (!list.length){
+    const e = document.createElement('span'); e.className = 'empty'; e.textContent = 'Belum ada tombol.';
+    box.appendChild(e); return;
+  }
+  list.forEach((p, i) => {
+    const row = document.createElement('div'); row.className = 'preset';
+    const b = document.createElement('button'); b.className = 'btn play';
+    b.textContent = p.text;
+    const meta = document.createElement('small');
+    meta.textContent = p.seconds + ' dtk' + (p.source === 'word-cache' ? ' · suara sambungan kata' : '');
+    b.appendChild(meta);
+    b.onclick = () => playPreset(p.id, b);
+    const tools = document.createElement('div'); tools.className = 'tools';
+    [['▲', -1, 'Naikkan'], ['▼', 1, 'Turunkan']].forEach(([lbl, d, al]) => {
+      const t = document.createElement('button'); t.className = 'btn'; t.textContent = lbl;
+      t.setAttribute('aria-label', al); t.disabled = (d < 0 && i === 0) || (d > 0 && i === list.length - 1);
+      t.onclick = async () => { await post('/pimnas/presets/move', {id: p.id, delta: d}); loadPresets(); };
+      tools.appendChild(t);
+    });
+    const del = document.createElement('button'); del.className = 'btn btn--danger'; del.textContent = '✕';
+    del.setAttribute('aria-label', 'Hapus');
+    del.onclick = async () => {
+      if (!confirm('Hapus tombol ini?\n\n' + p.text)) return;
+      await post('/pimnas/presets/delete', {id: p.id}); loadPresets();
+    };
+    tools.appendChild(del);
+    row.appendChild(b); row.appendChild(tools);
+    box.appendChild(row);
+  });
+}
+async function loadPresets(){
+  try{
+    const r = await tfetch('/pimnas/presets', {}, 5000);
+    renderPresets((await r.json()).presets || []);
+  }catch(e){}
+}
+async function playPreset(id, btn){
+  const d = await post('/pimnas/presets/play', {id: id});
+  if (d.ok){
+    btn.classList.add('playing');
+    setTimeout(() => btn.classList.remove('playing'), 1200);
+  }
+}
+async function addPreset(){
+  const ta = document.getElementById('ptext'), msg = document.getElementById('addMsg'), btn = document.getElementById('addBtn');
+  const text = ta.value.trim();
+  if (!text){ ta.focus(); return; }
+  btn.disabled = true;
+  msg.className = ''; msg.textContent = 'Membuat suara… (bisa sampai 20 detik)';
+  const d = await post('/pimnas/presets', {text: text}, 45000);
+  btn.disabled = false;
+  if (d.ok){
+    ta.value = ''; count();
+    msg.className = 'v--ok';
+    msg.textContent = 'Tombol jadi (' + d.preset.seconds + ' dtk). Sudah tersimpan di alat.';
+    loadPresets();
+  } else {
+    msg.className = 'v--danger';
+    msg.textContent = d.error || 'Gagal membuat tombol.';
+  }
+}
+
+// ── pre-flight ───────────────────────────────────────────────────────────────
+async function runCheck(){
+  const btn = document.getElementById('checkBtn'), ul = document.getElementById('checks');
+  btn.disabled = true; btn.textContent = 'Mengecek…';
+  try{
+    const r = await tfetch('/pimnas/check', {}, 12000);
+    const d = await r.json();
+    ul.textContent = '';
+    (d.rows || []).forEach(row => {
+      const li = document.createElement('li');
+      const mk = document.createElement('span'); mk.className = 'mk ' + (row.ok === true ? 'v--ok' : row.ok === false ? 'v--danger' : '');
+      mk.textContent = row.ok === true ? '✓' : row.ok === false ? '✗' : '•';
+      const lbl = document.createElement('span'); lbl.textContent = row.label;
+      li.appendChild(mk); li.appendChild(lbl);
+      if (row.detail){ const dd = document.createElement('span'); dd.className = 'd'; dd.textContent = '— ' + row.detail; li.appendChild(dd); }
+      ul.appendChild(li);
+    });
+  }catch(e){
+    toast('Cek gagal — alat tidak menjawab');
+  }
+  btn.disabled = false; btn.textContent = 'Jalankan cek lagi';
+}
+
+// ── camera (opt-in) ──────────────────────────────────────────────────────────
+function toggleCam(){
+  const img = document.getElementById('cam'), b = document.getElementById('camBtn');
+  if (camTimer){
+    clearInterval(camTimer); camTimer = null;
+    img.style.display = 'none'; b.textContent = 'Lihat kamera'; b.setAttribute('aria-pressed', 'false');
+    return;
+  }
+  img.style.display = 'block'; b.textContent = 'Sembunyikan kamera'; b.setAttribute('aria-pressed', 'true');
+  const tick = () => { img.src = '/snapshot?t=' + Date.now(); };
+  tick(); camTimer = setInterval(tick, 1500);
+}
+
+poll();
+loadPresets();
+</script>
+</body>
+</html>

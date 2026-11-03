@@ -245,6 +245,19 @@ class BenchmarkSuiteRunner:
             return None
 
 
+# Preset clips queue at HIGH (audio_manager.HIGH): above scene speech, below a
+# danger alert, which must still be able to cut in.
+_PRESET_PRIORITY = 1
+
+
+def _event_mode() -> bool:
+    try:
+        from config import cfg as _cfg
+        return _cfg.EVENT_MODE
+    except Exception:
+        return False
+
+
 # ─── Module-level singletons ───────────────────────────────────────────────────
 _benchmark = BenchmarkRunner()
 _stress    = StressRunner()
@@ -255,6 +268,17 @@ _suite     = BenchmarkSuiteRunner()
 
 class IsoraHandler(BaseHTTPRequestHandler):
     """HTTP request handler untuk semua endpoint I-Sora."""
+
+    # Socket timeout for every read and write. Without it a client that
+    # promises a body it never sends (or a phone that drops off the hotspot
+    # mid-response) pins its handler thread forever, and on a 128 MB board
+    # enough of those starve the app. A long-poll is unaffected: it waits on
+    # a condition, not on the socket.
+    timeout = 20
+
+    # Every POST body here is a small JSON document (the largest is a prompt).
+    # Anything bigger is refused before a byte of it is read into RAM.
+    _MAX_BODY = 256 * 1024
 
     def __init__(self, orchestrator, logger, data_collector, *args, **kwargs):
         self.orch = orchestrator
@@ -307,6 +331,8 @@ class IsoraHandler(BaseHTTPRequestHandler):
             self._serve_status()
         elif path == "/logs":
             self._serve_logs()
+        elif path == "/audio/trace":
+            self._serve_audio_trace()
         elif path == "/history":
             self._serve_history()
         elif path == "/health":
@@ -338,6 +364,20 @@ class IsoraHandler(BaseHTTPRequestHandler):
         # ── Button simulation page (web fallback for dead hardware buttons) ────
         elif path == "/buttons" or path == "/buttons/":
             self._serve_file("buttons.html", "text/html")
+        # ── Listen on the phone (→ its Bluetooth earphones/speaker) ────────────
+        elif path == "/pimnas" or path == "/pimnas/":
+            self._serve_file("pimnas.html", "text/html; charset=utf-8")
+        elif path == "/pimnas/presets":
+            from utils.speech_presets import presets
+            self._send_json({"presets": presets().list()})
+        elif path == "/pimnas/check":
+            self._serve_pimnas_check()
+        elif path == "/dengar" or path == "/dengar/":
+            self._serve_file("listen.html", "text/html; charset=utf-8")
+        elif path == "/listen/poll":
+            self._serve_listen_poll()
+        elif path.startswith("/listen/clip/"):
+            self._serve_listen_clip(path[len("/listen/clip/"):])
         # ── Data Collection endpoints ──────────────────────────────────────────
         elif path == "/collect" or path == "/collect/":
             self._serve_file("collect.html", "text/html")
@@ -368,17 +408,47 @@ class IsoraHandler(BaseHTTPRequestHandler):
         else:
             self._send_404()
 
+    def _body_size_ok(self) -> bool:
+        """Refuse a body too big for RAM, or a length that is not a length.
+
+        Checked once here, so the per-handler `rfile.read(length)` calls can
+        trust it: a negative length would read until the client hangs up.
+        """
+        raw = self.headers.get("Content-Length")
+        if raw is None:
+            return True
+        try:
+            length = int(raw)
+        except ValueError:
+            length = -1
+        if 0 <= length <= self._MAX_BODY:
+            return True
+        self.close_connection = True
+        self._send_json({"error": "request body too large or invalid"},
+                        413 if length > self._MAX_BODY else 400)
+        return False
+
     def do_POST(self):
         path = self.path.split("?")[0]
+        if not self._body_size_ok():
+            return
         if not self._require_auth(path):
             return
+        if path in self._EVENT_LOCKED_POSTS and _event_mode():
+            self._send_json({"error": "Mode PIMNAS aktif — fitur ini dikunci. "
+                                      "Matikan dulu dari /pimnas."}, 423)
+            return
 
-        if path == "/command":
+        if path.startswith("/pimnas/"):
+            self._handle_pimnas(path)
+        elif path == "/command":
             self._handle_command()
         elif path == "/tts-test":
             self._handle_tts_test()
         elif path == "/button":
             self._handle_button()
+        elif path == "/listen/leave":
+            self._handle_listen_leave()
         elif path == "/config":
             self._handle_config()
         elif path == "/brand":
@@ -479,10 +549,11 @@ class IsoraHandler(BaseHTTPRequestHandler):
             allow = "*"
         elif req_origin and req_origin in origins:
             allow = req_origin
-        elif origins:
-            allow = origins[0]
         else:
-            allow = "null"
+            # No grant at all. "null" would let in a sandboxed iframe on any
+            # page (its Origin IS "null"); the device's own pages are
+            # same-origin and need no CORS header.
+            return
         self.send_header("Access-Control-Allow-Origin", allow)
         self.send_header("Vary", "Origin")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
@@ -643,6 +714,24 @@ class IsoraHandler(BaseHTTPRequestHandler):
 
     def _serve_status(self):
         self._send_json(self.orch.get_status())
+
+    def _serve_audio_trace(self):
+        """GET /audio/trace?since=<seq> — every clip asked for and its fate.
+
+        Answers "why did it not say X": queued → played / cut (then replayed)
+        / dropped with a reason (flushed by a press, cooldown, stale nav,
+        play-failed...). Read-only; the same text /status already shows.
+        """
+        from urllib.parse import urlparse, parse_qs
+        am = getattr(self.orch, "audio_manager", None)
+        if am is None or not hasattr(am, "trace_since"):
+            self._send_json({"error": "audio not running"}, 503)
+            return
+        try:
+            since = int(parse_qs(urlparse(self.path).query).get("since", ["0"])[0])
+        except ValueError:
+            since = 0
+        self._send_json(am.trace_since(since))
 
     def _serve_logs(self):
         logs = self.orch.logger.get_recent(50)
@@ -922,6 +1011,282 @@ class IsoraHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self._send_error(e)
 
+    # ── Mode PIMNAS operator page (/pimnas) ───────────────────────────────────
+    # A second person (in the audience, on a phone that is also the device's
+    # hotspot) watches and steers a live demo. Everything here is LAN-only
+    # plain HTTP on purpose: the cloud app needs the venue's internet, and an
+    # HTTPS page cannot reach the device at all.
+    #
+    # OPEN on the LAN like /button and /dengar — the hotspot is the operator's
+    # own phone, and /auth/token is localhost-only so a phone could never hold
+    # a token anyway.
+
+    # Dev/maintenance work that has no place on a stage and that would load the
+    # single-core board (or take the camera away) mid-demo.
+    _EVENT_LOCKED_POSTS = {
+        "/collect/mode", "/collect/start",
+        "/benchmark/run", "/stress/start", "/suite/start",
+    }
+
+    def _read_json_body(self) -> dict:
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            data = json.loads(self.rfile.read(length)) if length else {}
+        except (ValueError, json.JSONDecodeError):
+            data = {}
+        return data if isinstance(data, dict) else {}
+
+    def _handle_pimnas(self, path: str):
+        from config import cfg as _cfg
+        from utils.speech_presets import presets, PresetError
+        data = self._read_json_body()
+        am = getattr(self.orch, "audio_manager", None)
+        store = presets()
+        try:
+            if path == "/pimnas/event":
+                on = bool(data.get("on"))
+                _cfg.update({"event_mode": on})
+                self.logger.info(f"Mode PIMNAS {'ON' if on else 'OFF'}",
+                                 module="WebServer")
+                self._send_json({"ok": True, "event_mode": on})
+
+            elif path == "/pimnas/presets":
+                if am is None:
+                    self._send_json({"error": "Audio belum siap."}, 503)
+                    return
+                entry = store.add(data.get("text"), am.render_text_pcm)
+                self.logger.info(f"Preset added ({entry['source']}): "
+                                 f"{entry['text']}", module="WebServer")
+                self._send_json({"ok": True, "preset": entry})
+
+            elif path == "/pimnas/presets/play":
+                pid = str(data.get("id", ""))
+                pcm = store.pcm(pid)
+                item = store.get(pid) if pcm else None
+                if not pcm or item is None:
+                    self._send_json({"error": "Tombol tidak ditemukan."}, 404)
+                    return
+                if am is None:
+                    self._send_json({"error": "Audio belum siap."}, 503)
+                    return
+                # Like a button press: what was queued is dropped so this plays
+                # now, and detection alerts stay quiet until it has finished.
+                am.clear()
+                am.queue_pcm_bytes(pcm, item["text"], priority=_PRESET_PRIORITY,
+                                   label="preset")
+                self.orch.note_user_interaction(
+                    float(item.get("seconds", 3)) + 1.5)
+                self.logger.info(f"Preset played: {item['text']}",
+                                 module="WebServer")
+                self._send_json({"ok": True})
+
+            elif path == "/pimnas/presets/delete":
+                self._send_json({"ok": store.delete(str(data.get("id", "")))})
+
+            elif path == "/pimnas/presets/move":
+                try:
+                    delta = int(data.get("delta", 0))
+                except (TypeError, ValueError):
+                    delta = 0
+                self._send_json({"ok": store.move(str(data.get("id", "")), delta)})
+
+            elif path == "/pimnas/mode":
+                mode = str(data.get("mode", ""))
+                if mode not in self.orch.MODES:
+                    self._send_json({"error": "mode tidak dikenal"}, 400)
+                    return
+                self.orch.note_press("ponsel", "mode:" + mode)
+                self.orch.set_pending_command("set_mode", {"mode": mode})
+                self._send_json({"ok": True, "mode": mode})
+
+            elif path == "/pimnas/describe":
+                self.orch.note_press("ponsel", "describe")
+                self.orch.set_pending_command("describe", {})
+                self._send_json({"ok": True})
+
+            elif path == "/pimnas/hush":
+                if am is not None:
+                    am.clear()
+                self._send_json({"ok": True})
+
+            elif path == "/pimnas/volume":
+                try:
+                    delta = int(data.get("delta", 0))
+                except (TypeError, ValueError):
+                    delta = 0
+                vol = max(20, min(100, _cfg.AUDIO_VOLUME + delta))
+                _cfg.update({"audio_volume": vol})
+                if am is not None:
+                    am.queue_cue("chime_press.wav", label="vol_test")
+                self._send_json({"ok": True, "audio_volume": vol})
+
+            elif path == "/pimnas/test-sound":
+                if am is None:
+                    self._send_json({"error": "Audio belum siap."}, 503)
+                    return
+                am.clear()
+                am.queue_system("isora_siap_digunakan")
+                self._send_json({"ok": True})
+
+            else:
+                self._send_404()
+        except PresetError as e:
+            self._send_json({"error": str(e)}, 400)
+        except Exception as e:
+            self._send_error(e, context="pimnas")
+
+    def _serve_pimnas_check(self):
+        """Pre-flight list for the operator, one row per thing that can sink a
+        demo. Each row: {key, label, ok (True/False/None = info), detail}."""
+        import socket
+        from config import cfg as _cfg
+        from utils.speech_presets import presets
+        rows = []
+
+        def row(key, label, ok, detail=""):
+            rows.append({"key": key, "label": label, "ok": ok, "detail": detail})
+
+        try:
+            st = self.orch.get_status()
+        except Exception:
+            st = {}
+
+        row("event", "Mode PIMNAS aktif (update & alat dev dikunci)",
+            _cfg.EVENT_MODE, "" if _cfg.EVENT_MODE else "nyalakan saklar di atas")
+
+        provider = _cfg.AI_PROVIDER
+        host = {"openai": "api.openai.com",
+                "gemini": "generativelanguage.googleapis.com",
+                "claude": "api.anthropic.com"}.get(provider, "api.openai.com")
+        key = {"openai": _cfg.OPENAI_API_KEY, "gemini": _cfg.GEMINI_API_KEY,
+               "claude": _cfg.CLAUDE_API_KEY}.get(provider, "")
+        row("ai_key", "Kunci AI (%s) terpasang" % provider, bool(key),
+            "" if key else "deskripsi daring tidak akan jalan")
+        t0 = time.monotonic()
+        try:
+            socket.create_connection((host, 443), timeout=3).close()
+            ms = int((time.monotonic() - t0) * 1000)
+            row("internet", "Internet ke server AI", ms < 1500,
+                "%d ms%s" % (ms, "" if ms < 1500 else " — lambat"))
+        except OSError as e:
+            row("internet", "Internet ke server AI", False,
+                "tidak tersambung (%s) — fitur luring tetap jalan"
+                % e.__class__.__name__)
+
+        year = time.localtime().tm_year
+        row("clock", "Jam alat benar", year >= 2026,
+            time.strftime("%d %b %Y %H:%M") if year >= 2026
+            else "tahun %d — HTTPS akan gagal" % year)
+
+        bat = st.get("battery")
+        if isinstance(bat, (int, float)):
+            row("battery", "Baterai", bat >= 40, "%d%%" % bat)
+        else:
+            row("battery", "Baterai", None, "tidak terbaca")
+
+        temp = st.get("temperature")
+        if isinstance(temp, (int, float)):
+            row("temp", "Suhu prosesor", temp < 75, "%.0f °C" % temp)
+
+        vol = _cfg.AUDIO_VOLUME
+        row("volume", "Volume cukup keras untuk ruangan", vol >= 70, "%d%%" % vol)
+
+        mode = st.get("mode", "")
+        if mode == "idle":
+            row("camera", "Kamera", None, "mati di mode diam (wajar)")
+        else:
+            eng = getattr(self.orch, "ai_engine", None)
+            cam = eng is not None and getattr(eng, "_cam", None) is not None
+            row("camera", "Kamera", cam,
+                "" if cam else "tidak terbuka — coba ganti mode")
+
+        am = getattr(self.orch, "audio_manager", None)
+        try:
+            have = am is not None and am._find_wav("koneksi lambat") is not None
+        except Exception:
+            have = False
+        row("audio", "Suara luring terpasang", have,
+            "" if have else "jalankan tools/deploy.py --audio-only")
+
+        n = len(presets().list())
+        row("presets", "Tombol suara siap", True if n else None,
+            "%d tombol" % n if n else "belum ada")
+
+        self._send_json({"rows": rows, "time": time.time()})
+
+    # ── Listen on the phone (/dengar) ──────────────────────────────────────────
+    # The phone plays every clip the device speaks, so a presentation (or a
+    # user with Bluetooth earphones paired to their phone) is not stuck with
+    # the device's small speaker. See core/phone_audio.py for the design and
+    # its fail-safe: a phone that stops polling expires within seconds and the
+    # device speaker takes over again.
+    #
+    # Stays OPEN on the LAN like /button: the page is opened by whoever holds
+    # the phone, with no login. What it exposes is what the speaker already
+    # says out loud, and the one thing it can change (silencing the device
+    # speaker) only lasts while that phone keeps polling.
+
+    @staticmethod
+    def _query(path: str) -> dict:
+        from urllib.parse import parse_qs
+        q = path.split("?", 1)
+        return {k: v[-1] for k, v in parse_qs(q[1]).items()} if len(q) == 2 else {}
+
+    @staticmethod
+    def _listen_client(raw: str) -> str:
+        raw = (raw or "")[:40]
+        return raw if raw and all(c.isalnum() or c == "-" for c in raw) else ""
+
+    def _serve_listen_poll(self):
+        from core.phone_audio import phone_audio
+        q = self._query(self.path)
+        client = self._listen_client(q.get("client", ""))
+        if not client:
+            self._send_json({"error": "client id required"}, 400)
+            return
+        try:
+            since = int(q.get("since", "-1"))
+        except ValueError:
+            since = -1
+        mute = q.get("mute", "1") != "0"
+        result = phone_audio.poll(client, since, mute)
+        result["device_muted"] = phone_audio.device_muted()
+        body = json.dumps(result, ensure_ascii=False).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", len(body))
+        self.send_header("Cache-Control", "no-store")
+        self._set_cors_headers()
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _serve_listen_clip(self, name: str):
+        from core.phone_audio import phone_audio
+        stem = name[:-4] if name.endswith(".wav") else name
+        data = phone_audio.clip(int(stem)) if stem.isdigit() else None
+        if data is None:
+            self._send_json({"error": "clip expired"}, 404)
+            return
+        self.send_response(200)
+        self.send_header("Content-Type", "audio/wav")
+        self.send_header("Content-Length", len(data))
+        self.send_header("Cache-Control", "no-store")
+        self._set_cors_headers()
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _handle_listen_leave(self):
+        from core.phone_audio import phone_audio
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            data = json.loads(self.rfile.read(length)) if length else {}
+        except (ValueError, json.JSONDecodeError):
+            data = {}
+        client = self._listen_client(str(data.get("client", "")))
+        if client:
+            phone_audio.leave(client)
+        self._send_json({"ok": bool(client)})
+
     # ── Brand toggle (I-Sora ⇄ AuralAI white-label) ─────────────────────────────
     # Hidden feature: a long-press on the /buttons logo flips the device's spoken
     # identity + web UI name between the two brands (same software). The switch
@@ -1075,6 +1440,19 @@ class IsoraHandler(BaseHTTPRequestHandler):
                     }, 400)
                     return
                 data["ai_temperature"] = max(0.0, min(2.0, temp))
+            # Online-navigation photo interval (seconds). Clamped, like the gap
+            # slider: the same key also arrives from the cloud push, and
+            # Config.SCAN_INTERVAL_S clamps again at the read site.
+            if "scan_interval_s" in data:
+                try:
+                    iv = int(round(float(data["scan_interval_s"])))
+                except (TypeError, ValueError, OverflowError):
+                    self._send_json({
+                        "error": "invalid scan_interval_s",
+                        "hint": "kirim jumlah detik, 3 - 60",
+                    }, 400)
+                    return
+                data["scan_interval_s"] = max(3, min(60, iv))
             # Per-word audio cache toggle ("caching per-kata" vs "satu blok audio").
             if "word_cache_enabled" in data:
                 data["word_cache_enabled"] = bool(data["word_cache_enabled"])
@@ -1185,6 +1563,11 @@ class IsoraHandler(BaseHTTPRequestHandler):
             _PROTECTED = {
                 "device_token", "auth_required", "api_keys_locked",
                 "cloud_device_secret", "admin_role_token", "device_privkey_enc",
+                # Which relay the device trusts for pairing and config pushes.
+                # Pointing it elsewhere hands that relay the device.
+                "cloud_base_url", "cloud_device_id", "device_pubkey",
+                # Who may read this device's camera from a browser.
+                "cors_allowed_origins",
             }
             blocked = [k for k in list(data)
                        if k in _PROTECTED

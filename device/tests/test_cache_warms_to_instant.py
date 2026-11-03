@@ -52,7 +52,7 @@ def record(am, monkeypatch):
     monkeypatch.setattr(am, "queue_pcm_bytes",
                         lambda pcm, text, **k: events.append("instant"))
     monkeypatch.setattr(am, "_queue_scene_synth",
-                        lambda text, scene_id=None: events.append("synth"))
+                        lambda text, scene_id=None, **k: events.append("synth"))
 
     def warm_now(words):
         for w in words:
@@ -96,7 +96,7 @@ def test_recurring_corpus_converges_to_all_instant(am, monkeypatch):
     monkeypatch.setattr(am, "queue_pcm_bytes",
                         lambda pcm, text, **k: seq.append("instant"))
     monkeypatch.setattr(am, "_queue_scene_synth",
-                        lambda text, scene_id=None: seq.append("synth"))
+                        lambda text, scene_id=None, **k: seq.append("synth"))
 
     def warm_capped(words):
         for w in list(words)[:cap]:
@@ -128,7 +128,7 @@ def test_never_repeating_vocabulary_never_gets_instant(am, monkeypatch):
     monkeypatch.setattr(am, "queue_pcm_bytes",
                         lambda pcm, text, **k: seq.append("instant"))
     monkeypatch.setattr(am, "_queue_scene_synth",
-                        lambda text, scene_id=None: seq.append("synth"))
+                        lambda text, scene_id=None, **k: seq.append("synth"))
 
     def warm_now(words):
         for w in words:

@@ -86,6 +86,12 @@ def deploy_directory(sftp, local_dir, remote_dir, dry_run=False):
             print(f"  -> {remote_path}")
             if not dry_run:
                 sftp.put(local_path, remote_path)
+                # Keep the local mtime. The device's .pcm cache is valid only
+                # while it carries its WAV's mtime (audio_manager._pcm_is_fresh),
+                # so a fresh upload time made every clip decode again after each
+                # deploy — an ffmpeg spawn before the first "orang di depan".
+                st = os.stat(local_path)
+                sftp.utime(remote_path, (st.st_atime, st.st_mtime))
             uploaded += 1
 
     return uploaded
@@ -145,6 +151,14 @@ def main():
         print(f"Uploading device/ -> {REMOTE_DEVICE_DIR}")
         n = deploy_directory(sftp, DEVICE_DIR, REMOTE_DEVICE_DIR, dry_run=args.dry_run)
         total += n
+        # A dev build only gives way to a release NEWER than the one it was
+        # built on, so the auto-updater never overwrites work in progress.
+        from release import dev_version
+        version = dev_version()
+        print(f"  -> {REMOTE_DEVICE_DIR}VERSION ({version})")
+        if not args.dry_run:
+            with sftp.open(REMOTE_DEVICE_DIR + "VERSION", "w") as f:
+                f.write(version + "\n")
 
         # Upload audio juga jika ada file
         audio_files = [f for f in os.listdir(AUDIO_DIR) if f.endswith(".wav")]

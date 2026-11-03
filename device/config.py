@@ -84,12 +84,11 @@ _DEFAULTS: dict = {
     # ── AI provider ───────────────────────────────────────────────────────────
     # active provider: "openai" | "gemini" | "claude"
     "ai_provider":              "openai",
-    "ai_timeout_s":             15,
-    # After a cloud call runs this many seconds the progress cue switches from
-    # "masih memproses" to "koneksi internet lambat" (a slow/flaky network is
-    # then the likely cause). Keep it above a normal call time (~7 s) so routine
-    # captures don't get a false "slow network" warning every time.
-    "ai_slow_warn_s":           9,
+    "ai_timeout_s":             30,   # a healthy call was measured at 21 s on a phone hotspot
+    # After a cloud call runs this many seconds "koneksi internet lambat" is said,
+    # once per call (core/ai_engine._ProgressCues). Keep it above the slower
+    # normal calls (9-11 s seen on a healthy hotspot) so it stays a real warning.
+    "ai_slow_warn_s":           12,
     # OpenAI
     "openai_api_key":           "",
     "openai_model":             "gpt-5.6-terra",
@@ -136,6 +135,11 @@ _DEFAULTS: dict = {
     ),
     "log_path":                 "/root/logs",
     "log_max_lines":            500,
+    "diag_sample_s":            60,     # utils/diag.py; 0 = no minute samples
+    # Keep every photo sent to the AI in /root/captures/debug, with the answers
+    # in index.jsonl; nothing is deleted. It can show people, so this stays off
+    # by default and is switched on per unit for an evaluation session.
+    "debug_save_frames":        False,
     # ── Adaptive power management (utils/power.py) ────────────────────────────
     # thermal_throttle_temp_c is the "hot" rung of the governor's ladder; the
     # warm and critical rungs sit at fixed offsets around it, so this one number
@@ -188,6 +192,16 @@ _DEFAULTS: dict = {
     # one tick legitimately covers a cloud describe, so this must sit well
     # above the slowest healthy tick or a busy device would reset itself.
     "hw_watchdog_stale_s":      45.0,
+    # Same signal for the app supervisor (system/supervise.sh, via
+    # utils/liveness.py), which only restarts the app and so is always on. The
+    # supervisor adds its own 30 s on top before it kills.
+    "liveness_stale_s":         45.0,
+    # MaixPy's UART CommProtocol listener ([Default CommListener]), started by
+    # `import maix`. It polls UART0 for MaixVision/MCU protocol frames, which
+    # nothing on this device sends, and inside the app it measured ~30% of the
+    # single core even in idle — enough load that the WiFi driver starved
+    # (DNS failures, cloud describe timeouts). Off unless something needs it.
+    "maix_comm_listener":       False,
     # ── Hardware buttons (active-low to GND; internal pull-up, no resistor) ───
     # The GPIO listener enables PULL_UP, so any free standard GPIO works — wire
     # each button: leg1 → pad, leg2 → GND. Pads that can NEVER work:
@@ -198,7 +212,8 @@ _DEFAULTS: dict = {
     # cycles mode / repeats URL during onboarding; long press = web address / ack.
     "button_pin_mode":          "A28",
     # ACTION button pad ("A29" recommended; "" or -1 = disabled). Short press
-    # captures on demand (describe / QRIS scan); long press repeats last result.
+    # captures on demand (describe / QRIS scan) — in explorer it switches online
+    # navigation on/off instead; long press repeats last result.
     # Safe alternates: A22–A25 (only when SPI4/eMMC is unused).
     "button_pin_action":        "A29",
     # Speaker volume (0-100); read by AudioManager on every play
@@ -226,8 +241,12 @@ _DEFAULTS: dict = {
     # Auth: device token (auto-generated on first boot if empty)
     "device_token":             "",
     # CORS: list of allowed origins for dashboard. Empty list = same-origin only.
-    # Use ["*"] for wide-open (NOT recommended for pilot).
-    "cors_allowed_origins":     ["*"],
+    # Every page that talks to the device is served BY the device, and the
+    # Android app is not a browser, so nothing needs cross-origin access. With
+    # ["*"] any web page opened on a phone on the same WiFi could read
+    # /snapshot — the camera. Units that still carry the old ["*"] default are
+    # moved off it by migrate_cors().
+    "cors_allowed_origins":     [],
     # Auth: require token on POST mutate endpoints (False = legacy/dev-only)
     "auth_required":            True,
     # Settings autosave (UI hint; backend always persists immediately)
@@ -236,6 +255,29 @@ _DEFAULTS: dict = {
     "qris_mode":                "hybrid",
     # Maximum acceptable QRIS nominal in IDR before requiring extra confirm
     "qris_nominal_warn_cap":    1_000_000,
+    # ── Mode scan bayar: banknotes + QRIS on alternating frames ───────────────
+    # (modes/pay_mode.py). The banknote model is YOLO26n trained on notes held
+    # in the hand, converted to a cv181x cvimodel (INT8, BF16 detection head)
+    # whose raw head is read by MaixPy's YOLOv8 decoder — see
+    # tools/money_model/README.md. A unit without the file still scans QRIS.
+    "money_model_path":         "/root/models/uang_yolo26n.mud",
+    # 0.5 rather than the 0.4 that scored best on the test split: a wrong
+    # denomination said with confidence costs a blind user money; a note that
+    # takes another half-second to be named does not.
+    "money_conf_threshold":     0.5,
+    # Finds a QR code as an object for the direction guide (utils/qr_guide).
+    # MaixPy's own QR model; written to /root/models by hand, not by deploy.py.
+    "qr_model_path":            "/root/models/yolov8_qr_det_320x224.mud",
+    "qr_conf_threshold":        0.4,
+    # Banknote-look frames in a row before a note is named (each look is every
+    # other frame), how long it must be out of view to count as put down, and
+    # the least time between two namings of the same value.
+    "money_min_streak":         3,
+    "money_gone_s":             1.5,
+    "money_repeat_gap_s":       4.0,
+    # The same, for a QR code (one decode is enough to be sure of it).
+    "qris_gone_s":              4.0,
+    "qris_repeat_gap_s":        10.0,
     # API key encryption lock — when True, web UI cannot overwrite
     # encrypted keys. Unlock procedure: tools/unlock_keys.py on device.
     "api_keys_locked":          False,
@@ -262,6 +304,10 @@ _DEFAULTS: dict = {
     "tts_openai_timeout_s":     15.0,
     # How long to wait on one gTTS render before giving up on it.
     "tts_gtts_timeout_s":       20.0,
+    # A gTTS render still unanswered after this many seconds gets a second
+    # request racing it on a fresh connection (0 = never). On a phone's mobile
+    # data a stalled first request is what cut descriptions off mid-sentence.
+    "tts_gtts_hedge_s":         4.0,
     # Per-word TTS cache (context mode). Scene sentences are near-unique but
     # reuse a small Indonesian vocabulary, so caching audio per word lets a
     # fully-seen sentence play with zero network. A missing word never drops a
@@ -290,6 +336,21 @@ _DEFAULTS: dict = {
     # so speaking the first sentence while the rest still synthesizes cuts the
     # silence after the chime roughly in half. 1 disables streaming.
     "scene_stream_chunks":      3,
+    # ── Online navigation (explorer + ACTION; modes/scan_narrator.py) ────────
+    # Seconds from one photo to the next. A floor, not a promise: the next
+    # photo also waits for the previous sentence to finish playing, so the
+    # narrator never talks over itself. Settable from /buttons and the cloud
+    # app; clamped to 3-60 at the read site (Config.SCAN_INTERVAL_S).
+    "scan_interval_s":          8,
+    # A result that lands this long after its photo is dropped unspoken: at
+    # walking pace the user is metres past where it was taken. Measured on
+    # isora-88dd: the short prompt answers in 2.2-3.0 s.
+    "scan_stale_s":             6,
+    # After a failed call, wait at least this long before the next one, so a
+    # dead hotspot is not hammered every few seconds. The failure is spoken
+    # once per outage, not once per attempt.
+    "scan_retry_s":             15,
+    "prompt_scan":              scene_prompt.SCENE_PROMPT_SCAN,
     # I2C battery HAT: enabled only after manual probe via /i2c-probe endpoint
     "i2c_battery_enabled":      False,
     # Companion redesign (handoff §4.3) — audio playback preference
@@ -357,6 +418,24 @@ _DEFAULTS: dict = {
     "paired":                   False,
     # Long-poll timeout (s) the device waits per /api/poll request.
     "cloud_poll_timeout_s":     35,
+    # ── Auto-update (core/updater.py) ───────────────────────────────────────
+    # Check GitHub for a newer signed release this often, download it in the
+    # background, and switch at the next boot or after 10 quiet minutes in idle
+    # mode. A release that does not come up healthy is rolled back. Inert until
+    # `tools/run.py --autostart` has installed /etc/isora/release.py.
+    "auto_update":              True,
+    "update_check_hours":       24,
+    # ── Mode PIMNAS (event profile; server/static/pimnas.html) ──────────────
+    # One switch for a live demo on a venue network nobody can trust. While on:
+    # no update is fetched or switched to, a describe gives up after
+    # event_ai_timeout_s instead of ai_timeout_s, and when it fails the device
+    # reads out what the nav YOLO sees (context mode keeps that model loaded
+    # for exactly this). Data collection / benchmark / stress refuse to start.
+    # Settable only from the LAN operator page, never from the cloud push.
+    "event_mode":               False,
+    "event_ai_timeout_s":       10,
+    # Sentences typed on the operator page, rendered once, played offline.
+    "speech_presets_dir":       "/root/audio/pimnas_presets",
 }
 
 
@@ -399,6 +478,20 @@ def migrate_prompt_pack(data: dict) -> dict:
     return changes
 
 
+def migrate_cors(data: dict) -> dict:
+    """Move a unit off the wide-open CORS default it was provisioned with.
+
+    Config._load merges the saved file over _DEFAULTS and save() writes every
+    key, so each unit set up before the default changed still carries ["*"]
+    in config.json. Nothing in this project ever needed it (see the default's
+    comment), so the old default is treated as unset. Any other list is an
+    operator's choice and is left alone.
+    """
+    if data.get("cors_allowed_origins") == ["*"]:
+        return {"cors_allowed_origins": []}
+    return {}
+
+
 class Config:
     """
     Thread-safe configuration backed by /root/config.json.
@@ -426,6 +519,7 @@ class Config:
             # looks up to date and every stale unit in the field would keep its
             # old prompt forever — the exact failure the migration exists to fix.
             changes = migrate_prompt_pack(loaded)
+            changes.update(migrate_cors(loaded))
             with self._lock:
                 self._data.update(loaded)
                 self._data.update(changes)
@@ -629,8 +723,18 @@ class Config:
         try:
             t = int(self.get("ai_timeout_s", 15))
         except (TypeError, ValueError):
-            return 15
-        return max(1, min(120, t))
+            t = 15
+        t = max(1, min(120, t))
+        if self.EVENT_MODE:
+            # On a stage a silent 15 s reads as a dead device. Give up sooner
+            # and let ai_engine's offline fallback speak instead.
+            t = min(t, int(self._clamped(self.get("event_ai_timeout_s", 10),
+                                         10.0, 4.0, 60.0)))
+        return t
+
+    @property
+    def EVENT_MODE(self) -> bool:
+        return self.get("event_mode", False) is True
 
     @property
     def OPENAI_API_KEY(self) -> str:
@@ -748,6 +852,38 @@ class Config:
         )
 
     @property
+    def PROMPT_SCAN(self) -> str:
+        return self.get("prompt_scan", _DEFAULTS["prompt_scan"]) or _DEFAULTS["prompt_scan"]
+
+    @staticmethod
+    def _clamped(raw, default: float, lo: float, hi: float) -> float:
+        try:
+            v = float(raw)
+        except (TypeError, ValueError):
+            return default
+        if v != v:                       # NaN
+            return default
+        return max(lo, min(hi, v))
+
+    @property
+    def SCAN_INTERVAL_S(self) -> float:
+        """Online-navigation photo interval, clamped to 3-60 s.
+
+        Clamped here and not only in POST /config: the cloud config push writes
+        straight into cfg, and a 0 would turn the narrator into a loop of
+        back-to-back cloud calls on a single-core board.
+        """
+        return self._clamped(self.get("scan_interval_s", 8), 8.0, 3.0, 60.0)
+
+    @property
+    def SCAN_STALE_S(self) -> float:
+        return self._clamped(self.get("scan_stale_s", 6), 6.0, 2.0, 30.0)
+
+    @property
+    def SCAN_RETRY_S(self) -> float:
+        return self._clamped(self.get("scan_retry_s", 15), 15.0, 3.0, 300.0)
+
+    @property
     def PROMPT_QRIS(self) -> str:
         return self.get("prompt_qris", _DEFAULTS["prompt_qris"])
 
@@ -757,7 +893,7 @@ class Config:
 
     @property
     def CORS_ALLOWED_ORIGINS(self) -> list:
-        v = self.get("cors_allowed_origins", ["*"])
+        v = self.get("cors_allowed_origins", [])
         return v if isinstance(v, list) else [str(v)]
 
     @property
@@ -900,6 +1036,11 @@ NAV_OBJECTS = {
 
 # Derived, never hand-edited — keeps the announced set in lock-step with NAV_OBJECTS.
 RELEVANT_LABELS = set(NAV_OBJECTS.keys())
+
+# Detected but never announced, for now: at a live demo a mislabelled person must
+# not be called "anjing" (PIMNAS, Nov 2026). Empty this set to bring them back;
+# their WAVs stay planned. Mirrored in web/lib/sim/constants.ts.
+MUTED_NAV_LABELS = {"dog", "cat"}
 
 COCO_LABEL_MAP = {
     0:  "person",       1:  "bicycle",   2:  "car",          3:  "motorcycle",

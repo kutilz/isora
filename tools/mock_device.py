@@ -4,7 +4,8 @@ Mock I-Sora device — exercises the cloud relay end-to-end without hardware.
 
 It mirrors what device/core/cloud.py will do:
   1. register (uploads a P-256 public key for E2E secrets)
-  2. request a pairing code and PRINT IT BIG (type it into the web /pair page)
+  2. request a pairing code and PRINT IT BIG (type it into the web app's
+     "Tambah perangkat" screen at /app/tambah)
   3. long-poll for config commands, DECRYPT secrets, print the applied config, ACK
   4. send periodic heartbeats
 
@@ -144,7 +145,7 @@ def main():
         code = resp["code"]
         print("\n" + "=" * 40)
         print(f"   PAIRING CODE:  {code}")
-        print(f"   buka {base}/pair dan masukkan kode di atas")
+        print(f"   buka {base}/app/tambah dan masukkan kode di atas")
         print("=" * 40 + "\n")
 
     # 3 + 4. heartbeat + long-poll for commands

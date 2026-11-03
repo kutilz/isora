@@ -16,9 +16,9 @@ export const t = {
   },
   hero: {
     badge: "Bisa dicoba tanpa perangkat",
-    title: "Melihat dengan suara — coba dulu dari kamera ponselmu",
+    title: "Melihat dengan suara — coba dulu dari kamera ponsel",
     lead:
-      "Arahkan kamera HP ke sekitarmu dan dengarkan apa yang akan dikatakan I-Sora. Sudah punya perangkatnya? Pasang aplikasi ini untuk menghubungkan dan mengaturnya.",
+      "Arahkan kamera HP ke sekitar dan dengarkan apa yang akan dikatakan I-Sora. Sudah punya perangkatnya? Pasang aplikasi ini untuk menghubungkan dan mengaturnya.",
     cta_sim: "Coba simulasi kamera",
     cta_app: "Buka aplikasi",
     cta_docs: "Baca panduan",
@@ -39,7 +39,7 @@ export const t = {
       {
         title: "Banyak perangkat, tanpa daftar akun",
         body:
-          "Buka aplikasinya dan langsung pakai — tidak ada pendaftaran. Lihat status tiap perangkat, atur layanan AI dan preferensi suaranya, dan buka kendali lokalnya saat kamu berada di WiFi yang sama.",
+          "Buka aplikasinya dan langsung pakai — tidak ada pendaftaran. Lihat status tiap perangkat, atur layanan AI dan preferensi suaranya, dan buka kendali lokalnya saat berada di WiFi yang sama.",
       },
     ],
   },
@@ -56,7 +56,7 @@ export const t = {
   privacy: {
     title: "Privasi tetap dijaga",
     body:
-      "API key dienkripsi di browser dan hanya bisa dibuka oleh perangkatmu — server kami tidak pernah melihat key aslinya. Kamera tidak pernah dialirkan ke cloud; hanya status ringkas (online, baterai, mode) yang dikirim, plus sidik ringkas jaringan agar aplikasi tahu kapan kamu berada di WiFi yang sama.",
+      "API key dienkripsi di browser dan hanya bisa dibuka oleh perangkat tersebut — server kami tidak pernah melihat key aslinya. Kamera tidak pernah dialirkan ke cloud; hanya status ringkas (online, baterai, mode) yang dikirim, plus sidik ringkas jaringan agar aplikasi tahu kapan ponsel berada di WiFi yang sama.",
   },
   footer: {
     made: "I-Sora — Melihat dengan Suara. Teknologi asistif berbasis suara untuk teman netra di Indonesia.",

@@ -62,6 +62,7 @@ layout. **Redeploy once** (`python tools/run.py --autostart`, or
 | `/root/aural-ai/` | `/root/isora/` |
 | `/etc/init.d/S00aauralchime`, `S26auralapp` | `S00aisorachime`, `S26isoraapp` |
 | `/tmp/aural_*`, `/root/logs/aural_*` | `/tmp/isora_*`, `/root/logs/isora_*` |
+| `/root/.aural_secure_seed` | `/root/.isora_secure_seed` — adopted automatically on first start (`secure_keys._LEGACY_SEED_FILES`); without it every encrypted API key and the E2E keypair are lost |
 | `auralai_menyala.{wav,pcm}`, `auralai_siap_digunakan.{wav,pcm}` | `isora_menyala.*`, `isora_siap_digunakan.*` |
 | `audio/AuralAI_Audio_Wordlist.md` | `audio/Isora_Audio_Wordlist.md` |
 | `device/aural_maix.py` | `device/isora_maix.py` |

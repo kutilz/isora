@@ -33,7 +33,10 @@ costs ~2 s).
 import os
 import hashlib
 import threading
+import time
 from typing import Optional
+
+from utils import diag
 
 # key → lock, created on demand. Guarded by _locks_lock.
 _MAX_LOCKS = 256
@@ -65,10 +68,13 @@ def get_or_synthesize(
     cache_dir: str = "/root/audio/tts_cache",
     lang: str = "id",
     timeout_s: float = 8.0,
+    hedge_s: Optional[float] = None,
 ) -> Optional[str]:
     """
     Return a local WAV path for text.
     Creates cache_dir if needed. Returns None on synthesis failure.
+    `hedge_s`: start a second, racing request once the first has taken this
+    long (see _synthesize). None/0 = one request only.
     """
     if not text or not text.strip():
         return None
@@ -83,7 +89,7 @@ def get_or_synthesize(
     with _lock_for(key):
         if os.path.exists(path):  # re-check after acquiring lock
             return path
-        result = _synthesize(text, path, lang, timeout_s)
+        result = _synthesize(text, path, lang, timeout_s, hedge_s)
         if result:
             _prune_cache(cache_dir)
         return result
@@ -136,7 +142,8 @@ def _prune_cache(cache_dir: str, max_entries: int = _MAX_ENTRIES) -> None:
         pass
 
 
-def _synthesize(text: str, out_path: str, lang: str, timeout_s: float) -> Optional[str]:
+def _synthesize(text: str, out_path: str, lang: str, timeout_s: float,
+                hedge_s: Optional[float] = None) -> Optional[str]:
     """Render `text` to `out_path` via gTTS, giving up after `timeout_s`.
 
     The write goes to a temp file that is only renamed into place once gTTS has
@@ -149,28 +156,77 @@ def _synthesize(text: str, out_path: str, lang: str, timeout_s: float) -> Option
     try:
         from gtts import gTTS
     except ImportError:
+        diag.event("tts_failed", level="warn", backend="gtts", err="gtts not installed")
         return None
 
     result: list = [None]
-    tmp = "%s.%d.part" % (out_path, threading.get_ident())
+    started = time.monotonic()
+    abandoned = threading.Event()
+    done = threading.Event()        # a render landed, or every attempt failed
+    state = {"started": 0, "ended": 0}
+    state_lock = threading.Lock()
 
-    def _work():
+    def _work(attempt: int):
+        tmp = "%s.%d.%d.part" % (out_path, threading.get_ident(), attempt)
         try:
             gTTS(text=text, lang=lang, slow=False).save(tmp)
-            os.replace(tmp, out_path)
-            result[0] = out_path
-        except Exception:
-            pass
+            with state_lock:
+                won = result[0] is None
+                if won:
+                    # Only the first finisher is renamed in: a later one would
+                    # bump the wav's mtime and make its fresh .pcm look stale.
+                    os.replace(tmp, out_path)
+                    result[0] = out_path
+            if won and abandoned.is_set():
+                # Google was only slow, not dead: this render arrived too late.
+                diag.event("tts_late", backend="gtts",
+                           s=time.monotonic() - started, text=text[:30])
+            elif won and attempt:
+                diag.event("tts_hedge_won", backend="gtts",
+                           s=time.monotonic() - started, text=text[:30])
+        except Exception as e:
+            # Swallowed on purpose (the caller falls back), but on a read-only
+            # root this was the only trace of why a sentence stayed silent.
+            diag.event("tts_failed", level="warn", backend="gtts",
+                       s=time.monotonic() - started, err=e, text=text[:30])
         finally:
             try:
                 if os.path.exists(tmp):
                     os.remove(tmp)
             except OSError:
                 pass
+            with state_lock:
+                state["ended"] += 1
+                if result[0] is not None or state["ended"] >= state["started"]:
+                    done.set()
 
-    t = threading.Thread(target=_work, daemon=True)
-    t.start()
-    t.join(timeout=timeout_s)
+    def _launch(attempt: int):
+        with state_lock:
+            state["started"] += 1
+            if result[0] is None:     # a win that just landed must stay landed
+                done.clear()
+        threading.Thread(target=_work, args=(attempt,), daemon=True,
+                         name="gTTS%d" % attempt).start()
+
+    deadline = started + timeout_s
+    _launch(0)
+    # Hedge: on a phone's mobile data one request in a few stalls on a dead
+    # connection for the whole timeout while a fresh one would answer in ~2 s.
+    # That stall was the mid-sentence silence — chunk 1 spoken, chunk 2 never.
+    # So once the first attempt has run past `hedge_s` (or failed outright), a
+    # second one races it on a new connection and whichever lands first wins.
+    if hedge_s and hedge_s > 0:
+        done.wait(timeout=max(0.0, min(hedge_s, deadline - time.monotonic())))
+        if result[0] is None and time.monotonic() < deadline - 1.0:
+            diag.event("tts_hedge", backend="gtts",
+                       s=time.monotonic() - started, text=text[:30])
+            _launch(1)
+    done.wait(timeout=max(0.0, deadline - time.monotonic()))
+    if result[0] is None and not done.is_set():
+        abandoned.set()
+        diag.event("tts_failed", level="warn", backend="gtts", err="timeout",
+                   s=time.monotonic() - started, text=text[:30])
+        diag.net_probe("tts_timeout")
     return result[0]
 
 
@@ -254,7 +310,8 @@ def get_or_synthesize_pcm(
             )
             with urllib.request.urlopen(req, timeout=timeout_s) as resp:
                 raw = resp.read()
-        except Exception:
+        except Exception as e:
+            diag.event("tts_failed", level="warn", backend="openai", err=e, text=text[:30])
             return None
         if not raw:
             return None

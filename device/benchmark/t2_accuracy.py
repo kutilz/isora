@@ -141,7 +141,8 @@ def run(emit_cb=None) -> dict:
 
     try:
         from config import cfg, COCO_LABEL_MAP, RELEVANT_LABELS
-        detector = nn.YOLO11(model=cfg.MODEL_PATH)
+        from utils.nn_compat import load_detector
+        detector, det_name = load_detector(cfg.MODEL_PATH)
         emit(f"  Model: {cfg.MODEL_PATH}", "ok")
     except Exception as e:
         emit(f"  ✗ Model init failed: {e}", "err")

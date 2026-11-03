@@ -23,7 +23,7 @@ export function RelayPausedLinks() {
       title="Yang bisa dicoba sekarang"
       note="Simulasi berjalan sepenuhnya di ponsel — tidak butuh perangkat dan tidak butuh internet setelah terbuka sekali."
     >
-      <SettingsLink href="/simulasi" label="Simulasi kamera" sub="Pakai kamera HP seolah-olah kamu memakai I-Sora" />
+      <SettingsLink href="/simulasi" label="Simulasi kamera" sub="Pakai kamera HP seolah-olah sedang memakai I-Sora" />
       <SettingsLink href="/preview" label="Coba suara" sub="Dengarkan chime dan sapaan" />
       <SettingsLink href="/buku" label="Buku panduan" sub="Versi digital dan buku audio" />
       <SettingsLink href="/docs" label="Panduan" sub="Cara pakai, pemasangan, masalah umum" />

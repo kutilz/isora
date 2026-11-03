@@ -9,8 +9,11 @@ pin effort low and let it be tuned live via `openai_reasoning_effort`.
 
 import base64
 import json
+import time
 import urllib.request
 import urllib.error
+
+from utils import diag
 
 from .base import AIAdapter, AdapterError
 
@@ -128,25 +131,45 @@ class OpenAIAdapter(AIAdapter):
                 raise AdapterError(str(e)) from e
 
     def _post(self, payload: dict, key: str, timeout: float) -> str:
+        body_bytes = json.dumps(payload).encode()
         req = urllib.request.Request(
             _API_URL,
-            data=json.dumps(payload).encode(),
+            data=body_bytes,
             headers={
                 "Content-Type":  "application/json",
                 "Authorization": f"Bearer {key}",
             },
             method="POST",
         )
+        call = {"model": payload.get("model"), "bytes": len(body_bytes),
+                "effort": (payload.get("reasoning") or {}).get("effort")}
+        started = time.monotonic()
         try:
             with urllib.request.urlopen(req, timeout=timeout) as resp:
+                call["wait_s"] = time.monotonic() - started
+                # The model's own clock, so a slow answer can be split into
+                # "the model was thinking" and "the link was slow".
+                call["server_ms"] = diag.header(resp, "openai-processing-ms")
+                call["req"] = diag.header(resp, "x-request-id")
                 data = json.loads(resp.read())
-            return _extract_text(data)
+            text = _extract_text(data)
+            usage = data.get("usage") or {}
+            diag.ai_call("openai", started, True,
+                         reason_tok=(usage.get("output_tokens_details") or {}).get("reasoning_tokens"),
+                         out_tok=usage.get("output_tokens"), in_tok=usage.get("input_tokens"),
+                         cached_tok=(usage.get("input_tokens_details") or {}).get("cached_tokens"),
+                         **call)
+            return text
         except urllib.error.HTTPError as e:
             body = e.read().decode(errors="replace")[:200]
+            diag.ai_call("openai", started, False, err=f"HTTP {e.code}",
+                         server_ms=diag.header(e, "openai-processing-ms"),
+                         model=call["model"], bytes=call["bytes"], effort=call["effort"])
             if e.code == 400 and _is_effort_rejection(body):
                 raise _EffortRejected(f"OpenAI HTTP 400: {body}") from e
             raise AdapterError(f"OpenAI HTTP {e.code}: {body}") from e
         except Exception as e:
+            diag.ai_call("openai", started, False, err=e, **call)
             raise AdapterError(str(e)) from e
 
     def describe_scene(self, jpeg_bytes: bytes, prompt: str) -> str:

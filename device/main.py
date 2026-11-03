@@ -106,7 +106,8 @@ def _boot_cue_fast():
         wav_path = "/root/audio/isora_menyala.wav"
         try:
             delta = os.path.getmtime(pcm_path) - os.path.getmtime(wav_path)
-            pcm_stale = abs(delta) > 2.0
+            # An empty .pcm is never "fresh" (audio_manager._pcm_is_fresh).
+            pcm_stale = abs(delta) > 2.0 or os.path.getsize(pcm_path) == 0
         except OSError:
             pcm_stale = False        # no WAV to compare against → leave it be
         if pcm_stale or not os.path.exists(pcm_path):
@@ -149,6 +150,24 @@ def _boot_cue_fast():
         pass  # Fast path failed silently
 
 
+def _drop_maix_comm_listener(cfg, logger):
+    """Stop MaixPy's UART CommProtocol listener unless cfg asks to keep it.
+
+    The thread is native and started by the first `import maix`; it wakes ~900
+    times a second to poll UART0 for protocol frames. Measured on two units
+    (I-Sora and AuralAI firmware alike) at ~30% CPU inside the app, idle or
+    not. See cfg "maix_comm_listener".
+    """
+    if cfg.get("maix_comm_listener", False):
+        return
+    try:
+        from maix import comm
+        comm.rm_default_comm_listener()
+        logger.info("MaixPy UART comm listener stopped", module="Main")
+    except Exception as e:
+        logger.warn(f"Could not stop MaixPy comm listener: {e}", module="Main")
+
+
 def _mark_boot_ready():
     """Record time-to-ready against the monotonic boot clock.
 
@@ -166,6 +185,19 @@ def _mark_boot_ready():
             f.write(uptime)
     except (OSError, IndexError):
         pass
+
+
+def _run_updater(orchestrator, logger):
+    """Auto-update thread body. Imported here, after boot-ready, so tarfile &
+    co. never land in time-to-ready; does nothing without the boot helper."""
+    try:
+        from core.updater import Updater, confirm_when_healthy
+    except Exception as e:
+        logger.warn(f"Updater unavailable: {e}", module="Main")
+        return
+    threading.Thread(target=confirm_when_healthy, args=(orchestrator, logger),
+                     daemon=True, name="ReleaseConfirm").start()
+    Updater(orchestrator=orchestrator, logger=logger).run()
 
 
 def main():
@@ -202,6 +234,17 @@ def main():
     logger.info("=" * 50, module="Main")
     logger.info("I-Sora SDK — Starting up", module="Main")
     logger.info("=" * 50, module="Main")
+    from utils import diag
+    diag.start(logger, cfg, cfg.LOG_PATH)
+    # `import maix` installs a signal handler, which Python allows only on the
+    # main thread. Imported first from the AudioMgr thread it raises on EVERY
+    # clip and the unit is silent; until now only the comm-listener import
+    # below (skipped when maix_comm_listener is on) happened to prevent that.
+    try:
+        import maix  # noqa: F401
+    except Exception:
+        pass
+    _drop_maix_comm_listener(cfg, logger)
 
     # ── Second boot cue: "menghubungkan ke wifi" ──────────────────────────────
     # Played via the full audio_manager path (which is now imported).
@@ -297,6 +340,19 @@ def main():
         is_alive_fn=lambda: orchestrator.loop_healthy(_stale_s),
     )
 
+    # ── Heartbeat for the app supervisor (device/system/supervise.sh) ────────
+    # Always on: unlike the hardware watchdog, the worst it can do is restart
+    # the app, never reset the board. Same liveness signal, same generous
+    # threshold — a slow cloud describe legitimately holds a tick for tens of
+    # seconds and must not be killed for it.
+    from utils import liveness as _liveness
+    _live_s = cfg.get("liveness_stale_s", 45.0)
+    beacon = _liveness.LivenessBeacon(
+        is_alive_fn=lambda: orchestrator.loop_healthy(_live_s))
+    if beacon.start():
+        logger.ok(f"Liveness heartbeat → {_liveness.ALIVE_PATH} "
+                  f"(loop stale after {_live_s}s)", module="Main")
+
     # ── Spoken-URL onboarding (last; waits for WiFi + web + audio) ─────────────
     announcer = OnboardingAnnouncer(orchestrator=orchestrator, logger=logger)
     orchestrator.onboarding = announcer
@@ -317,11 +373,16 @@ def main():
     logger.info("All threads running. Press Ctrl+C to stop.", module="Main")
     _mark_boot_ready()
 
+    # ── Auto-update + release confirmation (see core/updater.py) ──────────────
+    threading.Thread(target=_run_updater, args=(orchestrator, logger),
+                     daemon=True, name="Updater").start()
+
     # Pre-warm the speech backend AFTER boot-ready is stamped, so its cost never
     # lands in the boot-latency number — and, more to the point, never lands on
     # the user's first describe. See AudioManager.warm_speech_stack.
     try:
         orchestrator.audio_manager.warm_speech_stack(delay_s=2.0)
+        orchestrator.audio_manager.prewarm_pcm_cache(delay_s=20.0)
     except Exception as e:
         logger.debug(f"Speech pre-warm not started: {e}", module="Main")
 
@@ -338,6 +399,10 @@ def main():
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
+        # Before anything slow: the camera release below can take a while, and
+        # the supervisor must neither kill it as a wedge nor restart the app.
+        _liveness.mark_stopping()
+        beacon.stop()
         logger.info("Shutdown requested", module="Main")
         # Disarm FIRST and with the magic close: a deliberate stop must not
         # leave the board to reset itself one timeout after we exit.

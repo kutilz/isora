@@ -123,7 +123,7 @@ export default function DeviceClient({ id }: { id: string }) {
         <div className="app-body">
           <SettingsGroup
             title="Belum bisa menghubungi relay"
-            note="Perangkatmu tetap berfungsi penuh — ini hanya memengaruhi pengaturan dari jauh."
+            note="Perangkat tetap berfungsi penuh — ini hanya memengaruhi pengaturan dari jauh."
           >
             <SettingsItem label="Sesi tidak bisa dibuat" sub={err || undefined} />
             <SettingsLink href="/docs/masalah-umum" label="Masalah umum" />
@@ -217,7 +217,7 @@ export default function DeviceClient({ id }: { id: string }) {
             <strong>Tinggal satu langkah.</strong> Isi pengaturan di bawah, lalu tekan{" "}
             <strong>Simpan &amp; selesai</strong>.
             {justPaired && " Perangkat sudah mengucapkan “Perangkat sudah terhubung.”"}{" "}
-            Halaman ini boleh kamu tutup dulu — perangkat tetap tertaut, dan setelannya bisa
+            Halaman ini boleh ditutup dulu — perangkat tetap tertaut, dan setelannya bisa
             dilanjutkan kapan saja dari daftar perangkat.
           </Notice>
         )}
@@ -270,7 +270,7 @@ export default function DeviceClient({ id }: { id: string }) {
                 )}
               </>
             ) : (
-              "Kendali lokal hanya terbuka dari WiFi yang sama dengan perangkat. Sambungkan ponselmu ke WiFi itu, lalu buka halaman ini lagi."
+              "Kendali lokal hanya terbuka dari WiFi yang sama dengan perangkat. Sambungkan ponsel ke WiFi itu, lalu buka halaman ini lagi."
             )
           }
         >
@@ -294,7 +294,7 @@ export default function DeviceClient({ id }: { id: string }) {
               label="Tidak tersedia sekarang"
               sub={
                 lan
-                  ? "Ponselmu sedang tidak di WiFi yang sama dengan perangkat."
+                  ? "Ponsel sedang tidak di WiFi yang sama dengan perangkat."
                   : "Perangkat belum melaporkan alamat lokalnya."
               }
             />

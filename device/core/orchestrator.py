@@ -33,6 +33,9 @@ import time
 from typing import Optional
 
 from config import cfg
+from modes.pay_mode import PayScanner
+from modes.scan_narrator import ScanNarrator, ai_key_present
+from utils import diag
 from utils.power import PowerGovernor, pace_delay
 
 # Contact-bounce settle applied to BOTH button edges (seconds).
@@ -54,8 +57,14 @@ class Orchestrator:
     _MODE_CYCLE = {"idle": "explorer", "explorer": "context",
                    "context": "qris", "qris": "idle"}
 
-    # Modes that keep YOLO loaded
-    _YOLO_MODES = {"explorer"}
+    # The NPU model each mode keeps loaded: (cfg key of its .mud, role). A mode
+    # not listed holds none. One model at a time fits this 128 MB board, so
+    # moving between explorer and scan bayar swaps the nav YOLO for the
+    # banknote one (AIEngine.reload_model).
+    _MODE_MODELS = {
+        "explorer": ("model_path", "nav"),
+        "qris":     ("money_model_path", "money"),
+    }
 
     # Neutral mode the device falls back to whenever the configured one is
     # unusable. Never explorer: an unasked-for mode that starts speaking is
@@ -103,6 +112,21 @@ class Orchestrator:
         any state they did not intend to be in is always one more press.
         """
         return cls._MODE_CYCLE.get(current, cls.NEUTRAL_MODE)
+
+    @classmethod
+    def model_for_mode(cls, mode):
+        """(path, role) of the model `mode` wants on the NPU, or None."""
+        spec = cls._MODE_MODELS.get(mode)
+        # Mode PIMNAS: context keeps the nav YOLO on the NPU as well, so a
+        # describe the network fails can still say what is in front of the
+        # camera (AIEngine._offline_fallback). It is only read on that failure —
+        # context mode still runs no inference per tick.
+        if spec is None and mode == "context" and cfg.EVENT_MODE:
+            spec = cls._MODE_MODELS["explorer"]
+        if spec is None:
+            return None
+        key, role = spec
+        return cfg.get(key), role
 
     @classmethod
     def resolve_boot_mode(cls, raw, last_mode=None) -> str:
@@ -160,6 +184,15 @@ class Orchestrator:
         self.mdns:          object = None   # set by main.py (mDNS publisher)
         self.data_collector: object = None  # set by main.py (Mode Ambil Data)
 
+        # Online navigation: explorer + ACTION. Off at boot and on every mode
+        # change — a cloud call every few seconds is not something to resume
+        # without the user asking for it again.
+        self.scan = ScanNarrator(self)
+
+        # Scan bayar: which look (banknote / QR) the next frame gets, and what
+        # has already been said. Reset on every mode switch.
+        self.pay = PayScanner()
+
         # ── Adaptive power governor ───────────────────────────────────────────
         # Owns the answer to "how much work is the AI loop allowed to do right
         # now", from temperature and whether anything is actually happening.
@@ -177,6 +210,10 @@ class Orchestrator:
         # second, so a few seconds of grace spans normal polling without
         # leaving the encoder running for a closed tab.
         self._last_preview_req = None
+        # Last MODE/ACTION press and where it came from, for the PIMNAS operator
+        # page: a second person on a phone has to see that the presenter just
+        # pressed, or both press and the device skips a mode.
+        self._last_press = None
         self._preview_grace_s  = cfg.get("preview_grace_s", 5.0)
 
         # ── Mode-change event (wakes AI loop when mode switches) ──────────────
@@ -299,13 +336,25 @@ class Orchestrator:
 
     def set_pending_command(self, cmd: str, data: dict = None):
         with self._lock:
-            self._pending_command = {"cmd": cmd, "data": data or {}}
+            replaced = self._pending_command
+            self._pending_command = {"cmd": cmd, "data": data or {},
+                                     "t": time.monotonic()}
+        # One slot only: a press while the AI loop is busy overwrites the one
+        # already waiting, which from the outside is a press that did nothing.
+        if replaced:
+            diag.event("press_merged", cmd=cmd, replaced=replaced["cmd"],
+                       waited_s=time.monotonic() - replaced["t"])
 
     def pop_pending_command(self) -> Optional[dict]:
         with self._lock:
             cmd = self._pending_command
             self._pending_command = None
-            return cmd
+        if cmd:
+            # The photo is taken now, not at the press: this is how far apart
+            # those two moments were.
+            diag.event("press_run", cmd=cmd["cmd"],
+                       waited_s=time.monotonic() - cmd["t"])
+        return cmd
 
     # ─── Status snapshot ──────────────────────────────────────────────────────
 
@@ -368,9 +417,17 @@ class Orchestrator:
             _cam_rot = 0
             _cam_w, _cam_h = cfg.get("input_width", 320), cfg.get("input_height", 224)
 
+        scan_active = self.scan.active
+
         with self._lock:
             return {
                 "mode":         self._mode,
+                "event_mode":   cfg.EVENT_MODE,
+                "last_press":   dict(self._last_press) if self._last_press else None,
+                # Online navigation (explorer + ACTION) and its photo interval,
+                # so /buttons and the cloud app can show and adjust both.
+                "scan_active":     scan_active,
+                "scan_interval_s": cfg.SCAN_INTERVAL_S,
                 "device_id":    dev_id,
                 "device_name":  dev_name,
                 "mdns_host":    dev_host,
@@ -631,6 +688,13 @@ class Orchestrator:
         except Exception:
             pass
 
+        # Leaving explorer ends online navigation. Silently: the new mode's
+        # own name is what the user should hear next.
+        self.scan.stop()
+        # Entering scan bayar starts from nothing said, so a note already in
+        # the hand is announced again rather than remembered from last time.
+        self.pay.reset()
+
         # Wake up the AI loop so it picks up the new mode immediately
         self._mode_event.set()
 
@@ -741,6 +805,7 @@ class Orchestrator:
                             # The web path always survived the same exception,
                             # which is exactly backwards for the input a blind
                             # user actually has in their hand.
+                            self.note_press("tombol", role, long_press)
                             try:
                                 handler(long_press)
                             except Exception as he:
@@ -1042,6 +1107,7 @@ class Orchestrator:
                     f"Simulated {which.upper()} button ({kind} press)",
                     module="Orchestrator",
                 )
+                self.note_press("ponsel", which, long_press)
                 if which == "chord":
                     self._toggle_volume_mode()
                 elif which == "mode":
@@ -1053,6 +1119,12 @@ class Orchestrator:
                     f"Simulated button '{which}' failed: {e}",
                     module="Orchestrator",
                 )
+
+    def note_press(self, source: str, button: str, long_press: bool = False):
+        """Record a press ("tombol" = on the device, "ponsel" = web page)."""
+        with self._lock:
+            self._last_press = {"source": source, "button": button,
+                                "long": bool(long_press), "t": time.time()}
 
     def note_user_interaction(self, window_s: Optional[float] = None):
         """Start/refresh the detection-audio mute window after a user action,
@@ -1128,16 +1200,42 @@ class Orchestrator:
         else:
             self.switch_mode(self.next_mode(self.mode))
 
+    def _action_means_pair(self) -> bool:
+        """Whether an unpaired device's short ACTION should go to pairing.
+
+        In idle (the boot mode, camera closed, where ACTION has nothing else to
+        do) always; in the camera modes only while no AI key is set. "An
+        unpaired device has nothing to describe yet" stopped being true once
+        keys could be set without the cloud (the LAN /buttons page, a relay
+        that is down): such a unit answered every describe and every online-nav
+        toggle with "Gagal menghubungkan" — measured on aural-78a7, 29 Oct.
+        """
+        if self.mode == "idle":
+            return True
+        try:
+            from core.cloud import _ai_key_present
+            return not _ai_key_present()
+        except Exception:
+            return True
+
     def _on_action_button(self, long_press: bool,
                           in_volume: Optional[bool] = None):
         """
         ACTION button: on-demand capture (1 press = 1 API call).
 
-          short → describe scene (explorer/context) or scan QRIS (qris mode)
+          short → pair with the waiting phone while the device is unpaired
+                  (in idle, or in any mode while no AI key is set),
+                  otherwise online navigation on/off (explorer), describe
+                  scene (context) or say where the QR code is (scan bayar)
           long  → re-speak the last result the user heard
 
-        Inert during onboarding to avoid confusing first-boot; steps the volume
-        up instead while volume mode is open.
+        The pairing binding takes the button only until the device is claimed,
+        and it is what makes setup need no typing and no sight: the person is
+        holding the device, so pressing it is both the easiest gesture available
+        and better proof of ownership than the code it replaced.
+
+        Otherwise inert during onboarding to avoid confusing first-boot; steps
+        the volume up instead while volume mode is open.
 
         `in_volume` — see _on_button: the modal state as it was when the press
         happened, so a queued press cannot be re-read against a mode that has
@@ -1146,7 +1244,18 @@ class Orchestrator:
         if self._in_volume_mode() if in_volume is None else in_volume:
             self._volume_step(+1)                     # ACTION = louder
             return
+        diag.event("press", button="action", mode=self.mode, long=bool(long_press))
         self._press_cue()
+        # Pairing first: an unpaired device has nothing useful to describe yet,
+        # and this is checked before `onboarding_active` because the user may
+        # have long-pressed "sudah paham" (which clears it) and only then gone
+        # to fetch their phone.
+        if not long_press:
+            cloud = getattr(self, "cloud", None)
+            if (cloud is not None and cloud.wants_button_pair()
+                    and self._action_means_pair()):
+                cloud.confirm_pairing()
+                return
         onboarding_active = (
             not cfg.get("setup_completed", False)
             and not cfg.get("url_ack", False)
@@ -1160,9 +1269,41 @@ class Orchestrator:
                 if last:
                     self.audio_manager.queue_info(last)
             return
+        # Explorer: ACTION switches online navigation on/off. It used to fire a
+        # one-off describe here, which ran on the AI loop thread and so paused
+        # YOLO — every hazard alert — for the whole cloud round-trip. A one-off
+        # description is still one press away in context mode.
+        if self.mode == "explorer":
+            self.toggle_scan()
+            return
+        # Scan bayar: the guide answers at its next quiet moment, on the AI loop.
+        if self.mode == "qris":
+            self.pay.guide.ask()
+            self.note_user_interaction()
+            return
         # Short press: trigger the current mode's capture via the same command
         # path the Web UI uses, so it runs on the AI loop thread (not GPIO).
-        self.set_pending_command("qris" if self.mode == "qris" else "describe")
+        self.set_pending_command("describe")
+
+    def toggle_scan(self) -> bool:
+        """Online navigation on/off; returns the new state. Pure state + audio,
+        like switch_mode — the narrator does its camera work on the AI loop."""
+        am = self.audio_manager
+        if self.scan.stop():
+            self.logger.info("Online navigation off", module="Orchestrator")
+            if am:
+                am.queue_system("navigasi_daring_mati")
+            return False
+        if not ai_key_present():
+            # Say why instead of switching on a narrator that can only fail.
+            if am:
+                am.queue_system("api_tidak_tersedia")
+            return False
+        self.scan.start()
+        self.logger.info("Online navigation on", module="Orchestrator")
+        if am:
+            am.queue_system("navigasi_daring_aktif")
+        return True
 
     # ─── Adaptive power management ────────────────────────────────────────────
 
@@ -1252,7 +1393,12 @@ class Orchestrator:
     def _start_aural_engine(self):
         """Construct AIEngine (opens camera + model) and register the watchdog."""
         from core.ai_engine import AIEngine
-        self.ai_engine = AIEngine(orchestrator=self, logger=self.logger)
+        # Open with the model the CURRENT mode wants (or none, for context),
+        # not always the nav one — otherwise entering scan bayar or context
+        # paid a nav-model load only for _sync_engine_to_mode to drop it again
+        # on the very next tick.
+        self.ai_engine = AIEngine(orchestrator=self, logger=self.logger,
+                                  model=self.model_for_mode(self.mode))
         if self.watchdog:
             self.watchdog.register(
                 "ai_engine",
@@ -1307,12 +1453,17 @@ class Orchestrator:
         engine = self.ai_engine
         if engine is None:
             return
-        want = mode in self._YOLO_MODES
+        want = self.model_for_mode(mode)
         try:
             if want:
-                engine.reload_model()
+                engine.reload_model(*want)
             else:
                 engine.release_model()
+            # Scan bayar also holds the QR-finding model (see AIEngine.locate_qr).
+            if mode == "qris" and hasattr(engine, "ensure_qr_detector"):
+                engine.ensure_qr_detector()
+            elif hasattr(engine, "release_qr_detector"):
+                engine.release_qr_detector()
         except Exception as e:
             self.logger.warn(f"Model sync failed for mode {mode}: {e}",
                              module="Orchestrator")
@@ -1539,9 +1690,9 @@ class Orchestrator:
                     run_idle_tick(self)
                     continue                      # parks itself; nothing to pace
                 elif mode == "qris":
-                    # QRIS only activates on-demand via command; idle here
-                    self._mode_event.wait(timeout=0.1)
-                    continue
+                    # Scan bayar: banknotes and QR codes, alternating frames.
+                    from modes.pay_mode import run_pay_tick
+                    run_pay_tick(self)
                 else:
                     self._mode_event.wait(timeout=0.1)
                     continue
@@ -1605,6 +1756,11 @@ class Orchestrator:
 
         elif cmd == "describe":
             if self.ai_engine:
+                # Context mode does not read the camera every tick (see
+                # modes/context_mode.py), so _last_frame may be from whenever
+                # the mode was entered. Take the picture now, at the press.
+                if self.mode == "context":
+                    self.ai_engine.grab_fresh_frame()
                 self.ai_engine.trigger_scene_description()
             else:
                 self._say_no_camera()

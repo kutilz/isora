@@ -6,7 +6,7 @@ summary: Coba cara kerja I-Sora tanpa perangkat — kamera ponsel, chime arah, d
 
 # Simulasi dengan kamera HP
 
-Halaman **[Simulasi kamera](/simulasi)** menjalankan alur I-Sora di ponselmu:
+Halaman **[Simulasi kamera](/simulasi)** menjalankan alur I-Sora di ponsel:
 kamera belakang jadi mata, dan ponsel berbicara persis seperti perangkat.
 
 Gunanya dua: calon pengguna bisa merasakan dulu sebelum punya perangkat, dan
@@ -18,16 +18,14 @@ pendamping bisa berlatih membaca isyarat suaranya.
 2. Ketuk **Mulai simulasi**, lalu izinkan akses kamera.
 3. Pakai **earphone**. Arah kiri/kanan disampaikan lewat panning stereo, jadi
    lewat speaker ponsel isyarat arahnya hilang.
-4. Arahkan kamera ke sekitarmu dan dengarkan.
+4. Arahkan kamera ke sekitar dan dengarkan.
 
-## Tombol I-Sora di layar
+## Tombol di layar
 
-Perangkat aslinya cuma punya satu tombol, dan simulasi menirunya:
-
-| Tekanan | Yang terjadi |
+| Tombol | Yang terjadi |
 |---|---|
-| **Sebentar** | Bacakan ulang semua objek yang terlihat sekarang |
-| **Lama** (± 1 detik) | Jelaskan sekitar dengan AI |
+| **Ulangi** | Bacakan ulang semua yang terlihat sekarang |
+| **Jelaskan** | Jelaskan sekitar dengan AI |
 
 ## Mode
 
@@ -43,12 +41,11 @@ Sama seperti pengaturan di perangkat:
 - **Hanya chime** — untuk yang sudah hafal bunyinya; jauh lebih cepat.
 - **Hanya bicara** — untuk yang baru mulai.
 
-## Jelaskan sekitar (perlu API key)
+## Jelaskan sekitar
 
-Fitur ini mengirim **satu gambar** ke OpenAI atau Gemini memakai **API key
-milikmu sendiri**. Key hanya disimpan di ponsel ini dan dikirim langsung ke
-penyedia AI — tidak pernah melewati server I-Sora. Kosongkan kolomnya untuk
-menghapusnya dari ponsel.
+Tombol **Jelaskan** mengirim **satu gambar** ke layanan AI lewat
+server I-Sora. Tidak perlu daftar atau mengisi apa pun. Fitur ini aktif pukul
+12.50–15.30 WIB.
 
 ## Offline
 

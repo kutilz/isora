@@ -20,7 +20,7 @@ karena perangkat belum online):
 
 1. Pada saat pertama kali, perangkat membuka halaman pengaturan lokal.
    Ikuti suara yang dipandu perangkat untuk menyambungkan WiFi.
-2. Masukkan **nama jaringan (SSID)** dan **password** WiFi rumahmu.
+2. Masukkan **nama jaringan (SSID)** dan **password** WiFi rumah.
 3. Setelah tersambung, perangkat akan otomatis lanjut ke tahap **pairing** dan
    menyebutkan kode unik.
 

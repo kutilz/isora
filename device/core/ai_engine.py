@@ -4,12 +4,14 @@ Runs inside the AI loop thread.
 
 Resource lifecycle
 ──────────────────
-  release_model()   Free YOLO from NPU memory (called when switching to context/qris mode).
-  reload_model()    Reload YOLO after mode returns to explorer.
+  release_model()   Free the NPU model (called when switching to context mode).
+  reload_model()    Load the model the mode wants — the nav YOLO for explorer,
+                    the banknote YOLO for scan bayar — swapping out the other.
   release()         Full teardown: camera + model (called by watchdog restart).
   reload()          Full reinit: camera + model (watchdog restart_fn).
 """
 
+import os
 import time
 import base64
 import threading
@@ -20,9 +22,11 @@ try:
 except ImportError:
     MAIX_AVAILABLE = False
 
-from config import cfg, RELEVANT_LABELS, COCO_LABEL_MAP
-from utils import distance, orientation
+from config import cfg, RELEVANT_LABELS, MUTED_NAV_LABELS, COCO_LABEL_MAP
+from utils import diag, distance, orientation
+from utils.scene_prompt import scrub_animals
 from utils.logger import position_from_bbox
+from utils.money import nominal_from_label
 from utils.stage_timer import StageTimer
 from utils.scene_metrics import scene_metrics
 from adapters import get_adapter, AdapterError
@@ -50,6 +54,10 @@ _NET_SLOW_SIGNS = (
 )
 
 
+# Largest frame handed to MaixPy's QR finder (see AIEngine.read_qr).
+_QR_MAX_PIXELS = 320 * 240
+
+
 def _net_failure_kind(exc):
     """"down" | "slow" | None — which spoken cue this failure has earned."""
     s = str(exc).lower()
@@ -63,6 +71,12 @@ def _net_failure_kind(exc):
     return "slow" if "urlopen error" in s else None
 
 
+def _audio_slot():
+    """The speaker's one-clip-at-a-time lock (audio_manager._codec)."""
+    from core.audio_manager import _codec
+    return _codec()
+
+
 def _net_failure_cue(exc, fallback: str) -> str:
     kind = _net_failure_kind(exc)
     if kind == "down":
@@ -72,16 +86,75 @@ def _net_failure_cue(exc, fallback: str) -> str:
     return fallback
 
 
+# Past this a call is slower than a normal one (3.5-8 s measured): see what the
+# link and the CPU are doing while it is still happening.
+_SLOW_CALL_PROBE_S = 9.0
+
+
+class _ProgressCues:
+    """What to say while a cloud call runs, spaced so it does not become noise.
+
+    A clip every 3 s (each about 2 s long) left almost no quiet during a long
+    call, and "koneksi internet lambat" repeating did not tell the user anything
+    new the second time. Said once per call: a slow call is usually the AI being
+    slow, not the connection (measured 3 Nov 2026: 9 and 11 s calls on a healthy
+    hotspot). The steady "masih memproses" stays, because a blind user cannot see
+    that the device is still alive, but it stays spaced out.
+    """
+
+    STILL_WORKING_EVERY_S = 6.0
+    AFTER_SLOW_EVERY_S = 9.0
+    _JITTER_S = 0.5     # the caller's ticks drift slightly past each 3 s
+
+    def __init__(self, slow_after_s: float):
+        self._slow_after_s = slow_after_s
+        self._said_slow = False
+        self._last = 3.0 - self.STILL_WORKING_EVERY_S   # first cue at the 3 s tick
+
+    def next(self, elapsed: float):
+        """The cue for this tick, or None to stay quiet."""
+        if elapsed >= self._slow_after_s and not self._said_slow:
+            self._said_slow = True
+            self._last = elapsed
+            return "koneksi_lambat"
+        every = self.AFTER_SLOW_EVERY_S if self._said_slow else self.STILL_WORKING_EVERY_S
+        if elapsed - self._last >= every - self._JITTER_S:
+            self._last = elapsed
+            return "masih_memproses"
+        return None
+
+
 class AIEngine:
 
-    def __init__(self, orchestrator, logger):
+    _said_slow = False      # did the current cloud call already say "koneksi lambat"?
+
+    # Model spec meaning "the navigation YOLO from cfg.MODEL_PATH". A spec is
+    # (path, role); role says what the detections are FOR, which decides who
+    # may read them: only "nav" goes through the COCO hazard pipeline in
+    # capture_and_infer, only "money" through detect_money.
+    NAV = (None, "nav")
+
+    def __init__(self, orchestrator, logger, model=NAV):
         self.orch   = orchestrator
         self.logger = logger
 
         self._cam:          object = None
         self._detector:     object = None
         self._model_loaded: bool   = False
+        self._model_path:   object = None
+        self._model_role:   object = None
         self._last_frame:   object = None
+
+        # The model the current mode asked for — what a camera recovery or a
+        # watchdog reinit brings back, so neither can swap a scan-bayar engine
+        # back to the nav model behind the mode's back. None = no model.
+        self._want = model
+        # A model that failed to load is not retried every tick: a missing
+        # .mud (say, the banknote model not deployed on this unit yet) would
+        # otherwise log an error ~15 times a second for as long as the mode
+        # stays on. (path, monotonic time of the failure).
+        self._failed_model = None
+        self._model_retry_s = 30.0
         # RLock, not Lock: release() now holds the lock across release_model()
         # so a model teardown and a camera close can never be split by another
         # thread's reload_model(). Both take the same lock, so it must be
@@ -96,6 +169,10 @@ class AIEngine:
 
         # Throttle for cloud pairing QR scans (only active while unpaired).
         self._last_qr_scan = 0.0
+        # Scan bayar's QR-finding model, held NEXT TO the banknote model (both
+        # fit: 3.5 + 2.6 MB, ~35 + ~29 ms a frame, measured on isora-810f).
+        self._qr_detector = None
+        self._qr_failed_at = None
 
         # Temporal de-flicker tracker. A label must persist in roughly the same
         # spot for several consecutive frames before it counts as a real
@@ -117,7 +194,8 @@ class AIEngine:
         self._orientation_dirty  = False
 
         self._init_camera()
-        self._init_model()
+        if model is not None:
+            self._init_model(*model)
 
     # ─── Init helpers ─────────────────────────────────────────────────────────
 
@@ -126,10 +204,15 @@ class AIEngine:
             self.logger.warn("MaixPy unavailable — camera skipped", module="AIEngine")
             return
         try:
-            self._cam = camera.Camera(
-                cfg.INPUT_WIDTH, cfg.INPUT_HEIGHT, image.Format.FMT_RGB888
-            )
-            self._cam.open()
+            # Opening the camera runs MaixPy's multimedia init, and whatever
+            # the speaker is playing at that moment is lost — measured: the
+            # mode chime on idle → explorer, every time. Take the audio slot
+            # for the open: the clip in progress finishes first, the next waits.
+            with _audio_slot():
+                self._cam = camera.Camera(
+                    cfg.INPUT_WIDTH, cfg.INPUT_HEIGHT, image.Format.FMT_RGB888
+                )
+                self._cam.open()
             self.logger.ok(
                 f"Camera: {cfg.INPUT_WIDTH}×{cfg.INPUT_HEIGHT} @ {cfg.CAMERA_FPS}fps",
                 module="AIEngine",
@@ -194,8 +277,9 @@ class AIEngine:
             cfg.INPUT_WIDTH, cfg.INPUT_HEIGHT, self._rot_software
         )
 
-    def _init_model(self):
-        """Load the NPU model. HOLDS _lock across the allocation.
+    def _init_model(self, path=None, role="nav"):
+        """Load the NPU model at `path` (default cfg.MODEL_PATH). HOLDS _lock
+        across the allocation.
 
         The lock is not optional here. The allocation is a .mud parse plus an
         NPU/ION reservation inside a C call, and the same object's release()
@@ -214,55 +298,48 @@ class AIEngine:
         if not MAIX_AVAILABLE:
             self.logger.warn("MaixPy unavailable — model skipped", module="AIEngine")
             return
+        path = path or cfg.MODEL_PATH
         with self._lock:
             try:
-                cls, cls_name  = self._detector_class(cfg.MODEL_PATH)
-                detector       = cls(model=cfg.MODEL_PATH)
+                cls, cls_name  = self._detector_class(path)
+                detector       = cls(model=path)
             except Exception as e:
                 self._detector     = None
                 self._model_loaded = False
-                self.logger.error(f"Model load failed: {e}", module="AIEngine")
+                self._model_path   = None
+                self._model_role   = None
+                self._failed_model = (path, time.monotonic())
+                self.logger.error(f"Model load failed ({path}): {e}", module="AIEngine")
                 return
             self._detector     = detector
             self._model_loaded = True
-            self.logger.ok(f"{cls_name} loaded: {cfg.MODEL_PATH}", module="AIEngine")
+            self._model_path   = path
+            self._model_role   = role
+            self._failed_model = None
+            self.logger.ok(f"{cls_name} loaded: {path} ({role})", module="AIEngine")
 
     @staticmethod
     def _detector_class(model_path):
         """Pick the maix.nn class that matches the .mud and exists in this build.
 
-        MaixPy 4.5.x ships YOLOv5/YOLOv8 only — `nn.YOLO11` was added later — so
-        hardcoding one class breaks on whichever image the unit happens to run.
-        The .mud's `model_type` is the source of truth; fall back to whatever the
-        build actually exposes.
+        Delegates to utils.nn_compat so the benchmark suite shares the choice:
+        the benchmarks used to hardcode `nn.YOLO11` and could not start at all on
+        a MaixPy 4.5.1 unit (YOLOv5/YOLOv8 only) while the app ran fine on the
+        very same image.
         """
-        wanted = ""
-        try:
-            with open(model_path) as f:
-                for line in f:
-                    if line.strip().startswith("model_type"):
-                        wanted = line.split("=", 1)[1].strip().lower()
-                        break
-        except Exception:
-            pass
-
-        preferred = {
-            "yolo11": ("YOLO11", "YOLOv8", "YOLOv5"),
-            "yolov8": ("YOLOv8", "YOLO11", "YOLOv5"),
-            "yolov5": ("YOLOv5", "YOLOv8", "YOLO11"),
-        }.get(wanted, ("YOLO11", "YOLOv8", "YOLOv5"))
-
-        for name in preferred:
-            cls = getattr(nn, name, None)
-            if cls is not None:
-                return cls, name
-        raise RuntimeError("maix.nn exposes no usable YOLO class")
+        from utils.nn_compat import detector_class
+        return detector_class(model_path)
 
     # ─── Resource management (called by Orchestrator on mode switch) ──────────
 
     def release_model(self):
-        """Unload YOLO from NPU to free memory. Camera stays open."""
+        """Unload YOLO from NPU to free memory. Camera stays open.
+
+        Also records that nothing is wanted any more, so a camera recovery in a
+        model-less mode (context) does not quietly load one again.
+        """
         with self._lock:
+            self._want = None
             if self._detector is not None:
                 try:
                     del self._detector
@@ -270,19 +347,31 @@ class AIEngine:
                     pass
                 self._detector     = None
                 self._model_loaded = False
+                self._model_path   = None
+                self._model_role   = None
                 self.logger.info("YOLO model released (NPU free)", module="AIEngine")
 
-    def reload_model(self):
-        """Reload YOLO. No-op if already loaded.
+    def reload_model(self, path=None, role="nav"):
+        """Make `path` (default cfg.MODEL_PATH) the loaded model. No-op if it
+        already is; a different model is released first — the board has room
+        for one.
 
         The check and the load are ONE critical section. Splitting them let two
         callers both see "not loaded" and both allocate, and let a load start
         while release() was closing the camera.
         """
+        path = path or cfg.MODEL_PATH
         with self._lock:
-            if self._model_loaded:
+            if self._model_loaded and self._model_path == path:
                 return
-            self._init_model()
+            if self._model_loaded:
+                self.release_model()
+            self._want = (path, role)
+            failed = self._failed_model
+            if (failed is not None and failed[0] == path
+                    and time.monotonic() - failed[1] < self._model_retry_s):
+                return
+            self._init_model(path, role)
 
     def release(self):
         """Full teardown — camera + model. Called before watchdog restart.
@@ -296,9 +385,11 @@ class AIEngine:
         """
         with self._lock:
             self.release_model()
+            self.release_qr_detector()
             if self._cam is not None:
                 try:
-                    self._cam.close()
+                    with _audio_slot():      # mmf teardown, see _init_camera
+                        self._cam.close()
                 except Exception:
                     pass
                 self._cam = None
@@ -306,10 +397,13 @@ class AIEngine:
     def reload(self):
         """Full reinit after a crash. Used as watchdog restart_fn."""
         self.logger.warn("Reloading AI Engine (watchdog triggered)", module="AIEngine")
+        want = self._want              # release() clears it
         self.release()
         time.sleep(0.5)
         self._init_camera()
-        self._init_model()
+        if want is not None:
+            self._want = want
+            self._init_model(*want)
 
     def _maybe_recover_camera(self):
         """Rate-limited camera re-init while the camera is down (no hammering)."""
@@ -323,8 +417,8 @@ class AIEngine:
             "Camera unavailable — retrying init (30s backoff)", module="AIEngine"
         )
         self._init_camera()
-        if self._cam is not None and not self._model_loaded:
-            self._init_model()
+        if self._cam is not None and not self._model_loaded and self._want is not None:
+            self._init_model(*self._want)
 
     # ─── Main pipeline ────────────────────────────────────────────────────────
 
@@ -354,12 +448,14 @@ class AIEngine:
             self.logger.warn(f"Camera read error ({e}) — attempting reopen",
                              module="AIEngine")
             try:
-                self._cam.close()
+                with _audio_slot():          # see _init_camera
+                    self._cam.close()
             except Exception:
                 pass
             time.sleep(0.3)
             try:
-                self._cam.open()
+                with _audio_slot():
+                    self._cam.open()
                 # A reopened sensor comes back with its ISP defaults, so the
                 # hardware half turn is gone. Without this, a device mounted
                 # upside down quietly rights itself after any camera hiccup —
@@ -403,9 +499,12 @@ class AIEngine:
         t_infer    = 0.0
 
         with self._lock:
-            loaded     = self._model_loaded
+            loaded     = self._model_loaded and self._model_role == "nav"
             detector   = self._detector
 
+        # Only the nav model's classes are COCO ids. With the banknote model on
+        # the NPU (scan bayar) this is just the camera read; detect_money()
+        # runs that model when the mode asks for it.
         if loaded and detector is not None:
             result  = detector.detect(
                 frame,
@@ -420,7 +519,7 @@ class AIEngine:
 
             for det in result:
                 label = COCO_LABEL_MAP.get(det.class_id, str(det.class_id))
-                if label not in RELEVANT_LABELS:
+                if label not in RELEVANT_LABELS or label in MUTED_NAV_LABELS:
                     continue
 
                 x, y, w, h   = det.x, det.y, det.w, det.h
@@ -547,11 +646,31 @@ class AIEngine:
         if now - self._last_qr_scan < 0.6:
             return None
         self._last_qr_scan = now
+        return self.read_qr()
 
+    def read_qr(self):
+        """Payload of the first QR in the latest frame (native MaixPy decoder,
+        no network), or None. Unthrottled: scan bayar paces it itself."""
         frame = self._last_frame
         if frame is None or not MAIX_AVAILABLE:
             return None
+        found = self._decode_qr(frame)
+        return found[0] if found else None
+
+    def _decode_qr(self, frame):
+        """(payload, cx, cy, size) of the first readable QR in `frame`, or None.
+        Position as 0..1 of the frame, size over its shorter side."""
         try:
+            # MaixPy's QR finder runs out of its fast frame-buffer stack on a
+            # big image and then SEGFAULTS the whole app (measured on a 1280-px
+            # frame) — no exception reaches Python. Camera frames are 320x224,
+            # so this costs nothing normally; it only matters if
+            # input_width/height were ever raised.
+            w, h = frame.width(), frame.height()
+            if w * h > _QR_MAX_PIXELS:
+                s = (_QR_MAX_PIXELS / float(w * h)) ** 0.5
+                frame = frame.resize(max(int(w * s), 1), max(int(h * s), 1))
+                w, h = frame.width(), frame.height()
             codes = frame.find_qrcodes()
         except Exception:
             return None
@@ -565,15 +684,165 @@ class AIEngine:
                     payload = None
             if isinstance(payload, (bytes, bytearray)):
                 payload = payload.decode("utf-8", errors="replace")
-            if payload:
-                return payload
+            if not payload:
+                continue
+            try:
+                x, y, qw, qh = qr.x(), qr.y(), qr.w(), qr.h()
+                return (payload, (x + qw / 2.0) / w, (y + qh / 2.0) / h,
+                        max(qw, qh) / float(min(w, h)))
+            except Exception:
+                return (payload, 0.5, 0.5, 1.0)     # read, position unknown
         return None
+
+    def locate_qr(self):
+        """Where a QR is right now, as a qr_guide.Sighting, or None. No network.
+
+        A code that can be read says exactly what and where. One still too far to
+        read is found from its finder squares, which survive at about a third of
+        the size the decoder needs — the difference between being told "kode di
+        kanan" from a step away and only from arm's length.
+        """
+        from utils.qr_guide import Sighting, locate_finders
+        frame = self._qr_frame()
+        if frame is None or not MAIX_AVAILABLE:
+            return None
+        with self._lock:
+            detector = self._qr_detector
+        if detector is not None:
+            # The model finds a code as an object from ~30 px wide, where the
+            # decoder and the finder-square search both see nothing. It says
+            # where; decoding (exact, and what says "QRIS, merchant X") is only
+            # attempted once the code is big enough to have a chance.
+            try:
+                objs = detector.detect(frame, conf_th=float(cfg.get("qr_conf_threshold", 0.4)),
+                                       iou_th=0.45)
+            except Exception as e:
+                self.logger.warn(f"QR model failed: {e}", module="AIEngine")
+                objs = None
+            if not objs:
+                return None
+            o = max(objs, key=lambda o: o.score)
+            w, h = float(frame.width()), float(frame.height())
+            sighting = Sighting((o.x + o.w / 2.0) / w, (o.y + o.h / 2.0) / h,
+                                max(o.w, o.h) / min(w, h))
+            if sighting.size >= 0.18:
+                found = self._decode_qr(frame)
+                if found:
+                    sighting.payload = found[0]
+            return sighting
+        found = self._decode_qr(frame)
+        if found:
+            payload, cx, cy, size = found
+            return Sighting(cx, cy, size, payload)
+        try:
+            gray = frame.to_format(image.Format.FMT_GRAYSCALE)
+            return locate_finders(bytes(gray.to_bytes()), gray.width(), gray.height())
+        except Exception as e:
+            self.logger.warn(f"QR locate failed: {e}", module="AIEngine")
+            return None
+
+    def ensure_qr_detector(self):
+        """Load the QR-finding model if it is not loaded. AI-LOOP THREAD.
+        A unit without the file keeps the finder-square search."""
+        path = cfg.get("qr_model_path", "")
+        if not path or not MAIX_AVAILABLE or self._qr_detector is not None:
+            return
+        if self._qr_failed_at is not None and time.monotonic() - self._qr_failed_at < 60:
+            return
+        if not os.path.exists(path):
+            self._qr_failed_at = time.monotonic()
+            self.logger.warn(f"QR model missing: {path}", module="AIEngine")
+            return
+        with self._lock:
+            try:
+                cls, _name = self._detector_class(path)
+                self._qr_detector = cls(model=path)
+                self.logger.ok(f"QR model loaded: {path}", module="AIEngine")
+            except Exception as e:
+                self._qr_detector = None
+                self._qr_failed_at = time.monotonic()
+                self.logger.error(f"QR model load failed ({path}): {e}", module="AIEngine")
+
+    def release_qr_detector(self):
+        with self._lock:
+            if self._qr_detector is None:
+                return
+            try:
+                del self._qr_detector
+            except Exception:
+                pass
+            self._qr_detector = None
+            self.logger.info("QR model released", module="AIEngine")
+
+    def _qr_frame(self):
+        """The frame to look for a code in."""
+        return self._last_frame
+
+    def save_guide_photo(self, cue: str):
+        """Keep the frame behind a spoken direction with what was said, so a
+        session can be reviewed afterwards (cfg debug_save_frames)."""
+        if not cfg.get("debug_save_frames", False):
+            return
+        name = diag.save_frame(self._frame_jpeg(), cfg, "panduan_qr")
+        diag.frame_result(name, cue)
+
+    # ─── Scan bayar: banknotes ────────────────────────────────────────────────
+
+    def detect_money(self) -> list:
+        """Run the banknote model on the latest frame.
+
+        Returns [] unless the banknote model is the one on the NPU (the mode
+        swaps it in through reload_model). Each hit carries `nominal` — the
+        rupiah value parsed from the .mud label — next to the usual dashboard
+        fields, so the web preview can draw it like any other detection.
+        """
+        with self._lock:
+            detector = self._detector if self._model_role == "money" else None
+        frame = self._last_frame
+        if detector is None or frame is None:
+            return []
+        objs = detector.detect(
+            frame,
+            conf_th=float(cfg.get("money_conf_threshold", 0.5)),
+            iou_th=cfg.IOU_THRESHOLD,
+        )
+        labels = list(getattr(detector, "labels", None) or [])
+        frame_w, frame_h = self.frame_dims()
+        frame_area = max(frame_w * frame_h, 1)
+        out = []
+        for o in objs:
+            label = (labels[o.class_id] if 0 <= o.class_id < len(labels)
+                     else str(o.class_id)).strip()
+            out.append({
+                "label":      label,
+                "nominal":    nominal_from_label(label),
+                "confidence": round(o.score, 3),
+                "position":   position_from_bbox(o.x, o.y, o.w, o.h, frame_w, frame_h),
+                "is_danger":  False,
+                "tier":       "far",
+                "bbox":       {"x": o.x, "y": o.y, "w": o.w, "h": o.h},
+                "area_ratio": round((o.w * o.h) / frame_area, 4),
+            })
+        if self.orch.watchdog:
+            self.orch.watchdog.heartbeat("ai_engine")
+        return out
 
     # ─── Cloud triggers ───────────────────────────────────────────────────────
 
     def _get_adapter(self):
         """Return an adapter instance for the configured ai_provider."""
         return get_adapter(cfg.AI_PROVIDER, cfg)
+
+    def grab_fresh_frame(self) -> bool:
+        """Read the camera now so _last_frame shows the scene at this moment.
+
+        For modes that do not read every tick (context). The sensor keeps
+        streaming into the VI buffers while nobody reads, so the first read can
+        hand back a frame queued earlier — it is read and thrown away.
+        """
+        self.capture_and_infer()
+        self.capture_and_infer()
+        return self._last_frame is not None
 
     def _frame_jpeg(self) -> bytes:
         """Return last-frame JPEG bytes, or empty bytes if unavailable."""
@@ -583,6 +852,13 @@ class AIEngine:
             return bytes(self._last_frame.to_jpeg().to_bytes())
         except Exception:
             return b""
+
+    def _failure_cue(self, exc, fallback: str) -> str:
+        """Like _net_failure_cue, but a timeout right after the wait already said
+        "koneksi lambat" must not say it again: that sounds like more waiting,
+        when in fact this attempt is over and the user should press again."""
+        cue = _net_failure_cue(exc, fallback)
+        return fallback if cue == "koneksi_lambat" and self._said_slow else cue
 
     def _run_with_progress(self, fn, *args, interval_s: float = 3.0):
         """
@@ -598,23 +874,25 @@ class AIEngine:
         ("vi get frame timeout") — a hard failure, not just latency.
         """
         stop = threading.Event()
+        self._said_slow = False
 
         def _progress():
-            # A normal cloud call is ~7 s, so only after it drags past
-            # ai_slow_warn_s do we switch the spoken cue from "masih memproses"
-            # to "koneksi internet lambat" — by then a slow/flaky network is the
-            # likely cause, and saying so is more honest (and reassuring) than a
-            # generic "still processing". Threshold stays above the normal call
-            # time to avoid false "slow network" alarms on every capture.
-            slow_after = float(cfg.get("ai_slow_warn_s", 9.0))
+            cues = _ProgressCues(float(cfg.get("ai_slow_warn_s", 12.0)))
             start = time.monotonic()
+            probed = False
             while not stop.wait(timeout=interval_s):
                 wd = getattr(self.orch, "watchdog", None)
                 if wd:
                     wd.heartbeat("ai_engine")
                 elapsed = time.monotonic() - start
-                cue = "koneksi_lambat" if elapsed >= slow_after else "masih_memproses"
-                self.orch.audio_manager.queue_system(cue)
+                if not probed and elapsed >= _SLOW_CALL_PROBE_S:
+                    probed = True
+                    diag.net_probe("ai_slow")
+                cue = cues.next(elapsed)
+                if cue == "koneksi_lambat":
+                    self._said_slow = True
+                if cue:
+                    self.orch.audio_manager.queue_system(cue)
 
         t = threading.Thread(target=_progress, daemon=True)
         t.start()
@@ -642,6 +920,7 @@ class AIEngine:
         am = self.orch.audio_manager
         am.queue_cue("chime_capture.wav")
         am.queue_system("sedang_menganalisis")
+        photo = ""
 
         try:
             adapter = self._get_adapter()
@@ -658,11 +937,19 @@ class AIEngine:
             provider = cfg.AI_PROVIDER
 
             def _work():
+                nonlocal photo
                 with timer.stage(provider):
-                    return adapter.describe_scene(self._frame_jpeg(), cfg.PROMPT_SCENE)
+                    jpeg = self._frame_jpeg()
+                    photo = diag.save_frame(jpeg, cfg, "konteks")
+                    return adapter.describe_scene(jpeg, cfg.PROMPT_SCENE)
 
             description = self._run_with_progress(_work)
+            diag.frame_result(photo, description)
             self.logger.info(f"[scene-timing] {timer.oneline()}", module="AIEngine")
+            scrubbed = scrub_animals(description)
+            if scrubbed != description:
+                self.logger.info(f"Animal word replaced in: {description}", module="AIEngine")
+                description = scrubbed
             self.logger.ok(f"Scene: {description}", module="AIEngine")
             am.queue_cue("chime_success.wav")
             # Open a latency record for the /buttons dashboard; speak_scene fills
@@ -676,18 +963,53 @@ class AIEngine:
             )
             am.speak_scene(description, scene_id=sid)
         except AdapterError as e:
+            diag.frame_result(photo, e, ok=False)
             self.logger.error(f"AI adapter error: {e}", module="AIEngine")
             am.queue_cue("chime_error.wav")
             # Say which of the three it actually was — no connection, a
             # connection too slow to finish in time, or a failure on the far
             # end — so the user knows whether to move, wait, or just retry.
-            am.queue_system(_net_failure_cue(e, "gagal_menganalisis"))
+            am.queue_system(self._failure_cue(e, "gagal_menganalisis"))
+            self._offline_fallback()
         except Exception as e:
+            diag.frame_result(photo, e, ok=False)
             self.logger.exception(
                 f"Unexpected adapter error: {e}", module="AIEngine", exc=e,
             )
             am.queue_cue("chime_error.wav")
-            am.queue_system(_net_failure_cue(e, "gagal_menganalisis"))
+            am.queue_system(self._failure_cue(e, "gagal_menganalisis"))
+            self._offline_fallback()
+
+    def _offline_fallback(self) -> int:
+        """Mode PIMNAS: after a failed describe, say what the nav YOLO sees.
+
+        Real detections from a fresh frame, spoken from the pre-recorded nav
+        phrases ("orang di depan") — no network, and nothing that was not
+        actually in front of the camera. Returns how many objects were read
+        out. Off outside the event profile, where the failure cue alone stays
+        the behaviour a daily user knows.
+        """
+        if not cfg.EVENT_MODE:
+            return 0
+        with self._lock:
+            ready = self._model_loaded and self._model_role == "nav"
+        if not ready:
+            return 0
+        try:
+            detections = []
+            # The first read can be a frame queued while nobody was reading.
+            for _ in range(2):
+                _, detections, _ = self.capture_and_infer()
+            if not detections:
+                return 0
+            self.logger.info(
+                f"Offline fallback: {len(detections)} object(s)",
+                module="AIEngine")
+            self.orch.audio_manager.announce_detections(detections, force=True)
+            return len(detections)
+        except Exception as e:
+            self.logger.warn(f"Offline fallback failed: {e}", module="AIEngine")
+            return 0
 
     def trigger_qris_scan(self):
         """
@@ -718,6 +1040,7 @@ class AIEngine:
         self.orch.audio_manager.queue_system("memindai_kode_pembayaran")
 
         jpeg = self._frame_jpeg()
+        self._qris_photo = diag.save_frame(jpeg, cfg, "qris")
 
         if mode == "offline":
             self._qris_offline(jpeg)
@@ -766,14 +1089,14 @@ class AIEngine:
             # Same distinction as a scene describe: "gagal memindai" tells the
             # user to re-aim at the QR when the real problem was the link.
             self.orch.audio_manager.queue_system(
-                _net_failure_cue(e, "gagal_memindai"))
+                self._failure_cue(e, "gagal_memindai"))
         except Exception as e:
             self.logger.exception(
                 f"Unexpected adapter error: {e}", module="AIEngine", exc=e,
             )
             self.orch.audio_manager.queue_cue("chime_error.wav")
             self.orch.audio_manager.queue_system(
-                _net_failure_cue(e, "gagal_memindai"))
+                self._failure_cue(e, "gagal_memindai"))
 
     def _qris_hybrid(self, jpeg: bytes):
         # 1) local decode (fast, offline)
@@ -813,35 +1136,61 @@ class AIEngine:
         else:
             # Local failed AND we have nothing trustworthy → graceful fallback
             if ai_text:
-                # Last resort: use raw AI text but flagged in logs
+                # Last resort: the AI's reading. A vision model cannot decode a
+                # QR — it reads the printed sticker, and may guess — so this is
+                # never presented as a scan result: no success chime, and the
+                # user is told to confirm with the cashier before paying.
                 self.logger.warn(
                     "QRIS hybrid: local failed, falling back to AI raw",
                     module="AIEngine",
                 )
-                self.orch.audio_manager.queue_cue("chime_success.wav")
-                self.orch.audio_manager.queue_info(ai_text)
+                self.orch.audio_manager.queue_cue("chime_error.wav")
+                guess = ai_text.strip().rstrip(".")
+                self.orch.audio_manager.queue_info(
+                    f"QR tidak terbaca. Perkiraan AI, belum pasti: {guess}. "
+                    "Mohon pastikan nominal ke kasir.")
+                text = f"(AI, belum terverifikasi) {guess}"
             else:
                 self.orch.audio_manager.queue_cue("chime_error.wav")
                 self.orch.audio_manager.queue_system("gagal_memindai")
         self._save_qris_log(text)
 
+    # Enough history to look back over a day of use. The file is read whole and
+    # rewritten on every scan, so an unbounded one made each payment scan
+    # slower than the last.
+    _QRIS_LOG_MAX = 200
+
     def _save_qris_log(self, result: str):
+        """Append to qris_log.json. Bounded, atomic, and never raises: the
+        scan result has already been spoken, and a full or read-only SD card
+        must not turn that into an error in the AI loop."""
+        diag.frame_result(getattr(self, "_qris_photo", ""), result)
         import json as _json
         from config import LOG_PATH
         import os
 
-        log_file = os.path.join(LOG_PATH, "qris_log.json")
-        os.makedirs(LOG_PATH, exist_ok=True)
-        entry = {"timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"), "result": result}
-        logs = []
-        if os.path.exists(log_file):
-            try:
-                with open(log_file) as f:
-                    logs = _json.load(f)
-            except Exception as e:
-                self.logger.exception(
-                    f"QRIS log read failed: {e}", module="AIEngine", exc=e,
-                )
-        logs.append(entry)
-        with open(log_file, "w") as f:
-            _json.dump(logs, f, indent=2, ensure_ascii=False)
+        try:
+            log_file = os.path.join(LOG_PATH, "qris_log.json")
+            os.makedirs(LOG_PATH, exist_ok=True)
+            entry = {"timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"), "result": result}
+            logs = []
+            if os.path.exists(log_file):
+                try:
+                    with open(log_file) as f:
+                        logs = _json.load(f)
+                    if not isinstance(logs, list):
+                        logs = []
+                except Exception as e:
+                    self.logger.warn(f"QRIS log unreadable, starting over: {e}",
+                                     module="AIEngine")
+                    logs = []
+            logs.append(entry)
+            logs = logs[-self._QRIS_LOG_MAX:]
+            # tmp + replace: a power cut mid-write leaves the old file, not a
+            # truncated one that the next scan would throw away.
+            tmp = log_file + ".tmp"
+            with open(tmp, "w") as f:
+                _json.dump(logs, f, indent=2, ensure_ascii=False)
+            os.replace(tmp, log_file)
+        except Exception as e:
+            self.logger.warn(f"QRIS log not saved: {e}", module="AIEngine")

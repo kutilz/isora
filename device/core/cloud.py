@@ -47,12 +47,33 @@ ALLOWED_CONFIG_KEYS = {
     # clamps at the read site, and select_scene_prompt falls back to the
     # detailed prompt for any verbosity string it does not recognize.
     "scene_verbosity", "ai_temperature",
+    # Online-navigation photo interval. Safe unvalidated: Config.SCAN_INTERVAL_S
+    # clamps it to 3-60 s at the read site.
+    "scan_interval_s",
     "qris_mode", "tts_enabled", "url_announce_enabled",
     "setup_completed",
 }
 
 # Secret config keys delivered E2E-encrypted; stored encrypted-at-rest on apply.
 SECRET_KEYS = {"openai_api_key", "gemini_api_key", "claude_api_key"}
+
+def _ai_key_present() -> bool:
+    """Does the provider the device is actually set to use have a key?
+
+    Reported (as a bool, never the key) so the web app can say "deskripsi
+    suasana belum aktif" instead of letting someone discover it by pressing the
+    button outdoors and hearing nothing useful.
+    """
+    provider = (cfg.AI_PROVIDER or "openai").lower()
+    try:
+        if provider == "gemini":
+            return bool(cfg.GEMINI_API_KEY)
+        if provider == "claude":
+            return bool(cfg.CLAUDE_API_KEY)
+        return bool(cfg.OPENAI_API_KEY)
+    except Exception:
+        return False
+
 
 CODE_REFRESH_S = 8 * 60      # request a new code before the 10-min TTL expires
 ANNOUNCE_EVERY_S = 60        # re-speak the code roughly this often while unpaired
@@ -73,6 +94,8 @@ class CloudClient:
         self._paired = bool(cfg.PAIRED)
         self._last_qr_token = None
         self._last_qr_at = 0.0
+        self._confirm_busy = False      # an ACTION-press confirm is in flight
+        self._confirm_at = 0.0
 
     def stop(self):
         self._running = False
@@ -114,6 +137,16 @@ class CloudClient:
         if patch:
             cfg.update(patch)
         try:
+            # Logged because the regeneration is invisible otherwise, and the
+            # symptom it cures ("every API key I send is ignored") is one of the
+            # hardest things to diagnose from the outside.
+            status = crypto_box.keypair_status(cfg)
+            if status == "unusable":
+                self.logger.warn(
+                    "E2E keypair unusable (private key can no longer be decrypted) "
+                    "— regenerating; re-send the API key from the app",
+                    module="Cloud",
+                )
             crypto_box.ensure_keypair(cfg)
         except Exception as e:
             self.logger.warn(f"E2E keypair unavailable: {e}", module="Cloud")
@@ -146,6 +179,11 @@ class CloudClient:
     def _heartbeat(self):
         status = {}
         try:
+            from utils.identity import current_ip
+            _lan_ip = current_ip()
+        except Exception:
+            _lan_ip = ""
+        try:
             status = self.orch.get_status() if hasattr(self.orch, "get_status") else {}
             status = {
                 "mode": status.get("mode"),
@@ -157,11 +195,29 @@ class CloudClient:
                 "data_collection_mode": status.get("data_collection_mode"),
                 "capturing": status.get("capturing"),
                 "capture_count": status.get("capture_count"),
-                # LAN entry point so the hub can deep-link /buttons and /collect
-                # (only reachable from the same WiFi as the device).
+                # First-run state. Pairing finishes the moment the ACTION
+                # button is pressed, but the settings that follow are pushed
+                # from a phone that may well close the page halfway. Without
+                # these two the hub cannot tell "linked and ready" from
+                # "linked and still waiting to be set up", and the person is
+                # the one left guessing.
+                "setup_completed": bool(status.get("setup_completed")),
+                "ai_ready": _ai_key_present(),
+                # Online navigation (explorer + ACTION): whether it is on, and
+                # the interval the app's slider should start from.
+                "scan_active": bool(status.get("scan_active")),
+                "scan_interval_s": status.get("scan_interval_s"),
+                # LAN entry points so the hub can deep-link /buttons and
+                # /collect (only reachable from the same WiFi as the device).
+                # Both are reported because neither works everywhere: Chrome on
+                # Android does not resolve mDNS `.local` names, while the IP
+                # moves whenever DHCP hands out a new lease.
                 "local_url": (
                     f"http://{status.get('mdns_host')}:{cfg.get('web_port', 8080)}"
                     if status.get("mdns_host") else None
+                ),
+                "local_ip_url": (
+                    f"http://{_lan_ip}:{cfg.get('web_port', 8080)}" if _lan_ip else None
                 ),
             }
         except Exception:
@@ -266,6 +322,76 @@ class CloudClient:
             except Exception:
                 pass
 
+    def _on_unpaired(self):
+        """The relay says nobody owns this device any more — believe it.
+
+        Someone tapped "Lepaskan perangkat" in the app. Without this the device
+        keeps `paired` forever: wants_button_pair() stays False, an ACTION press
+        never offers to pair again, and the only way back is editing
+        config.json over SSH — which is not something the person wearing the
+        glasses can do. The device keeps working exactly as before; it just
+        becomes pairable again, and says so.
+        """
+        self._paired = False
+        cfg.update({"paired": False})
+        self._code = None
+        self._code_at = 0.0
+        self._last_announce = 0.0
+        self.logger.warn("Device released by its owner — pairable again", module="Cloud")
+        if self.announcer is not None and not cfg.get("data_collection_mode", False):
+            try:
+                # force=True because the onboarding gate is closed once setup is
+                # done — yet this is the one moment a set-up device genuinely
+                # needs to repeat "press the button to connect".
+                self.announcer.announce(force=True)
+            except Exception:
+                pass
+
+    # ─── button pairing ────────────────────────────────────────────────────────
+
+    def wants_button_pair(self) -> bool:
+        """True while an ACTION press should be read as 'pair me'."""
+        return bool(cfg.CLOUD_ENABLED) and not self._paired
+
+    def confirm_pairing(self):
+        """
+        The person holding the device pressed ACTION — tell the relay to link it
+        to whoever is waiting (see web/app/api/pair/confirm).
+
+        Called from the button thread, so the HTTP round-trip runs on a throwaway
+        thread: a GPIO handler that blocks for the request timeout would swallow
+        every press made while it waits.
+        """
+        if not self.wants_button_pair():
+            return
+        now = time.monotonic()
+        # One press in flight at a time, and ignore a bounce/impatient re-press
+        # while the previous answer is still coming back.
+        if self._confirm_busy or now - self._confirm_at < 2.0:
+            return
+        self._confirm_busy = True
+        self._confirm_at = now
+        threading.Thread(target=self._confirm_worker, daemon=True, name="PairBtn").start()
+
+    def _confirm_worker(self):
+        try:
+            st, resp = self._req("POST", "/api/pair/confirm", body={}, auth=True)
+            if st == 200 and resp and resp.get("ok"):
+                self.logger.ok("Paired via button press", module="Cloud")
+                self._on_paired()
+                return
+            # 0 means the request never left the device — that is "no internet"
+            # to the person holding it, not "nobody is waiting".
+            reason = "offline" if st == 0 else ((resp or {}).get("reason") or "failed")
+            self.logger.warn(f"Button pair rejected: {st} ({reason})", module="Cloud")
+            if self.announcer is not None:
+                try:
+                    self.announcer.announce_pair_result(reason)
+                except Exception:
+                    pass
+        finally:
+            self._confirm_busy = False
+
     # ─── camera QR pairing ─────────────────────────────────────────────────────
 
     def wants_qr_scan(self) -> bool:
@@ -328,6 +454,8 @@ class CloudClient:
             announced_fallback = False
             if reg and not self._paired:
                 self._on_paired()
+            elif reg is False and self._paired:
+                self._on_unpaired()
 
             # 2. Unpaired → keep a fresh code spoken (camera-QR pairing runs in
             #    parallel via the AI loop: wants_qr_scan() / on_qr_payload()).
@@ -346,6 +474,8 @@ class CloudClient:
                 self._last_hb = time.monotonic()
                 if hb and not self._paired:
                     self._on_paired()
+                elif hb is False and self._paired:
+                    self._on_unpaired()
 
             # 4. Long-poll for a command (blocks up to the poll window).
             cmd = self._poll_once()

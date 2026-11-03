@@ -35,6 +35,7 @@ system_wifi_disconnected.wav    → "WiFi terputus"
 system_4g_connected.wav         → "Jaringan seluler terhubung"
 system_4g_disconnected.wav      → "Jaringan seluler terputus"
 system_no_internet.wav          → "Tidak ada koneksi internet"
+system_perangkat_sudah_terhubung.wav → "Perangkat sudah terhubung."
 ```
 
 ### 1.3 Mode
@@ -42,6 +43,8 @@ system_no_internet.wav          → "Tidak ada koneksi internet"
 system_mode_explorer.wav        → "Mode penjelajah aktif"
 system_mode_context.wav         → "Mode konteks aktif"
 system_mode_qris.wav            → "Mode scan bayar aktif"
+system_navigasi_daring_aktif.wav → "Navigasi daring aktif"
+system_navigasi_daring_mati.wav  → "Navigasi daring mati"
 system_mode_currency.wav        → "Mode deteksi uang aktif"
 system_mode_switching.wav       → "Mengganti mode"
 ```
@@ -56,6 +59,7 @@ system_done.wav                 → "Selesai"
 system_failed.wav               → "Gagal, coba lagi"
 system_no_result.wav            → "Tidak ada hasil yang terdeteksi"
 system_try_again.wav            → "Coba arahkan kamera lebih jelas"
+system_kamera_belum_aktif_tekan_mode_dulu.wav → "Kamera belum aktif. Tekan tombol mode dulu."
 ```
 
 ---
@@ -167,6 +171,11 @@ currency_50000.wav              → "lima puluh ribu rupiah"
 currency_100000.wav             → "seratus ribu rupiah"
 ```
 
+> Yang benar-benar diputar mode scan bayar (`modes/pay_mode.py`) adalah
+> `system_<frasa>.wav` dari `SYSTEM_EVENTS` di `tools/generate_audio.py`
+> (mis. `system_lima_puluh_ribu_rupiah.wav`), dibuat oleh
+> `python tools/generate_audio.py` tanpa flag. Teks di atas sama persis.
+
 ### 4.2 Nominal Koin
 ```
 currency_coin_100.wav           → "koin seratus rupiah"
@@ -197,6 +206,22 @@ qris_not_detected.wav           → "Kode pembayaran tidak ditemukan"
 qris_not_qris.wav               → "Ini bukan kode QRIS"
 qris_unclear.wav                → "Kode tidak terbaca, coba dekatkan kamera"
 qris_too_far.wav                → "Terlalu jauh, dekatkan ke kode"
+```
+
+### 5.1b Panduan Arah ke Kode QR (`utils/qr_guide.py`, diputar luring)
+```
+system_kode_di_kiri_atas.wav    → "kode di kiri atas"
+system_kode_di_atas.wav         → "kode di atas"
+system_kode_di_kanan_atas.wav   → "kode di kanan atas"
+system_kode_di_kiri.wav         → "kode di kiri"
+system_kode_di_kanan.wav        → "kode di kanan"
+system_kode_di_kiri_bawah.wav   → "kode di kiri bawah"
+system_kode_di_bawah.wav        → "kode di bawah"
+system_kode_di_kanan_bawah.wav  → "kode di kanan bawah"
+system_dekati_kode.wav          → "dekati kode"
+system_kode_pas_pindai_sekarang.wav → "kode pas, pindai sekarang"
+system_kode_hilang.wav          → "kode hilang"
+system_belum_ada_kode_terlihat.wav  → "belum ada kode terlihat"
 ```
 
 ### 5.2 Konfirmasi Transaksi

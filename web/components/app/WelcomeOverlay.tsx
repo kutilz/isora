@@ -54,7 +54,7 @@ export default function WelcomeOverlay({
         </span>
         <p className="welcome__eyebrow">Selamat datang di</p>
         <h2 id="welcome-title">I-Sora</h2>
-        <p className="welcome__name">{name} siap menemanimu.</p>
+        <p className="welcome__name">{name} siap menemani.</p>
         <p className="welcome__status" role="status">
           {status}
         </p>

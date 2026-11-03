@@ -7,18 +7,18 @@ const STEP_MS = 4500;
 /** Each line describes what lib/sim actually does, so keep them true if that changes. */
 const STEPS = {
   penjelajah: [
-    "Kamera melihat apa yang ada di depanmu, sama seperti kamera di kacamata.",
+    "Kamera melihat apa yang ada di depan, sama seperti kamera di kacamata.",
     "Model AI di ponsel ini mengenali 12 objek, seperti orang, motor, mobil, dan kursi.",
     "Letak objek di gambar menentukan arahnya: kiri, depan, atau kanan.",
     "Makin besar objek di gambar, makin dekat jaraknya.",
     "Suara hanya muncul saat ada yang berubah, supaya tidak berisik.",
   ],
   rupiah: [
-    "Kamera membaca uang kertas yang kamu pegang di bagian terang.",
+    "Kamera membaca uang kertas yang dipegang di bagian terang.",
     "Model AI di ponsel ini mengenali 7 pecahan, dari seribu sampai seratus ribu.",
     "Uang harus terlihat beberapa kali berturut-turut, supaya tidak salah sebut.",
     "Nilainya disebut sekali, dan tidak diulang selama uangnya masih dipegang.",
-    "Tekan tombol sebentar untuk mendengar nilainya lagi.",
+    "Tekan Ulangi untuk mendengar nilainya lagi.",
   ],
 };
 

@@ -360,15 +360,21 @@ a.srow:focus-visible, button.srow:focus-visible { outline: 3px solid var(--focus
   font: inherit; font-size: var(--t-md); font-weight: 700; cursor: pointer;
 }
 
+.sim-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
 .sim-button {
-  width: 100%; min-height: 88px; border-radius: var(--r-lg);
-  background: var(--accent); color: var(--ink-inverse); border: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--s-1);
+  min-height: 96px; border: 0; border-radius: var(--r-lg);
+  background: var(--accent); color: var(--ink-inverse);
   font: inherit; font-size: var(--t-md); font-weight: 700; cursor: pointer;
   touch-action: manipulation; user-select: none; -webkit-user-select: none;
+  transition: transform .12s ease-out;
 }
-.sim-button:active { background: var(--accent-hover); }
-.sim-button[data-holding="true"] { background: var(--amber); color: var(--amber-ink); }
-.sim-button:disabled { background: var(--surface-3); color: var(--ink-3); cursor: default; }
+.sim-button svg { width: 32px; height: 32px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sim-button:active { background: var(--accent-hover); transform: scale(.97); }
+.sim-button--ai { background: var(--amber); color: var(--amber-ink); }
+.sim-button--ai:active { background: var(--amber); }
+.sim-button:disabled { background: var(--surface-3); color: var(--ink-3); cursor: default; transform: none; }
+@media (prefers-reduced-motion: reduce) { .sim-button { transition: none; } }
 
 .sim-log {
   display: grid; gap: var(--s-2); margin: 0; padding: 0; list-style: none;

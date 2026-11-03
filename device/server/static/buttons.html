@@ -195,6 +195,13 @@
   </p>
 </section>
 
+<!-- LISTEN ON THE PHONE -->
+<section class="card" aria-labelledby="h-listen">
+  <h2 id="h-listen">Dengar lewat HP</h2>
+  <a class="btn btn--lg" href="/dengar" style="width:100%">Putar suara di HP ini</a>
+  <p class="hint">Untuk earphone atau speaker Bluetooth: sambungkan ke HP, lalu suara kacamata ikut keluar dari sana.</p>
+</section>
+
 <!-- MODE BUTTON -->
 <section class="card" aria-labelledby="h-mode">
   <h2 id="h-mode">Tombol MODE</h2>
@@ -221,6 +228,21 @@
     </button>
   </div>
   <p class="hint" id="hAct"></p>
+</section>
+
+<!-- ONLINE NAVIGATION (explorer + ACTION) -->
+<section class="card" aria-labelledby="h-scan">
+  <h2 id="h-scan">Navigasi daring (mode Explorer)</h2>
+  <p class="hint">Di mode Explorer, <span class="role">tekan ACTION</span> untuk menyalakan atau mematikannya. Selama menyala, perangkat memotret berkala dan membacakan jalur, tangga, pintu, dan tulisan papan; peringatan bahaya dari deteksi luring tetap jalan. Sekarang: <b id="scanState">—</b>.</p>
+  <div class="slider-head">
+    <label for="scanRange">Jarak antar kabar</label>
+    <output id="scanVal" for="scanRange">—</output>
+  </div>
+  <input type="range" id="scanRange" min="3" max="60" step="1" value="8"
+         aria-describedby="scanHint"
+         oninput="onScanInput(this.value)" onchange="commitScan(this.value)">
+  <div class="scale" aria-hidden="true"><span>3 detik (sering)</span><span>60 detik (jarang)</span></div>
+  <p class="hint" id="scanHint">Dihitung dari foto ke foto. Kalau kalimat sebelumnya belum selesai dibacakan, foto berikutnya menunggu. Makin sering, makin banyak pemakaian API.</p>
 </section>
 
 <!-- DESCRIPTION VERBOSITY -->
@@ -393,6 +415,7 @@ const $ = id => document.getElementById(id);
 let TOKEN = localStorage.getItem('isora_token') || '';
 let connected = false, prevOn = false, prevTimer = null, lastCaption = '';
 let gapEditingUntil = 0;   // suppress poll overwrites while the user drags
+let scanEditingUntil = 0;  // same, for the online-navigation interval slider
 let BRAND = 'isora';       // white-label brand, synced from /status.brand
 
 // ── timeout-guarded fetch helpers (never hang) ───────────────────────────────
@@ -707,6 +730,33 @@ function applyCacheMode(enabled){
   $('gapCard').style.display = enabled ? 'block' : 'none';
 }
 
+// ── online-navigation interval slider ─────────────────────────────────────────
+function scanText(sec){ return (parseInt(sec, 10) || 8) + ' detik'; }
+function showScan(v){
+  const txt = scanText(v);
+  $('scanVal').textContent = txt;
+  $('scanRange').setAttribute('aria-valuetext', txt);
+}
+function onScanInput(v){
+  scanEditingUntil = Date.now() + 1500;
+  showScan(v);
+}
+let scanTimer = null;
+function commitScan(v){
+  onScanInput(v);
+  clearTimeout(scanTimer);
+  scanTimer = setTimeout(async ()=>{
+    const sec = parseInt(v, 10) || 8;
+    logLine('jarak antar kabar daring: ' + sec + ' detik');
+    try{
+      const r = await postConfig({scan_interval_s: sec});
+      const d = await r.json().catch(()=>({}));
+      if (d.ok) logLine('   ✓ tersimpan (' + sec + ' detik)', 'ok');
+      else      logLine('   ✗ ' + (d.error || ('HTTP '+r.status)), 'err');
+    }catch(e){ logLine('   ✗ gagal (' + (e.name||e) + ')', 'err'); }
+  }, 280);
+}
+
 // ── word-gap slider ───────────────────────────────────────────────────────────
 function gapText(ms){
   ms = parseInt(ms, 10) || 0;
@@ -845,7 +895,10 @@ function applyState(s){
   const onboarding = (s.setup_completed === false) && (s.url_ack === false);
   const collecting = !!s.data_collection_mode;
 
-  $('stMode').textContent = collecting ? 'Mode Ambil Data' : modeLabel(s.mode);
+  const explorer = s.mode === 'explorer';
+  const scanOn = explorer && !!s.scan_active;
+  $('stMode').textContent = collecting ? 'Mode Ambil Data'
+                          : modeLabel(s.mode) + (scanOn ? ' · daring' : '');
   $('stPhase').textContent = collecting ? 'ambil dataset'
                           : onboarding ? 'setup / pairing' : 'operasi normal';
 
@@ -871,11 +924,16 @@ function applyState(s){
     $('lModeShort').textContent = 'Ganti mode';
     $('lModeLong').textContent  = 'Ucap alamat';
     const qris = s.mode === 'qris';
-    $('lActShort').textContent  = qris ? 'Pindai QRIS' : 'Deskripsikan';
+    $('lActShort').textContent  = qris ? 'Pindai QRIS'
+                                : explorer ? (scanOn ? 'Matikan daring' : 'Nyalakan daring')
+                                : 'Deskripsikan';
     $('lActLong').textContent   = 'Ulangi hasil';
     $('bActShort').disabled = false; $('bActLong').disabled = false;
     $('hMode').innerHTML = '<span class="role">Tekan</span>: putar mode Diam→Explorer→Context→QRIS · <span class="role">Tekan lama</span>: ucapkan ulang alamat web.';
-    $('hAct').innerHTML  = '<span class="role">Tekan</span>: ' + (qris?'pindai kode QRIS':'deskripsikan sekitar') + ' · <span class="role">Tekan lama</span>: ulangi hasil terakhir.';
+    const actWhat = qris ? 'pindai kode QRIS'
+                  : explorer ? (scanOn ? 'matikan' : 'nyalakan') + ' navigasi daring'
+                  : 'deskripsikan sekitar';
+    $('hAct').innerHTML  = '<span class="role">Tekan</span>: ' + actWhat + ' · <span class="role">Tekan lama</span>: ulangi hasil terakhir.';
   }
 
   ['Idle','Explorer','Context','Qris'].forEach(n=>{
@@ -897,6 +955,12 @@ function applyState(s){
   if (typeof s.audio_volume === 'number' && Date.now() > volEditingUntil
       && s.audio_volume !== curVol){
     curVol = s.audio_volume; renderVol();
+  }
+
+  $('scanState').textContent = scanOn ? 'menyala' : (explorer ? 'mati' : 'mati (bukan mode Explorer)');
+  if (Date.now() > scanEditingUntil && typeof s.scan_interval_s === 'number'){
+    $('scanRange').value = Math.round(s.scan_interval_s);
+    showScan(s.scan_interval_s);
   }
 
   const sv = s.scene_verbosity || 'detail';

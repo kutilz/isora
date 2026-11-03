@@ -18,8 +18,29 @@ from utils import secure_keys
 def seed_file(tmp_path, monkeypatch):
     path = str(tmp_path / "seed")
     monkeypatch.setattr(secure_keys, "_SEED_FILE", path)
+    monkeypatch.setattr(secure_keys, "_LEGACY_SEED_FILES", (str(tmp_path / "legacy_seed"),))
     monkeypatch.setattr(secure_keys, "_fallback_seed", None)
     return path
+
+
+def test_unit_moved_from_auralai_adopts_its_seed(seed_file, tmp_path):
+    # Keys in the config.json it keeps were sealed under the AuralAI seed; a
+    # fresh seed would read every one of them back as "".
+    old = b"A" * 32
+    (tmp_path / "legacy_seed").write_bytes(old)
+
+    assert secure_keys._machine_seed() == old
+    with open(seed_file, "rb") as f:
+        assert f.read() == old           # persisted under the new name
+
+
+def test_own_seed_wins_over_the_legacy_one(seed_file, tmp_path):
+    # A unit already on I-Sora re-sealed its keys under its own seed.
+    (tmp_path / "legacy_seed").write_bytes(b"A" * 32)
+    with open(seed_file, "wb") as f:
+        f.write(b"B" * 32)
+
+    assert secure_keys._machine_seed() == b"B" * 32
 
 
 def test_seed_is_generated_and_persisted(seed_file):

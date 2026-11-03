@@ -101,3 +101,85 @@ def test_upsample_falls_back_when_audioop_is_gone(monkeypatch):
 
     monkeypatch.setattr(builtins, "__import__", _no_audioop)
     assert tts._upsample_2x(b"\x01\x00\x02\x00") == b"\x01\x00\x01\x00\x02\x00\x02\x00"
+
+
+# ─── Hedged gTTS: the mobile-data stall ──────────────────────────────────────
+
+def _scripted_gtts(monkeypatch, behaviours):
+    """Each new gTTS() takes the next behaviour: a delay before the write, or
+    an exception to raise. Records how many requests were started."""
+    import threading
+    calls = []
+    lock = threading.Lock()
+
+    class _GTTS:
+        def __init__(self, **kw):
+            with lock:
+                self.b = behaviours[len(calls)]
+                calls.append(time.monotonic())
+
+        def save(self, path):
+            if isinstance(self.b, Exception):
+                raise self.b
+            time.sleep(self.b)
+            with open(path, "wb") as f:
+                f.write(b"mp3-%r" % (self.b,))
+
+    monkeypatch.setitem(__import__("sys").modules, "gtts",
+                        type("m", (), {"gTTS": _GTTS}))
+    return calls
+
+
+def test_a_stalled_request_is_raced_and_the_fresh_one_wins(tmp_path, monkeypatch):
+    out = str(tmp_path / "x.wav")
+    calls = _scripted_gtts(monkeypatch, [6.0, 0.05])     # 1st stalls, 2nd quick
+    t0 = time.monotonic()
+    assert tts._synthesize("halo", out, "id", timeout_s=8.0, hedge_s=0.2) == out
+    took = time.monotonic() - t0
+    assert len(calls) == 2
+    assert took < 3.0, "waited for the stalled request instead of the hedge"
+    assert open(out, "rb").read() == b"mp3-0.05"
+
+
+def test_a_quick_answer_never_sends_a_second_request(tmp_path, monkeypatch):
+    out = str(tmp_path / "x.wav")
+    calls = _scripted_gtts(monkeypatch, [0.02, 0.02])
+    assert tts._synthesize("halo", out, "id", timeout_s=5.0, hedge_s=0.5) == out
+    assert len(calls) == 1
+
+
+def test_a_failed_first_request_is_retried_without_waiting_out_the_hedge(
+        tmp_path, monkeypatch):
+    out = str(tmp_path / "x.wav")
+    calls = _scripted_gtts(monkeypatch, [OSError("reset"), 0.02])
+    t0 = time.monotonic()
+    assert tts._synthesize("halo", out, "id", timeout_s=5.0, hedge_s=2.0) == out
+    assert len(calls) == 2 and time.monotonic() - t0 < 1.5
+
+
+def test_two_failures_give_up_at_once_not_at_the_timeout(tmp_path, monkeypatch):
+    out = str(tmp_path / "x.wav")
+    _scripted_gtts(monkeypatch, [OSError("dns"), OSError("dns")])
+    t0 = time.monotonic()
+    assert tts._synthesize("halo", out, "id", timeout_s=5.0, hedge_s=0.1) is None
+    assert time.monotonic() - t0 < 1.0
+    assert not os.path.exists(out)
+
+
+def test_the_losing_render_does_not_overwrite_the_winner(tmp_path, monkeypatch):
+    """A second rename would bump the wav's mtime and make its .pcm look stale."""
+    out = str(tmp_path / "x.wav")
+    _scripted_gtts(monkeypatch, [0.6, 0.05])
+    assert tts._synthesize("halo", out, "id", timeout_s=5.0, hedge_s=0.2) == out
+    mtime = os.path.getmtime(out)
+    time.sleep(0.8)                                   # let the slow one finish
+    assert open(out, "rb").read() == b"mp3-0.05"
+    assert os.path.getmtime(out) == mtime
+    assert not [f for f in os.listdir(tmp_path) if f.endswith(".part")]
+
+
+def test_without_a_hedge_it_is_one_request_as_before(tmp_path, monkeypatch):
+    out = str(tmp_path / "x.wav")
+    calls = _scripted_gtts(monkeypatch, [0.4, 0.01])
+    assert tts._synthesize("halo", out, "id", timeout_s=0.2) is None
+    assert len(calls) == 1

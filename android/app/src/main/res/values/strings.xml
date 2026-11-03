@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">I-Sora Dengar</string>
+    <string name="intro">Suara kacamata I-Sora diputar di HP ini, lalu dari HP ke earphone Bluetooth.</string>
+
+    <!-- Suara di HP -->
+    <string name="h_listen">Suara di HP</string>
+    <string name="listen_start">Mulai dengarkan</string>
+    <string name="listen_stop">Berhenti</string>
+    <string name="st_off">Belum mulai.</string>
+    <string name="st_finding">Mencari kacamata…</string>
+    <string name="st_connecting">Menyambung ke kacamata…</string>
+    <string name="st_listening_muted">Mendengarkan. Speaker kacamata diam.</string>
+    <string name="st_listening_both">Mendengarkan. Speaker kacamata ikut bunyi.</string>
+    <string name="st_retrying">Terputus dari kacamata, mencoba lagi…</string>
+    <string name="st_stopped">Berhenti. Suara kembali ke speaker kacamata.</string>
+    <string name="need_device">Kacamata belum ditemukan.</string>
+    <string name="h_speaker">Speaker kacamata saat HP mendengarkan</string>
+    <string name="mute_on">Diam — hanya HP yang bunyi</string>
+    <string name="mute_off">Ikut bunyi — HP dan kacamata</string>
+    <string name="h_caption">Terakhir diucapkan</string>
+    <string name="caption_none">—</string>
+
+    <!-- Earphone -->
+    <string name="h_earphone">Earphone Bluetooth</string>
+    <string name="out_bt">Suara HP keluar lewat %1$s.</string>
+    <string name="out_wired">Suara HP keluar lewat earphone kabel.</string>
+    <string name="out_phone">Belum ada earphone tersambung. Suara keluar dari speaker HP.</string>
+    <string name="bt_generic">earphone Bluetooth</string>
+    <string name="bt_none">HP ini tidak punya Bluetooth.</string>
+    <string name="bt_off">Bluetooth HP mati.</string>
+    <string name="bt_enable">Nyalakan Bluetooth</string>
+    <string name="bt_scan">Cari earphone</string>
+    <string name="bt_scanning">Mencari earphone… ketuk untuk berhenti</string>
+    <string name="bt_scan_hint">Untuk earphone baru: nyalakan mode pairing di earphone (biasanya tahan tombolnya beberapa detik sampai lampunya berkedip), lalu ketuk Cari earphone.</string>
+    <string name="bt_scan_failed">Pencarian Bluetooth tidak bisa dimulai. Di HP Android lama, nyalakan juga Lokasi.</string>
+    <string name="bt_found_none">Tidak ada earphone baru yang ditemukan. Pastikan earphone dalam mode pairing, lalu cari lagi.</string>
+    <string name="bt_pair">Pasangkan %1$s</string>
+    <string name="bt_pairing">Memasangkan %1$s… Kalau HP bertanya, pilih Pasangkan.</string>
+    <string name="bt_paired">%1$s sudah dipasangkan.</string>
+    <string name="bt_pair_failed">Gagal memasangkan %1$s. Pastikan earphone masih dalam mode pairing, lalu coba lagi.</string>
+    <string name="bt_saved">Earphone tersimpan</string>
+    <string name="bt_use">Pakai %1$s</string>
+    <string name="bt_connecting">Menyambungkan %1$s…</string>
+    <string name="bt_use_hint">Nyalakan %1$s. Earphone yang tersimpan tersambung sendiri dalam beberapa detik.</string>
+    <string name="bt_connected_now">%1$s tersambung.</string>
+    <string name="bt_settings">Buka pengaturan Bluetooth HP</string>
+    <string name="bt_permission">Izinkan akses Bluetooth supaya aplikasi bisa mencari dan memasangkan earphone.</string>
+
+    <!-- Kacamata -->
+    <string name="h_device">Kacamata</string>
+    <string name="dev_default_name">Kacamata</string>
+    <string name="dev_none">Belum ada kacamata. Kacamata dan HP harus di WiFi yang sama, atau kacamata tersambung ke hotspot HP ini.</string>
+    <string name="dev_ok">%1$s di %2$s</string>
+    <string name="dev_unreachable">%1$s tidak terjangkau di %2$s. Tekan Mulai dengarkan atau Cari kacamata untuk mencarinya lagi.</string>
+    <string name="dev_checking">Memeriksa %1$s…</string>
+    <string name="dev_found_many">Ada beberapa kacamata. Pilih yang dipakai:</string>
+    <string name="dev_use">Pakai %1$s (%2$s)</string>
+    <string name="dev_not_found">Kacamata tidak ditemukan. Pastikan kacamata menyala dan di WiFi yang sama dengan HP, atau tersambung ke hotspot HP ini.</string>
+    <string name="dev_not_found_short">Kacamata tidak ditemukan.</string>
+    <string name="st_finding_retry">Mencari kacamata… percobaan ke-%1$d</string>
+    <string name="dev_no_address">HP ini belum punya alamat WiFi atau hotspot, jadi tidak ada yang bisa dicari. Pastikan WiFi tersambung atau hotspot menyala dengan kacamata sudah masuk, lalu coba lagi.</string>
+    <string name="dev_blocked">HP menolak koneksi ke jaringan lokal (%1$s). Alamat HP: %2$s. Matikan VPN dan Penghemat Data kalau ada, atau matikan lalu nyalakan WiFi, lalu coba lagi.</string>
+    <string name="dev_nobody">Alamat HP: %1$s. %2$d alamat sudah dicek, tidak ada kacamata. Pastikan kacamata menyala dan tersambung ke jaringan ini.</string>
+    <string name="dev_type_blocked">HP menolak koneksi ke %1$s (%2$s). Matikan VPN dan Penghemat Data kalau ada, lalu coba lagi.</string>
+    <string name="open_control">Buka kontrol kacamata</string>
+    <string name="control_back">‹ Kembali</string>
+    <string name="control_back_full">Kembali ke I-Sora Dengar</string>
+    <string name="control_failed"><![CDATA[<!doctype html><meta name=viewport content="width=device-width"><body style="font:18px sans-serif;padding:16px"><h2>Kacamata tidak menjawab</h2><p>%1$s: %2$s</p><p><a href="%3$s" style="font-size:22px">Coba lagi</a></p></body>]]></string>
+    <string name="device_find">Cari kacamata</string>
+    <string name="device_type">Ketik alamat kacamata</string>
+    <string name="dev_type_title">Alamat kacamata</string>
+    <string name="dev_type_hint">contoh 192.168.43.120</string>
+    <string name="dev_type_bad">Tidak ada kacamata I-Sora di %1$s.</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Batal</string>
+
+    <string name="footer">Suara tetap jalan saat layar HP mati. Kalau HP terputus, speaker kacamata bunyi lagi dengan sendirinya. Volume diatur dari tombol volume HP.</string>
+
+    <!-- Notifikasi -->
+    <string name="channel_name">Mendengarkan kacamata</string>
+    <string name="notif_title">I-Sora: mendengarkan kacamata</string>
+    <string name="notif_text">Suara kacamata diputar di HP ini.</string>
+</resources>

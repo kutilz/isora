@@ -13,13 +13,15 @@ playing will interrupt playback immediately.
 
 import os
 import re
+import shutil
 import time
 import queue
 import threading
-from collections import defaultdict
+from collections import defaultdict, deque
 from contextlib import contextmanager
 from typing import Optional
 
+from utils import diag
 from utils.word_cache import WordCache, plan_utterance, assemble_words, tokenize
 from utils.scene_metrics import scene_metrics
 from utils.detection_gate import decide_announce, prune
@@ -74,6 +76,20 @@ _MAX_SCENE_SYNTH = 2
 # still makes a sound, short enough that a deliberate second press is not
 # swallowed. See user_barge_in.
 _PRESS_CUE_HOLD_S = 0.25
+
+# Entries kept in the audio trace (GET /audio/trace). A mode switch plus its
+# cues is ~4 entries, a description ~10; 400 covers minutes of real use.
+_TRACE_LEN = 400
+
+# How many times a clip cut off by a MORE urgent one is put back to play again
+# afterwards. A mode name, a banknote or a sentence of a description that an
+# obstacle alert talked over used to be gone for good — the user heard half of
+# it, or none. Bounded by AGE first: a person standing in front of the camera
+# re-triggers "orang di depan dekat" every ~1.5 s, and two replays were used up
+# in three seconds — the pairing reply under it was lost (measured, 29 Oct).
+# The count is only a backstop against a loop.
+_MAX_REPLAYS = 8
+_REPLAY_MAX_AGE_S = 30.0
 
 # MaixPy's Player.play() accepts at most 512 KiB in ONE call. Hand it more and
 # the driver keeps the first 512 KiB, DROPS the rest and returns ERR_RUNTIME:
@@ -293,7 +309,7 @@ def split_sentences(text: str, max_chunks: int = 3) -> list:
 
 class _Task:
     __slots__ = ("text", "wav_path", "priority", "label", "seq", "is_cue",
-                 "pcm_bytes", "pcm_path", "created")
+                 "pcm_bytes", "pcm_path", "created", "gen", "replays")
 
     def __init__(self, text: str, wav_path: Optional[str],
                  priority: int, label: str, is_cue: bool = False,
@@ -316,6 +332,11 @@ class _Task:
         # was AT THAT MOMENT; spoken late they send a walking user the wrong
         # way. See the staleness check in _play_task.
         self.created   = time.monotonic()
+        # AudioManager._clear_gen when queued (stamped by _enqueue): a task
+        # from before the latest clear() was cancelled, even if the play loop
+        # had already taken it off the queue when the clear landed.
+        self.gen       = 0
+        self.replays   = 0
 
     def __lt__(self, other: "_Task") -> bool:
         if self.priority != other.priority:
@@ -360,10 +381,14 @@ def _pcm_is_fresh(wav_path: str, pcm_path: str) -> bool:
     expensive-but-correct direction.
     """
     try:
-        delta = os.path.getmtime(pcm_path) - os.path.getmtime(wav_path)
+        st = os.stat(pcm_path)
+        delta = st.st_mtime - os.path.getmtime(wav_path)
     except OSError:
         return False
-    return abs(delta) <= _PCM_MTIME_SLACK_S
+    # An EMPTY .pcm carrying the right stamp (an old ffmpeg run that "succeeded"
+    # with no output) was trusted forever: "mode idle" was silent on aural-78a7
+    # on every switch, and the prewarm skipped it as fresh.
+    return st.st_size > 0 and abs(delta) <= _PCM_MTIME_SLACK_S
 
 
 def _stamp_pcm(wav_path: str, pcm_path: str) -> None:
@@ -514,6 +539,13 @@ class AudioManager:
         self._text_lock = threading.Lock()
         # Set to interrupt ongoing playback sleep loop
         self._interrupt = threading.Event()
+        # Per-task outcome flags, written only on the AudioMgr thread.
+        self._cut_short = False
+        self._play_failed = False
+        # What was asked for and what became of it - see trace_since().
+        self._trace: deque = deque(maxlen=_TRACE_LEN)
+        self._trace_seq = 0
+        self._trace_lock = threading.Lock()
         self._stop      = threading.Event()
 
         # Generation counter for the background scene streamer. A scene is
@@ -524,6 +556,9 @@ class AudioManager:
         # description the user already walked away from.
         self._scene_gen = 0
         self._scene_gen_lock = threading.Lock()
+        # Bumped by clear() only (a new scene bumps _scene_gen, and must not
+        # cancel a mode name queued before it). See _Task.gen.
+        self._clear_gen = 0
 
         self._thread = threading.Thread(
             target=self._loop, daemon=True, name="AudioMgr"
@@ -547,6 +582,7 @@ class AudioManager:
         if label and cd > 0:
             with self._cd_lock:
                 if time.monotonic() - self._cooldown_map[label] < cd:
+                    self._note("dropped", text, priority, label, "cooldown")
                     return
 
         wav = None
@@ -556,11 +592,53 @@ class AudioManager:
                 wav = cand
         if wav is None:
             wav = self._find_wav(text)
-        task = _Task(text, wav, priority, label)
-        self._pq.put((priority, task.seq, task))
+        self._enqueue(_Task(text, wav, priority, label))
 
-        if priority < self._current_priority:
+    def _note(self, event: str, text: str, priority: Optional[int] = None,
+              label: str = "", reason: str = "", dur_s: Optional[float] = None):
+        """Record one step of a clip's life in the audio trace.
+
+        event: queued | played | cut | dropped. A "dropped" always carries a
+        reason, so a clip that never sounded can be told apart from one that
+        was cancelled on purpose (a press, a mode switch) or expired (a stale
+        nav alert). Never raises: this is diagnostics on the audio path.
+        """
+        try:
+            with self._trace_lock:
+                self._trace_seq += 1
+                self._trace.append({
+                    "seq": self._trace_seq, "t": round(time.monotonic(), 3),
+                    "event": event, "text": (text or "")[:120],
+                    "priority": None if priority is None else self._priority_label(priority),
+                    "label": label or "", "reason": reason,
+                    "dur_s": None if dur_s is None else round(dur_s, 2),
+                })
+        except Exception:
+            pass
+
+    def trace_since(self, seq: int = 0) -> dict:
+        """Trace entries after `seq` (oldest first) and the newest seq."""
+        with self._trace_lock:
+            return {"seq": self._trace_seq,
+                    "now": round(time.monotonic(), 3),
+                    "events": [e for e in self._trace if e["seq"] > seq]}
+
+    def _enqueue(self, task: "_Task"):
+        """The one way onto the queue: stamp the clear generation, then put.
+
+        A strictly more urgent task than the one playing interrupts it; the
+        interrupted one is put back (see _play_task), not lost.
+        """
+        task.gen = self._clear_gen
+        self._note("queued", task.text, task.priority, task.label)
+        self._pq.put((task.priority, task.seq, task))
+        if task.priority < self._current_priority:
             self._interrupt.set()
+
+    def _more_urgent_waiting(self, priority: int) -> bool:
+        with self._pq.mutex:
+            q = self._pq.queue
+            return bool(q) and q[0][0] < priority
 
     def queue_object(self, label: str, position: str, is_danger: bool = False):
         """
@@ -722,11 +800,9 @@ class AudioManager:
         cand = os.path.join(self._audio_dir, wav_name)
         if not os.path.exists(cand):
             self.logger.debug(f"[Cue missing] {wav_name}", module="AudioMgr")
+            self._note("dropped", wav_name, priority, label or "", "missing-file")
             return
-        task = _Task(wav_name, cand, priority, label or "", is_cue=True)
-        self._pq.put((priority, task.seq, task))
-        if priority < self._current_priority:
-            self._interrupt.set()
+        self._enqueue(_Task(wav_name, cand, priority, label or "", is_cue=True))
 
     def queue_info(self, text: str):
         """Low-priority informational audio (scene description, etc.)."""
@@ -737,12 +813,44 @@ class AudioManager:
         """Queue ready-to-play PCM (e.g. word-cache concat). No synthesis."""
         if not pcm_bytes:
             return
-        task = _Task(text, None, priority, label, pcm_bytes=pcm_bytes)
-        self._pq.put((priority, task.seq, task))
-        if priority < self._current_priority:
-            self._interrupt.set()
+        self._enqueue(_Task(text, None, priority, label, pcm_bytes=pcm_bytes))
 
-    def speak_scene(self, text: str, scene_id: Optional[int] = None):
+    def render_text_pcm(self, text: str):
+        """(pcm_bytes, source) for `text`, rendered now; (None, "") on failure.
+
+        For speech presets (utils/speech_presets), which keep the bytes for good.
+        The cloud voice first — a whole sentence has better prosody than spliced
+        words — then, with no internet, the per-word cache if every word is in
+        it. Blocks for the length of a synth; never call it on the AI loop.
+        """
+        text = (text or "").strip()
+        if not text:
+            return None, ""
+        try:
+            path = self._render_pcm(text)
+        except Exception as e:
+            self.logger.warn(f"Preset synth failed: {e}", module="AudioMgr")
+            path = None
+        if path:
+            data = _read_file_bytes(path)
+            if data:
+                return data, "online"
+        plan = plan_utterance(text, self._word_cache.lookup)
+        if plan.mode == "concat":
+            blobs = [_read_file_bytes(p) for p in plan.word_paths]
+            if blobs and all(blobs):
+                pcm = assemble_words(
+                    blobs,
+                    gap_samples=self._word_gap_samples(),
+                    trim_threshold=self._word_trim_threshold(),
+                    trim_margin_samples=self._word_trim_margin_samples(),
+                )
+                if pcm:
+                    return pcm, "word-cache"
+        return None, ""
+
+    def speak_scene(self, text: str, scene_id: Optional[int] = None,
+                    still_wanted=None):
         """Speak a scene description, fastest path first.
 
         If every word is already cached, concatenate the cached word-audio and
@@ -752,6 +860,11 @@ class AudioManager:
 
         `scene_id` (from SceneMetrics.start_describe) attributes the render
         choice + timing to this describe for the /buttons latency dashboard.
+
+        `still_wanted`, if given, is asked right before anything is queued. The
+        concat takes ~0.7 s on the device and a synth ~2-3 s, and a caller off
+        the AI thread (online navigation) can be switched off in that window;
+        without the check its sentence would play after "navigasi daring mati".
         """
         text = (text or "").strip()
         if not text:
@@ -759,6 +872,7 @@ class AudioManager:
         try:
             from config import cfg as _cfg
             if _cfg.AUDIO_MODE == "chime" or not _cfg.TTS_ENABLED:
+                self._note("dropped", text, LOW, "", "chime-mode")
                 return  # no speech in chime mode
             enabled = bool(_cfg.get("word_cache_enabled", True))
         except Exception:
@@ -778,7 +892,7 @@ class AudioManager:
         if not enabled:
             if scene_id is not None:
                 scene_metrics.note_plan(scene_id, "synth", len(toks), 0)
-            self._queue_scene_synth(text, scene_id)
+            self._queue_scene_synth(text, scene_id, still_wanted=still_wanted)
             return
 
         plan = plan_utterance(text, self._word_cache.lookup,
@@ -810,16 +924,20 @@ class AudioManager:
                             scene_id, "cache", len(toks), cached_words)
                         scene_metrics.note_cache_audio(
                             scene_id, len(pcm) / _PCM_BYTES_S * 1000, assemble_ms)
+                    if still_wanted is not None and not still_wanted():
+                        self._note("dropped", text, LOW, "", "no-longer-wanted")
+                        return
                     self.queue_pcm_bytes(pcm, text)
                     return
 
         # Miss (or concat failed): speak the whole sentence now, warm the gaps.
         if scene_id is not None:
             scene_metrics.note_plan(scene_id, "synth", len(toks), cached_words)
-        self._queue_scene_synth(text, scene_id)
+        self._queue_scene_synth(text, scene_id, still_wanted=still_wanted)
         self._warm_words_async(plan.missing or toks)
 
-    def _queue_scene_synth(self, text: str, scene_id: Optional[int]):
+    def _queue_scene_synth(self, text: str, scene_id: Optional[int],
+                           still_wanted=None):
         """Speak a scene description, first words as early as possible.
 
         Two avoidable costs used to sit between the success chime and the first
@@ -867,19 +985,25 @@ class AudioManager:
                                     name=f"SceneChunk{i}")
                    for i in range(len(chunks))]
 
+        def _dropped() -> bool:
+            return self._scene_abandoned(gen) or (
+                still_wanted is not None and not still_wanted())
+
         def _bg():
             for w in workers:
                 w.start()
             first_ms = None
             total_audio_ms = 0.0
             for i, chunk in enumerate(chunks):
-                if self._scene_abandoned(gen):
+                if _dropped():
+                    self._note("dropped", " ".join(chunks[i:]), LOW, "", "abandoned")
                     return
                 workers[i].join()
                 pcm, render_s = renders[i] or (None, 0.0)
                 # Re-check AFTER the round-trip: that is where the user's press
                 # most likely landed.
-                if self._scene_abandoned(gen):
+                if _dropped():
+                    self._note("dropped", " ".join(chunks[i:]), LOW, "", "abandoned")
                     return
                 audio_ms = 0.0
                 if pcm:
@@ -903,10 +1027,23 @@ class AudioManager:
                         f"[scene-timing] chunk{i + 1} ready "
                         f"{(time.monotonic() - t0) * 1000:.0f}ms "
                         f"(tts={render_s * 1000:.0f}ms)", module="AudioMgr")
+                if not pcm:
+                    # The link gave up on this sentence even with a hedged
+                    # request; another render in the play loop would most
+                    # likely stall just as long. If every word is cached,
+                    # speak it from the word cache now instead of leaving a
+                    # silence where the rest of the description should be.
+                    spliced = self._concat_if_cached(chunk)
+                    if spliced:
+                        self.logger.info(
+                            f"[scene-timing] chunk{i + 1} from word cache "
+                            f"(synth failed)", module="AudioMgr")
+                        self._enqueue(_Task(chunk, None, LOW, "",
+                                            pcm_bytes=spliced))
+                        continue
                 # pcm=None (synthesis failed) still gets queued: the play loop
                 # retries and logs the fallback, same as before.
-                task = _Task(chunk, None, LOW, "", pcm_path=pcm)
-                self._pq.put((LOW, task.seq, task))
+                self._enqueue(_Task(chunk, None, LOW, "", pcm_path=pcm))
             # Second pass over the same record so audio_ms covers the whole
             # description while to_audio_ms stays "when the user heard word one".
             if scene_id is not None and first_ms is not None:
@@ -923,6 +1060,7 @@ class AudioManager:
                 self.logger.warn(
                     "Scene synthesis skipped — %d already in flight"
                     % self._synth_active, module="AudioMgr")
+                self._note("dropped", text, LOW, "", "synth-busy")
                 return
             self._synth_active += 1
 
@@ -935,6 +1073,26 @@ class AudioManager:
 
         threading.Thread(target=_bg_guarded, daemon=True,
                          name="SceneSynth").start()
+
+    def _concat_if_cached(self, text: str) -> Optional[bytes]:
+        """Spliced word-cache PCM for `text` when EVERY word is cached, else
+        None — never a sentence with holes in it."""
+        try:
+            plan = plan_utterance(text, self._word_cache.lookup,
+                                  max_words=self._word_cache_max_words())
+            if plan.mode != "concat":
+                return None
+            blobs = [_read_file_bytes(p) for p in plan.word_paths]
+            if not blobs or not all(blobs):
+                return None
+            return assemble_words(
+                blobs,
+                gap_samples=self._word_gap_samples(),
+                trim_threshold=self._word_trim_threshold(),
+                trim_margin_samples=self._word_trim_margin_samples(),
+            ) or None
+        except Exception:
+            return None
 
     def _scene_abandoned(self, gen: int) -> bool:
         """True once a clear() (barge-in, mode switch) has superseded this scene."""
@@ -1059,9 +1217,11 @@ class AudioManager:
         """Discard all pending tasks and stop current playback."""
         with self._scene_gen_lock:
             self._scene_gen += 1   # abandon any half-spoken scene description
+            self._clear_gen += 1   # and whatever the play loop already took
         while not self._pq.empty():
             try:
-                self._pq.get_nowait()
+                t = self._pq.get_nowait()[2]
+                self._note("dropped", t.text, t.priority, t.label, "flushed")
             except queue.Empty:
                 break
         self._interrupt.set()
@@ -1087,7 +1247,7 @@ class AudioManager:
                 return candidate
         return None
 
-    def _ensure_pcm(self, wav_path: str) -> Optional[str]:
+    def _ensure_pcm(self, wav_path: str, nice: bool = False) -> Optional[str]:
         """Convert WAV → PCM s16le 48 kHz mono; result cached next to source.
 
         Rebuilt whenever the cached PCM does not carry its source WAV's mtime —
@@ -1098,36 +1258,112 @@ class AudioManager:
         pcm = os.path.splitext(wav_path)[0] + ".pcm"
         if _pcm_is_fresh(wav_path, pcm):
             return pcm
+        # Written beside the target and renamed: the prewarm thread may be
+        # converting the same WAV, and a reader must never see half a file.
+        tmp = "%s.%d.tmp" % (pcm, threading.get_ident())
         # W-1: list-args + shell=False — no command injection surface.
         try:
+            # nice: a background decode yields the CPU to the AI loop.
+            prefix = ["nice", "-n", "19"] if nice and shutil.which("nice") else []
             ret = subprocess.run(
-                [
+                prefix + [
                     "ffmpeg", "-v", "warning", "-y",
                     "-i", wav_path,
                     "-f", "s16le", "-acodec", "pcm_s16le",
-                    "-ar", str(_PCM_RATE), "-ac", "1", pcm,
+                    "-ar", str(_PCM_RATE), "-ac", "1", tmp,
                 ],
                 shell=False,
                 stdin=subprocess.DEVNULL,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
-                timeout=10,
+                timeout=20 if nice else 10,
             ).returncode
+            if ret == 0 and os.path.getsize(tmp) > 0:
+                _stamp_pcm(wav_path, tmp)
+                os.replace(tmp, pcm)
+            else:
+                ret = ret or 1
         except (OSError, subprocess.SubprocessError) as e:
             self.logger.exception(
                 f"ffmpeg invoke failed for {wav_path}: {e}",
                 module="AudioMgr", exc=e,
             )
+            ret = 1
+        if ret != 0:
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
             return None
-        if ret != 0 or not os.path.exists(pcm):
-            return None
-        _stamp_pcm(wav_path, pcm)
         return pcm
+
+    def prewarm_pcm_cache(self, delay_s: float = 20.0):
+        """Convert every WAV whose .pcm is missing or stale, in the background.
+
+        Otherwise each clip pays its ffmpeg decode (0.2-0.4 s for a cue, more for a sentence) the first
+        time it is needed — after every deploy that is nearly all of them,
+        obstacle alerts included, and under memory pressure a decode that fails
+        is a clip the user never hears. One file at a time at the lowest CPU
+        priority, never while something is playing; chimes, system and mode
+        cues first, since those are what a demo hits first.
+        """
+        def _order(name):
+            for i, p in enumerate(("chime_", "system_", "mode_", "isora", "obj")):
+                if name.startswith(p):
+                    return (i, name)
+            return (9, name)
+
+        def _bg():
+            if self._stop.wait(delay_s):
+                return
+            try:
+                names = sorted((n for n in os.listdir(self._audio_dir)
+                                if n.endswith(".wav")), key=_order)
+            except OSError:
+                return
+            done = failed = 0
+            t0 = time.monotonic()
+            for name in names:
+                wav = os.path.join(self._audio_dir, name)
+                if _pcm_is_fresh(wav, os.path.splitext(wav)[0] + ".pcm"):
+                    continue
+                while not self.is_quiet():
+                    if self._stop.wait(0.5):
+                        return
+                if self._ensure_pcm(wav, nice=True):
+                    done += 1
+                else:
+                    failed += 1
+                if self._stop.wait(0.05):
+                    return
+            if done or failed:
+                self.logger.info(
+                    f"[pcm] prewarmed {done} clips in "
+                    f"{time.monotonic() - t0:.0f}s ({failed} failed)",
+                    module="AudioMgr")
+
+        threading.Thread(target=_bg, daemon=True, name="PcmPrewarm").start()
 
     @property
     def current_text(self) -> str:
         with self._text_lock:
             return self._current_text
+
+    def is_quiet(self) -> bool:
+        """Nothing playing, nothing queued, and no scene still rendering.
+
+        A scene description is queued chunk by chunk from a background render,
+        so an empty queue alone is not silence: for the ~2 s gTTS takes, the
+        sentence exists only as an in-flight synth. Online navigation waits on
+        this before taking its next photo, so it never talks over itself.
+        """
+        with self._synth_lock:
+            if self._synth_active:
+                return False
+        with self._text_lock:
+            if self._current_text:
+                return False
+        return self._pq.empty()
 
     @property
     def last_caption(self) -> dict:
@@ -1275,13 +1511,18 @@ class AudioManager:
             # it normally renders in 2. The old 8 s ceiling threw those away and
             # then paid for a retry, which is strictly slower than waiting.
             timeout_s = float(_cfg.get("tts_gtts_timeout_s", 20.0))
+            # A request still unanswered after this long gets a second one
+            # racing it (utils.tts._synthesize). On mobile data the first is
+            # then usually a stalled connection, not a slow Google.
+            hedge_s = float(_cfg.get("tts_gtts_hedge_s", 4.0))
         except Exception:
             cache_dir = "/root/audio/tts_cache"
             timeout_s = 20.0
+            hedge_s = 4.0
         try:
             from utils.tts import get_or_synthesize
             return get_or_synthesize(text, cache_dir=cache_dir,
-                                     timeout_s=timeout_s)
+                                     timeout_s=timeout_s, hedge_s=hedge_s)
         except Exception as e:
             self.logger.exception(
                 f"TTS synthesis failed: {e}", module="AudioMgr", exc=e
@@ -1306,14 +1547,22 @@ class AudioManager:
         #   "both"   → legacy behaviour, no gating.
         # Cues (chime ticks, success/error tones) bypass audio_mode gating —
         # they're non-speech feedback and must play in every mode.
+        if task.gen != self._clear_gen:
+            # a clear() (button press, mode switch) cancelled it
+            self._note("dropped", task.text, task.priority, task.label, "cancelled")
+            return
+        speech_fallback_wav = None
         if not task.is_cue:
             if audio_mode == "chime" and task.wav_path is None:
                 self.logger.debug(
                     f"[Audio skipped — chime-only] {task.text}", module="AudioMgr"
                 )
+                self._note("dropped", task.text, task.priority, task.label, "chime-mode")
                 return
             if audio_mode == "speech":
-                task.wav_path = None  # force TTS path
+                # Force TTS, but keep the recording: offline, "speech" mode
+                # used to silence every cue that has a perfectly good WAV.
+                speech_fallback_wav, task.wav_path = task.wav_path, None
 
         # Drop a navigation alert that has gone stale in the queue. "motor di
         # agak kiri, dekat" is a statement about a moment; spoken four seconds
@@ -1326,6 +1575,7 @@ class AudioManager:
                 self.logger.debug(
                     "[nav dropped — %.1fs stale] %s" % (age, task.text),
                     module="AudioMgr")
+                self._note("dropped", task.text, task.priority, task.label, "stale")
                 return
 
         # Stamp the cooldown BEFORE playing so a duplicate queued in the same
@@ -1341,7 +1591,15 @@ class AudioManager:
                 prev_cd = self._cooldown_map.get(task.label)
                 self._cooldown_map[task.label] = time.monotonic()
 
+        # Clear BEFORE publishing our priority, then look again: an urgent alert
+        # queued in between used to have its interrupt wiped here, so it waited
+        # out this whole clip — and a nav alert waiting > 3 s is then dropped.
+        self._interrupt.clear()
+        self._cut_short = False     # set when playback is aborted mid-clip
+        self._play_failed = False   # set when the driver raised
         self._current_priority = task.priority
+        if self._more_urgent_waiting(task.priority):
+            self._interrupt.set()
         with self._text_lock:
             self._current_text = task.text
             # Capture last caption now (rather than after playback) so the
@@ -1352,7 +1610,6 @@ class AudioManager:
                 "time_iso": time.strftime("%Y-%m-%dT%H:%M:%S"),
                 "priority": self._priority_label(task.priority),
             }
-        self._interrupt.clear()
 
         # Resolve the PCM to play. A scene chunk arrives pre-rendered by the
         # streamer (pcm_path), so nothing is synthesized on this thread; a cue
@@ -1368,6 +1625,8 @@ class AudioManager:
             if pcm is None:
                 pcm = (self._ensure_pcm(task.wav_path) if task.wav_path
                        else self._render_pcm(task.text))
+            if pcm is None and speech_fallback_wav:
+                pcm = self._ensure_pcm(speech_fallback_wav)
             if pcm:
                 try:
                     with open(pcm, "rb") as f:
@@ -1385,6 +1644,11 @@ class AudioManager:
                 )
             _t0 = time.monotonic()
             played = self._play_pcm_bytes(pcm_data)
+            if not played and self._play_failed and not self._interrupt.is_set():
+                # A Player that failed to open (codec still held by the boot
+                # chime, a driver hiccup) is usually fine a moment later.
+                time.sleep(0.2)
+                played = self._play_pcm_bytes(pcm_data)
             if is_scene:
                 self.logger.info(
                     f"[scene-timing] play END   @{time.monotonic():.3f} "
@@ -1393,6 +1657,16 @@ class AudioManager:
 
         if not played:
             self.logger.info(f"[Audio fallback] {task.text}", module="AudioMgr")
+            reason = "play-failed" if pcm_data else "no-audio"
+            self._note("dropped", task.text, task.priority, task.label, reason)
+            if not self._interrupt.is_set():
+                diag.event("speech_dropped", level="warn", reason=reason,
+                           root=diag.root_mode(), text=task.text[:60])
+        elif self._cut_short:
+            self._note("cut", task.text, task.priority, task.label)
+        else:
+            self._note("played", task.text, task.priority, task.label,
+                       dur_s=len(pcm_data) / _PCM_BYTES_S)
 
         # Interrupted before it could be heard → roll the cooldown back, so the
         # user's next press can say the same thing rather than being silently
@@ -1403,6 +1677,21 @@ class AudioManager:
                     self._cooldown_map.pop(task.label, None)
                 else:
                     self._cooldown_map[task.label] = prev_cd
+
+        # Talked over by something more urgent (not cancelled by a clear, not
+        # shutdown) → play it again once that is done. Same seq, so it keeps
+        # its place ahead of anything newer at its priority. Cues are instant
+        # feedback for a moment that has passed; nav alerts still face the
+        # staleness check above when they come round again.
+        if (self._cut_short and not self._stop.is_set()
+                and task.gen == self._clear_gen and not task.is_cue
+                and task.replays < _MAX_REPLAYS
+                and time.monotonic() - task.created < _REPLAY_MAX_AGE_S):
+            task.replays += 1
+            if speech_fallback_wav:
+                task.wav_path = speech_fallback_wav
+            self.logger.debug(f"[replay after barge] {task.text}", module="AudioMgr")
+            self._pq.put((task.priority, task.seq, task))
 
         self._current_priority = LOW
         with self._text_lock:
@@ -1428,9 +1717,27 @@ class AudioManager:
         """
         if not pcm_data:
             return False
+
+        # A phone on /dengar gets every clip (see core/phone_audio.py). Sent
+        # before the volume scaling: the phone has its own volume. When it
+        # asked for the device speaker to stay quiet, hold the queue for the
+        # clip's length instead of playing it, so barge-in and pacing behave
+        # exactly as they would on the speaker.
+        from core.phone_audio import phone_audio
+        sent = phone_audio.publish(pcm_data, getattr(self, "_current_text", ""))
+        if sent is not None and phone_audio.device_muted():
+            return self._hold_for_phone(len(pcm_data))
+
         try:
             from maix import audio as maix_audio
         except ImportError:
+            return False          # not on a MaixCAM (tests, PC)
+        except Exception as e:
+            # e.g. "signal only works in main thread" when maix was first
+            # imported here. Logged, not swallowed: it silences every clip.
+            self._play_failed = True
+            self.logger.exception(f"maix.audio import failed: {e}",
+                                  module="AudioMgr", exc=e)
             return False
 
         with _codec():
@@ -1459,6 +1766,8 @@ class AudioManager:
                     """
                     if not (self._interrupt.is_set() or self._stop.is_set()):
                         return False
+                    self._cut_short = True
+                    phone_audio.cancel()
                     try:
                         player.stop()
                     except AttributeError:
@@ -1508,8 +1817,26 @@ class AudioManager:
                 return True
 
             except Exception as e:
+                self._play_failed = True
                 self.logger.exception(f"Play error: {e}", module="AudioMgr", exc=e)
                 return False
+
+    def _hold_for_phone(self, pcm_nbytes: int) -> bool:
+        """Occupy the playback slot for as long as the clip lasts on the phone.
+
+        The device speaker stays silent, but the queue must not run ahead: a
+        CRITICAL alert still has to be able to cut this clip short, and the
+        next clip must not be handed over while this one is still sounding.
+        """
+        from core.phone_audio import phone_audio
+        deadline = time.monotonic() + pcm_nbytes / _PCM_BYTES_S + _PLAY_TAIL_PAD_S
+        while time.monotonic() < deadline:
+            if self._interrupt.is_set() or self._stop.is_set():
+                self._cut_short = True
+                phone_audio.cancel()
+                return True
+            time.sleep(0.02)
+        return True
 
     def _loop(self):
         while not self._stop.is_set():
@@ -1520,3 +1847,10 @@ class AudioManager:
                 pass
             except Exception as e:
                 self.logger.exception(f"Loop error: {e}", module="AudioMgr", exc=e)
+                # _play_task clears these on its way out; an exception skips
+                # that, and a stale _current_text reads to is_quiet() as "still
+                # speaking" forever — online navigation would never take
+                # another photo.
+                self._current_priority = LOW
+                with self._text_lock:
+                    self._current_text = ""

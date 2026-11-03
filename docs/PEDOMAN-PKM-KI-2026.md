@@ -1,11 +1,12 @@
 # Pedoman Lengkap PKM-KI 2026
+
 ## PKM Karya Inovatif — Program Kreativitas Mahasiswa Tahun 2026
 
 > **Sumber:** *Buku Panduan Program Kreativitas Mahasiswa (PKM) Tahun 2026* — Direktorat
 > Pembelajaran dan Kemahasiswaan, Ditjen Pendidikan Tinggi, Kementerian Pendidikan Tinggi,
 > Sains, dan Teknologi (Kemdiktisaintek). Dokumen ini merangkum **Buku Panduan Umum** +
 > **Buku Panduan Bidang PKM-KI** menjadi satu acuan kerja khusus PKM-KI.
->
+> 
 > Portal pengusulan: <https://simbelmawa.kemdiktisaintek.go.id/pkm/> (disebut `simbelmawa/pkm`)
 
 ---
@@ -35,29 +36,29 @@
 
 ## 1. Ringkasan Cepat (Cheat Sheet)
 
-| Aspek | Ketentuan PKM-KI 2026 |
-|---|---|
-| **Nama bidang** | PKM Karya Inovatif (PKM-KI) |
-| **Skema** | PKM Skema **Pendanaan** (salah satu dari 8 bidang), berujung di **PIMNAS** |
-| **Inti kegiatan** | Karya berupa hasil karya **fungsional inovatif solutif skala penuh**, berbasis iptek, **siap diproduksi massal** |
-| **Kriteria keilmuan** | **Sesuai bidang ilmu**; kolaborasi lintas bidang ilmu dianjurkan |
-| **Jenjang** | D-3, D-4, S-1 |
-| **Jumlah anggota** | **3–5 mahasiswa** (1 ketua + 2–4 anggota) |
-| **Pendanaan Belmawa** | **Rp 6.000.000 – Rp 8.000.000** per judul |
-| **Dana pendamping PT** | **Wajib ada**, maksimum Rp 2.000.000 (tunai dan/atau barang) |
-| **Dana sponsor/mitra** | Opsional, maksimum Rp 1.000.000 (tunai dan/atau barang) |
-| **Durasi pelaksanaan** | **3–4 bulan** |
-| **Luaran wajib** | 1) Laporan Kemajuan, 2) Laporan Akhir, 3) **Produk Fungsional Skala Penuh + Dokumen Teknis Produk**, 4) **Akun Media Sosial** |
-| **Judul** | Maksimum **20 kata**, huruf kapital, Bahasa Indonesia, tanpa akronim/singkatan tidak baku |
-| **Halaman bagian inti** | Maksimum **10 halaman** (Bab 1 s.d. Daftar Pustaka) |
-| **Font / spasi** | Times New Roman 12 / **1,15 spasi**, rata kiri-kanan (justify) |
-| **Kertas & margin** | A4, satu kolom, margin **kiri 4 cm**; kanan, atas, bawah **3 cm** |
-| **Nama berkas** | `namaketua_namaPT_PKM-KI.pdf` |
-| **Ukuran berkas** | PDF maksimum **5 MB** |
-| **Similaritas** | Maksimum **25%** (Turnitin/iThenticate/sejenis), hasil uji dilampirkan |
-| **Sitasi** | **Harvard style** (author–date), disarankan Mendeley/Zotero |
-| **Rumus Nilai Akhir** | `NA = 0,3·NP + 0,2·NLK + 0,5·NM`, di mana NM = **10% Dokumen Teknis + 40% Presentasi** |
-| **Mode pelaksanaan** | **Luring (offline)** — wajib, terutama pada tahap manufaktur |
+| Aspek                   | Ketentuan PKM-KI 2026                                                                                                         |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **Nama bidang**         | PKM Karya Inovatif (PKM-KI)                                                                                                   |
+| **Skema**               | PKM Skema **Pendanaan** (salah satu dari 8 bidang), berujung di **PIMNAS**                                                    |
+| **Inti kegiatan**       | Karya berupa hasil karya **fungsional inovatif solutif skala penuh**, berbasis iptek, **siap diproduksi massal**              |
+| **Kriteria keilmuan**   | **Sesuai bidang ilmu**; kolaborasi lintas bidang ilmu dianjurkan                                                              |
+| **Jenjang**             | D-3, D-4, S-1                                                                                                                 |
+| **Jumlah anggota**      | **3–5 mahasiswa** (1 ketua + 2–4 anggota)                                                                                     |
+| **Pendanaan Belmawa**   | **Rp 6.000.000 – Rp 8.000.000** per judul                                                                                     |
+| **Dana pendamping PT**  | **Wajib ada**, maksimum Rp 2.000.000 (tunai dan/atau barang)                                                                  |
+| **Dana sponsor/mitra**  | Opsional, maksimum Rp 1.000.000 (tunai dan/atau barang)                                                                       |
+| **Durasi pelaksanaan**  | **3–4 bulan**                                                                                                                 |
+| **Luaran wajib**        | 1) Laporan Kemajuan, 2) Laporan Akhir, 3) **Produk Fungsional Skala Penuh + Dokumen Teknis Produk**, 4) **Akun Media Sosial** |
+| **Judul**               | Maksimum **20 kata**, huruf kapital, Bahasa Indonesia, tanpa akronim/singkatan tidak baku                                     |
+| **Halaman bagian inti** | Maksimum **10 halaman** (Bab 1 s.d. Daftar Pustaka)                                                                           |
+| **Font / spasi**        | Times New Roman 12 / **1,15 spasi**, rata kiri-kanan (justify)                                                                |
+| **Kertas & margin**     | A4, satu kolom, margin **kiri 4 cm**; kanan, atas, bawah **3 cm**                                                             |
+| **Nama berkas**         | `namaketua_namaPT_PKM-KI.pdf`                                                                                                 |
+| **Ukuran berkas**       | PDF maksimum **5 MB**                                                                                                         |
+| **Similaritas**         | Maksimum **25%** (Turnitin/iThenticate/sejenis), hasil uji dilampirkan                                                        |
+| **Sitasi**              | **Harvard style** (author–date), disarankan Mendeley/Zotero                                                                   |
+| **Rumus Nilai Akhir**   | `NA = 0,3·NP + 0,2·NLK + 0,5·NM`, di mana NM = **10% Dokumen Teknis + 40% Presentasi**                                        |
+| **Mode pelaksanaan**    | **Luring (offline)** — wajib, terutama pada tahap manufaktur                                                                  |
 
 > ⚠️ **Tiga pembeda utama PKM-KI:** (a) produk **skala penuh 1:1**, bukan prototipe;
 > (b) **target pengguna akhir jelas dan spesifik**; (c) teknologi manufaktur **sudah dikuasai**,
@@ -79,6 +80,7 @@ teknologi tepat guna maupun teknologi tinggi, pada tingkat kesiapan yang memungk
 langsung dioperasikan dan **direplika**.
 
 **Contoh ilustrasi dari panduan:**
+
 - Helm pintar yang memberi panduan jalur alternatif bagi pengendara motor saat macet.
 - Meteran listrik (kWh meter) yang posisinya dapat dideteksi jarak jauh, untuk membantu petugas
   PLN yang kesulitan mengakses rumah berpagar tertutup.
@@ -91,6 +93,7 @@ langsung dioperasikan dan **direplika**.
 > **solusi fungsional siap pakai** bagi para penggunanya.
 
 **Implikasi praktis:**
+
 - Konsep ilmu dan teknologi untuk manufaktur **harus sudah dikenali pengusul dan sudah tersedia**.
 - **Tidak boleh** dilakukan penelitian untuk menemukan teknik manufaktur yang akan dijalankan.
 - **Tidak dikenal proses *trial and error*** dalam proses manufaktur produk PKM-KI.
@@ -107,12 +110,12 @@ memiliki **potensi untuk diproduksi secara massal**.
 
 **Makna "fungsional skala penuh" per jenis produk:**
 
-| Jenis produk | Makna fungsional skala penuh |
-|---|---|
-| **Mekanik** | Siap pakai dengan **dimensi dan fungsi final** |
-| **Elektronik** | **Beroperasi stabil** pada kondisi pengguna |
-| **IoT** | **Sudah terpasang** dan mampu **berkomunikasi di lingkungan nyata** |
-| **Digital** | **Dapat langsung digunakan** oleh target pengguna |
+| Jenis produk   | Makna fungsional skala penuh                                        |
+| -------------- | ------------------------------------------------------------------- |
+| **Mekanik**    | Siap pakai dengan **dimensi dan fungsi final**                      |
+| **Elektronik** | **Beroperasi stabil** pada kondisi pengguna                         |
+| **IoT**        | **Sudah terpasang** dan mampu **berkomunikasi di lingkungan nyata** |
+| **Digital**    | **Dapat langsung digunakan** oleh target pengguna                   |
 
 ### 2.4 Tujuan PKM-KI
 
@@ -141,14 +144,14 @@ memiliki **potensi untuk diproduksi secara massal**.
 
 ### 2.7 PKM-KI vs PKM-KC — Jangan Sampai Salah Bidang
 
-| | **PKM-KC (Karsa Cipta)** | **PKM-KI (Karya Inovatif)** |
-|---|---|---|
-| Luaran wajib | **Prototipe** | **Produk Fungsional Skala Penuh + Dokumen Teknis** |
-| Skala | Prototipe / model | **Skala penuh 1:1**, siap dioperasikan |
-| Kemanfaatan | *Bisa saja belum* memberi kemanfaatan langsung bagi pihak lain | **Wajib** ada target pengguna akhir yang memakai secara langsung dan berulang |
-| Orientasi | Kreasi sesuatu yang baru dan fungsional atas dasar karsa & nalar | Rekayasa solusi atas **problematika faktual**, siap **produksi massal** |
-| Riset/percobaan | Boleh eksploratif | **Tidak boleh** riset teknik manufaktur, **tanpa trial and error** |
-| Nilai PKP2 (NM) | 50% presentasi | **10% Dokumen Teknis + 40% Presentasi** |
+|                 | **PKM-KC (Karsa Cipta)**                                         | **PKM-KI (Karya Inovatif)**                                                   |
+| --------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Luaran wajib    | **Prototipe**                                                    | **Produk Fungsional Skala Penuh + Dokumen Teknis**                            |
+| Skala           | Prototipe / model                                                | **Skala penuh 1:1**, siap dioperasikan                                        |
+| Kemanfaatan     | *Bisa saja belum* memberi kemanfaatan langsung bagi pihak lain   | **Wajib** ada target pengguna akhir yang memakai secara langsung dan berulang |
+| Orientasi       | Kreasi sesuatu yang baru dan fungsional atas dasar karsa & nalar | Rekayasa solusi atas **problematika faktual**, siap **produksi massal**       |
+| Riset/percobaan | Boleh eksploratif                                                | **Tidak boleh** riset teknik manufaktur, **tanpa trial and error**            |
+| Nilai PKP2 (NM) | 50% presentasi                                                   | **10% Dokumen Teknis + 40% Presentasi**                                       |
 
 > Salah memilih bidang PKM adalah salah satu penyebab **gugur di Tahap 1** (kesesuaian program
 > yang diajukan dengan bidang PKM yang dipilih).
@@ -161,18 +164,18 @@ Judul PKM-KI **wajib** selaras dengan **salah satu** dari 10 tema berikut. Opera
 tema saat mendaftarkan judul di simbelmawa, dan **kesesuaian judul dengan tema** adalah kriteria
 penilaian Tahap 1 (administrasi).
 
-| # | Tema | Cakupan Ringkas |
-|---|---|---|
-| 1 | **Kemandirian Pangan, Energi, dan Air** | Ketahanan & kemandirian pangan nasional; energi hijau (biodiesel/bioavtur sawit, bioetanol tebu & singkong, mikroalga, limbah biomassa, angin, surya, panas bumi); pemanfaatan air yang bijaksana & berkelanjutan |
-| 2 | **Kesehatan dan Gizi Masyarakat** | Teknologi tepat guna & pengembangan sistem untuk meningkatkan kesehatan dan gizi; kualitas gizi masa awal kehidupan menentukan kualitas hidup dewasa |
-| 3 | **Pencegahan dan Pemberantasan Korupsi** | Solusi menekan kebocoran anggaran, efisiensi anggaran pembangunan, peningkatan reputasi Indonesia |
-| 4 | **Pemberantasan Kemiskinan** | Pemikiran multidimensi untuk menekan angka kemiskinan relatif di bawah 6% pada akhir 2029 |
-| 5 | **Pencegahan dan Pemberantasan Narkoba** | Pencegahan & pemberantasan peredaran/penggunaan narkoba; kesadaran tingkat keluarga; pendekatan sosial |
-| 6 | **Penguatan Pendidikan, Sains, dan Teknologi** | Peningkatan kualitas SDM & daya saing bangsa; investasi dan peningkatan kualitas pendidikan, sains, teknologi |
-| 7 | **Penguatan Kesetaraan Gender & Perlindungan Hak Perempuan, Anak, dan Penyandang Disabilitas** | Masyarakat adil & inklusif; hak atas pendidikan, pekerjaan, partisipasi politik; tumbuh kembang & gizi anak |
-| 8 | **Pelestarian Lingkungan dan Mitigasi Bencana** | Pembangunan berkelanjutan, *zero emission*, pengurangan jejak karbon & jejak air, bioplastik, mitigasi bencana akibat kerusakan lingkungan |
-| 9 | **Pemerataan Ekonomi, Penguatan UMKM, dan Pembangunan IKN** | Pemerataan hasil pembangunan; penguatan skala ekonomi & kelembagaan UMKM; IKN ramah lingkungan, berteknologi terkini, mandiri energi |
-| 10 | **Pelestarian Seni Budaya dan Peningkatan Ekonomi Kreatif** | Kearifan lokal sebagai solusi; pelestarian seni budaya berkelanjutan; ekonomi kreatif sebagai motor pembangunan |
+| #   | Tema                                                                                           | Cakupan Ringkas                                                                                                                                                                                                   |
+| --- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Kemandirian Pangan, Energi, dan Air**                                                        | Ketahanan & kemandirian pangan nasional; energi hijau (biodiesel/bioavtur sawit, bioetanol tebu & singkong, mikroalga, limbah biomassa, angin, surya, panas bumi); pemanfaatan air yang bijaksana & berkelanjutan |
+| 2   | **Kesehatan dan Gizi Masyarakat**                                                              | Teknologi tepat guna & pengembangan sistem untuk meningkatkan kesehatan dan gizi; kualitas gizi masa awal kehidupan menentukan kualitas hidup dewasa                                                              |
+| 3   | **Pencegahan dan Pemberantasan Korupsi**                                                       | Solusi menekan kebocoran anggaran, efisiensi anggaran pembangunan, peningkatan reputasi Indonesia                                                                                                                 |
+| 4   | **Pemberantasan Kemiskinan**                                                                   | Pemikiran multidimensi untuk menekan angka kemiskinan relatif di bawah 6% pada akhir 2029                                                                                                                         |
+| 5   | **Pencegahan dan Pemberantasan Narkoba**                                                       | Pencegahan & pemberantasan peredaran/penggunaan narkoba; kesadaran tingkat keluarga; pendekatan sosial                                                                                                            |
+| 6   | **Penguatan Pendidikan, Sains, dan Teknologi**                                                 | Peningkatan kualitas SDM & daya saing bangsa; investasi dan peningkatan kualitas pendidikan, sains, teknologi                                                                                                     |
+| 7   | **Penguatan Kesetaraan Gender & Perlindungan Hak Perempuan, Anak, dan Penyandang Disabilitas** | Masyarakat adil & inklusif; hak atas pendidikan, pekerjaan, partisipasi politik; tumbuh kembang & gizi anak                                                                                                       |
+| 8   | **Pelestarian Lingkungan dan Mitigasi Bencana**                                                | Pembangunan berkelanjutan, *zero emission*, pengurangan jejak karbon & jejak air, bioplastik, mitigasi bencana akibat kerusakan lingkungan                                                                        |
+| 9   | **Pemerataan Ekonomi, Penguatan UMKM, dan Pembangunan IKN**                                    | Pemerataan hasil pembangunan; penguatan skala ekonomi & kelembagaan UMKM; IKN ramah lingkungan, berteknologi terkini, mandiri energi                                                                              |
+| 10  | **Pelestarian Seni Budaya dan Peningkatan Ekonomi Kreatif**                                    | Kearifan lokal sebagai solusi; pelestarian seni budaya berkelanjutan; ekonomi kreatif sebagai motor pembangunan                                                                                                   |
 
 ---
 
@@ -237,22 +240,22 @@ Luaran kegiatan PKM-KI berupa **empat** hal:
 Dokumen teknis produk **harus memuat penjelasan rinci mengenai aspek teknis** karya inovatif,
 meliputi:
 
-| # | Komponen | Bobot pada Formulir Penilaian Dokumen Teknis |
-|---|---|---|
-| 1 | **Deskripsi produk dan fungsi** | 15 |
-| 2 | **Diagram (rancangan) sistem** | 30 (satu butir bersama no. 3 & 4) |
-| 3 | **Spesifikasi teknis** | ⤴ |
-| 4 | **Daftar komponen (*Bill of Materials*)** | ⤴ |
-| 5 | **Proses produksi** | 15 |
-| 6 | **Hasil uji dan validasi** | 20 |
-| 7 | **Petunjuk penggunaan** | 20 |
+| #   | Komponen                                  | Bobot pada Formulir Penilaian Dokumen Teknis |
+| --- | ----------------------------------------- | -------------------------------------------- |
+| 1   | **Deskripsi produk dan fungsi**           | 15                                           |
+| 2   | **Diagram (rancangan) sistem**            | 30 (satu butir bersama no. 3 & 4)            |
+| 3   | **Spesifikasi teknis**                    | ⤴                                            |
+| 4   | **Daftar komponen (*Bill of Materials*)** | ⤴                                            |
+| 5   | **Proses produksi**                       | 15                                           |
+| 6   | **Hasil uji dan validasi**                | 20                                           |
+| 7   | **Petunjuk penggunaan**                   | 20                                           |
 
 **Perkembangan dokumen teknis sepanjang program:**
 
-| Tahap | Bentuk yang diunggah |
-|---|---|
-| Laporan Kemajuan | **Draf** dokumen desain teknis produk karya inovatif — sebagai **lampiran terakhir** laporan kemajuan |
-| Laporan Akhir | **Dokumen desain teknis lengkap**, dilengkapi **rancangan proses manufaktur produk**, disertai **uji produk dan demo penggunaan** |
+| Tahap            | Bentuk yang diunggah                                                                                                              |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Laporan Kemajuan | **Draf** dokumen desain teknis produk karya inovatif — sebagai **lampiran terakhir** laporan kemajuan                             |
+| Laporan Akhir    | **Dokumen desain teknis lengkap**, dilengkapi **rancangan proses manufaktur produk**, disertai **uji produk dan demo penggunaan** |
 
 ### 5.2 Akun Media Sosial — Ketentuan Lengkap (13 Butir)
 
@@ -280,15 +283,16 @@ relevan dengan topik PKM, diisi konten edukatif (video, gambar, dll.).
 
 #### Jadwal Pengiklanan Serentak (Tabel 1 Panduan PKM-KI)
 
-| Hari, Tanggal | Waktu | Konten yang Diiklankan |
-|---|---|---|
-| **Sabtu, 23 Mei 2026** | 12.00 WIB / 13.00 WITA / 14.00 WIT | **Pengenalan Program** |
-| **Sabtu, 20 Juni 2026** | 12.00 WIB / 13.00 WITA / 14.00 WIT | **Konten Program** |
-| **Sabtu, 8 Agustus 2026** | 12.00 WIB / 13.00 WITA / 14.00 WIT | **Hasil Program PKM** |
+| Hari, Tanggal             | Waktu                              | Konten yang Diiklankan |
+| ------------------------- | ---------------------------------- | ---------------------- |
+| **Sabtu, 23 Mei 2026**    | 12.00 WIB / 13.00 WITA / 14.00 WIT | **Pengenalan Program** |
+| **Sabtu, 20 Juni 2026**   | 12.00 WIB / 13.00 WITA / 14.00 WIT | **Konten Program**     |
+| **Sabtu, 8 Agustus 2026** | 12.00 WIB / 13.00 WITA / 14.00 WIT | **Hasil Program PKM**  |
 
 #### Postingan Reguler (Disarankan, Harian/Mingguan)
 
 Contoh topik konten:
+
 1. Pengenalan Topik/Program PKM
 2. Pengenalan tim pelaksana PKM
 3. Rencana pelaksanaan PKM
@@ -302,6 +306,7 @@ Contoh topik konten:
 11. Dan lain-lain
 
 #### Contoh Akun Media Sosial Hasil PKM-KI (dari panduan)
+
 - Instagram `@smartkoyoband`
 - TikTok `@pkmki_smlanslide`
 - YouTube `GO-TANI PKM-KI`
@@ -338,25 +343,25 @@ Contoh topik konten:
 
 ### 6.2 Aturan Umum yang Juga Mengikat PKM-KI
 
-| Aturan | Ketentuan |
-|---|---|
+| Aturan                             | Ketentuan                                                                                                                                                                                                          |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Satu mahasiswa = satu proposal** | Setiap mahasiswa hanya boleh mengusulkan **1 proposal PKM** (bidang apa pun), **baik sebagai ketua maupun anggota**. Pelanggaran → yang bersangkutan **diminta mengundurkan diri** dari kelompok PKM yang didanai. |
-| **Larangan lintas program** | Pengusul PKM **tidak boleh** mengusulkan **PPK Ormawa** dan **P2MW** di tahun yang sama. |
-| **Kuota dosen pendamping** | Satu dosen maksimum mendampingi **10 tim pengusul** di seluruh bidang PKM. |
-| **NUPTK dosen pendamping** | Dosen pendamping **wajib memiliki NUPTK**. Dosen tanpa NUPTK **tidak diperbolehkan** menjadi dosen pendamping. |
-| **Evaluasi internal PT** | PT **wajib** melaksanakan evaluasi internal dan membuat **Berita Acara Hasil Evaluasi Internal** untuk setiap bidang PKM. |
-| **Penggunaan AI (GenAI)** | Mengikuti **Panduan GenAI** Direktorat Pembelajaran dan Kemahasiswaan: <https://s.id/PanduanGenAI> (dinyatakan dalam Surat Pernyataan Ketua Tim). |
-| **Uji similaritas** | Maksimum **25%**; lampirkan hasil uji similaritas **bagian inti proposal** (Pendahuluan s.d. Daftar Pustaka). |
+| **Larangan lintas program**        | Pengusul PKM **tidak boleh** mengusulkan **PPK Ormawa** dan **P2MW** di tahun yang sama.                                                                                                                           |
+| **Kuota dosen pendamping**         | Satu dosen maksimum mendampingi **10 tim pengusul** di seluruh bidang PKM.                                                                                                                                         |
+| **NUPTK dosen pendamping**         | Dosen pendamping **wajib memiliki NUPTK**. Dosen tanpa NUPTK **tidak diperbolehkan** menjadi dosen pendamping.                                                                                                     |
+| **Evaluasi internal PT**           | PT **wajib** melaksanakan evaluasi internal dan membuat **Berita Acara Hasil Evaluasi Internal** untuk setiap bidang PKM.                                                                                          |
+| **Penggunaan AI (GenAI)**          | Mengikuti **Panduan GenAI** Direktorat Pembelajaran dan Kemahasiswaan: <https://s.id/PanduanGenAI> (dinyatakan dalam Surat Pernyataan Ketua Tim).                                                                  |
+| **Uji similaritas**                | Maksimum **25%**; lampirkan hasil uji similaritas **bagian inti proposal** (Pendahuluan s.d. Daftar Pustaka).                                                                                                      |
 
 ### 6.3 Klasterisasi Perguruan Tinggi (Kuota Proposal)
 
 | Klaster | PKM 8 Bidang | PKM-AI | PKM-GFT |
-|---|---|---|---|
-| **I** | 190 | 25 | 35 |
-| **II** | 100 | 20 | 20 |
-| **III** | 50 | 15 | 15 |
-| **IV** | 40 | 10 | 10 |
-| **V** | 30 | 5 | 5 |
+| ------- | ------------ | ------ | ------- |
+| **I**   | 190          | 25     | 35      |
+| **II**  | 100          | 20     | 20      |
+| **III** | 50           | 15     | 15      |
+| **IV**  | 40           | 10     | 10      |
+| **V**   | 30           | 5      | 5       |
 
 Klaster ditentukan berdasarkan **peringkat PT bidang kemahasiswaan** dan **rekam jejak pengusulan
 PKM tahun sebelumnya**, termasuk **ketaatan penyelesaian administrasi**. PT mengetahui klasternya
@@ -377,11 +382,11 @@ melalui **akun Operator**.
 
 ### 7.1 Tiga Sumber Dana
 
-| Sumber | Besaran | Keterangan |
-|---|---|---|
-| **A. Direktorat Pembelajaran dan Kemahasiswaan (Belmawa)** | **Rp 6.000.000 – Rp 8.000.000** | Bagi proposal yang lolos *passing grade*. Bersumber dari APBN. |
-| **B. Perguruan Tinggi** | **Maksimum Rp 2.000.000** | **WAJIB**. Tunai dan/atau barang. Dimasukkan dalam proposal + **Surat Pernyataan Komitmen Tambahan Pendanaan PT**. |
-| **C. Institusi Lain / Sponsor / Mitra** | **Maksimum Rp 1.000.000** | Opsional. Tunai dan/atau barang. Dimasukkan dalam proposal + **Surat Pernyataan Komitmen Tambahan Pendanaan Institusi**. |
+| Sumber                                                     | Besaran                         | Keterangan                                                                                                               |
+| ---------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **A. Direktorat Pembelajaran dan Kemahasiswaan (Belmawa)** | **Rp 6.000.000 – Rp 8.000.000** | Bagi proposal yang lolos *passing grade*. Bersumber dari APBN.                                                           |
+| **B. Perguruan Tinggi**                                    | **Maksimum Rp 2.000.000**       | **WAJIB**. Tunai dan/atau barang. Dimasukkan dalam proposal + **Surat Pernyataan Komitmen Tambahan Pendanaan PT**.       |
+| **C. Institusi Lain / Sponsor / Mitra**                    | **Maksimum Rp 1.000.000**       | Opsional. Tunai dan/atau barang. Dimasukkan dalam proposal + **Surat Pernyataan Komitmen Tambahan Pendanaan Institusi**. |
 
 **Tujuan dana tambahan PT:** (1) dukungan pengembangan mahasiswa; (2) kelancaran & optimalisasi
 program; (3) peningkatan kualitas & daya saing (pengadaan alat, bahan, pendukung lainnya).
@@ -426,48 +431,48 @@ program; (3) peningkatan kualitas & daya saing (pengadaan alat, bahan, pendukung
 
 ### 7.5 Format Rekapitulasi Rencana Anggaran Biaya (Tabel 2 Panduan)
 
-| No | Jenis Pengeluaran | Sumber Dana | Besaran Dana (Rp) |
-|---|---|---|---|
-| 1 | **Bahan habis pakai** (contoh: ATK, kertas, bahan, dll.) — **maksimum 60%** dari jumlah dana yang diusulkan | Belmawa / Perguruan Tinggi / Instansi Lain (jika ada) | |
-| 2 | **Sewa dan jasa** (sewa/jasa alat, jasa pembuatan produk pihak ketiga, dll.) — **maksimum 15%** | Belmawa / Perguruan Tinggi / Instansi Lain (jika ada) | |
-| 3 | **Transportasi lokal** — **maksimum 30%** | Belmawa / Perguruan Tinggi / Instansi Lain (jika ada) | |
-| 4 | **Lain-lain** (biaya komunikasi, biaya bayar akses publikasi, **biaya Ads media sosial**, dll.) — **maksimum 15%** | Belmawa / Perguruan Tinggi / Instansi Lain (jika ada) | |
-| | **Jumlah** | | |
-| | **Rekap Sumber Dana** — Belmawa / Perguruan Tinggi / Instansi Lain | | |
+| No  | Jenis Pengeluaran                                                                                                  | Sumber Dana                                           | Besaran Dana (Rp) |
+| --- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- | ----------------- |
+| 1   | **Bahan habis pakai** (contoh: ATK, kertas, bahan, dll.) — **maksimum 60%** dari jumlah dana yang diusulkan        | Belmawa / Perguruan Tinggi / Instansi Lain (jika ada) |                   |
+| 2   | **Sewa dan jasa** (sewa/jasa alat, jasa pembuatan produk pihak ketiga, dll.) — **maksimum 15%**                    | Belmawa / Perguruan Tinggi / Instansi Lain (jika ada) |                   |
+| 3   | **Transportasi lokal** — **maksimum 30%**                                                                          | Belmawa / Perguruan Tinggi / Instansi Lain (jika ada) |                   |
+| 4   | **Lain-lain** (biaya komunikasi, biaya bayar akses publikasi, **biaya Ads media sosial**, dll.) — **maksimum 15%** | Belmawa / Perguruan Tinggi / Instansi Lain (jika ada) |                   |
+|     | **Jumlah**                                                                                                         |                                                       |                   |
+|     | **Rekap Sumber Dana** — Belmawa / Perguruan Tinggi / Instansi Lain                                                 |                                                       |                   |
 
 > ⚠️ **Angka persentase di setiap jenis pengeluaran adalah nilai MAKSIMUM yang diperkenankan,
 > namun total persentase keempat jenis pengeluaran tetap senilai 100%.**
 
 ### 7.6 Format Justifikasi Anggaran Kegiatan (Lampiran Proposal)
 
-| No | Jenis Pengeluaran | Volume | Harga Satuan (Rp) | Total (Rp) |
-|---|---|---|---|---|
-| **1** | **Belanja Bahan (maks. 60%)** | | | |
-| | Bahan kimia, lab./bahan, logam/kayu dan sejenisnya | | | |
-| | pH Buffer | | | |
-| | Komponen elektronik | | | |
-| | Suku cadang / *microcontroller* / sensor / *kit* | | | |
-| | Bahan lainnya sesuai program PKM | | | |
-| | **SUB TOTAL** | | | |
-| **2** | **Belanja Sewa (maks. 15%)** | | | |
-| | Sewa gedung/alat | | | |
-| | Sewa server/hosting/domain/SSL/akses jurnal | | | |
-| | Sewa laboratorium (termasuk penggunaan alat lab) | | | |
-| | Sewa lainnya sesuai program PKM | | | |
-| | **SUB TOTAL** | | | |
-| **3** | **Perjalanan Lokal (maks. 30%)** | | | |
-| | Kegiatan penyiapan bahan | | | |
-| | Kegiatan lainnya sesuai program PKM | | | |
-| | **SUB TOTAL** | | | |
-| **4** | **Lain-lain (maks. 15%)** | | | |
-| | Jasa layanan instrumentasi | | | |
-| | Jasa bengkel/uji coba | | | |
-| | Percetakan produk | | | |
-| | **Ads (iklan berbayar) akun media sosial** | | | |
-| | Lainnya sesuai program PKM | | | |
-| | **SUB TOTAL** | | | |
-| | **GRAND TOTAL** | | | |
-| | **GRAND TOTAL (Terbilang)** | | | |
+| No    | Jenis Pengeluaran                                  | Volume | Harga Satuan (Rp) | Total (Rp) |
+| ----- | -------------------------------------------------- | ------ | ----------------- | ---------- |
+| **1** | **Belanja Bahan (maks. 60%)**                      |        |                   |            |
+|       | Bahan kimia, lab./bahan, logam/kayu dan sejenisnya |        |                   |            |
+|       | pH Buffer                                          |        |                   |            |
+|       | Komponen elektronik                                |        |                   |            |
+|       | Suku cadang / *microcontroller* / sensor / *kit*   |        |                   |            |
+|       | Bahan lainnya sesuai program PKM                   |        |                   |            |
+|       | **SUB TOTAL**                                      |        |                   |            |
+| **2** | **Belanja Sewa (maks. 15%)**                       |        |                   |            |
+|       | Sewa gedung/alat                                   |        |                   |            |
+|       | Sewa server/hosting/domain/SSL/akses jurnal        |        |                   |            |
+|       | Sewa laboratorium (termasuk penggunaan alat lab)   |        |                   |            |
+|       | Sewa lainnya sesuai program PKM                    |        |                   |            |
+|       | **SUB TOTAL**                                      |        |                   |            |
+| **3** | **Perjalanan Lokal (maks. 30%)**                   |        |                   |            |
+|       | Kegiatan penyiapan bahan                           |        |                   |            |
+|       | Kegiatan lainnya sesuai program PKM                |        |                   |            |
+|       | **SUB TOTAL**                                      |        |                   |            |
+| **4** | **Lain-lain (maks. 15%)**                          |        |                   |            |
+|       | Jasa layanan instrumentasi                         |        |                   |            |
+|       | Jasa bengkel/uji coba                              |        |                   |            |
+|       | Percetakan produk                                  |        |                   |            |
+|       | **Ads (iklan berbayar) akun media sosial**         |        |                   |            |
+|       | Lainnya sesuai program PKM                         |        |                   |            |
+|       | **SUB TOTAL**                                      |        |                   |            |
+|       | **GRAND TOTAL**                                    |        |                   |            |
+|       | **GRAND TOTAL (Terbilang)**                        |        |                   |            |
 
 > ⚠️ **Catatan penting dari panduan:** *"Kesalahan hasil perkalian dan penjumlahan dapat
 > mempengaruhi hasil penilaian."* — **Periksa ulang aritmetika RAB Anda.**
@@ -502,11 +507,11 @@ disahkan melalui validasi **dosen pendamping** dan **pimpinan PT bidang kemahasi
 
 **B. Isi utama proposal** — dikemas dalam **berkas PDF**, terdiri dari:
 
-| Bagian | Penomoran Halaman | Posisi Nomor |
-|---|---|---|
-| **Daftar Isi** (dst.) | Angka **Romawi**: i, ii, iii, … — mulai dari **Daftar Isi** | **Sudut kanan bawah** |
-| **Bagian Inti** (Bab 1 Pendahuluan s.d. Daftar Pustaka) | Angka **Arab**: 1, 2, 3, … — halaman **1 dimulai dari Bab 1** | **Sudut kanan atas** |
-| **Lampiran** | Melanjutkan angka Arab | **Sudut kanan atas** |
+| Bagian                                                  | Penomoran Halaman                                             | Posisi Nomor          |
+| ------------------------------------------------------- | ------------------------------------------------------------- | --------------------- |
+| **Daftar Isi** (dst.)                                   | Angka **Romawi**: i, ii, iii, … — mulai dari **Daftar Isi**   | **Sudut kanan bawah** |
+| **Bagian Inti** (Bab 1 Pendahuluan s.d. Daftar Pustaka) | Angka **Arab**: 1, 2, 3, … — halaman **1 dimulai dari Bab 1** | **Sudut kanan atas**  |
+| **Lampiran**                                            | Melanjutkan angka Arab                                        | **Sudut kanan atas**  |
 
 - **Bagian inti maksimum 10 (sepuluh) halaman.**
 - Nama berkas: **`namaketua_namaPT_PKM-KI.pdf`**
@@ -544,6 +549,7 @@ LAMPIRAN
 #### BAB 1. PENDAHULUAN
 
 Berisi uraian tentang:
+
 - **Permasalahan faktual** yang sedang dihadapi masyarakat, dunia usaha, atau dunia pendidikan,
   **termasuk tingkat urgensi pemecahan masalahnya**.
 - Dengan basis faktual ini, **target pengguna karya inovatif sudah pasti**, sekaligus menjamin
@@ -566,6 +572,7 @@ Berisi uraian tentang:
 #### BAB 3. TAHAP PELAKSANAAN
 
 Uraikan tahap pelaksanaan program, mulai dari:
+
 1. **Penemuan ide** karya inovatif
 2. **Karakterisasi produk** yang direncanakan
 3. **Desain teknis** melalui pelaksanaan **secara luring**
@@ -580,6 +587,7 @@ tempat** (laboratorium, bengkel, studio) yang akan digunakan **dengan seizin pih
 alokasi, larangan, dan format Tabel Rekapitulasi RAB.
 
 **4.2 Jadwal Kegiatan**
+
 - Disesuaikan dengan **Tahap Kegiatan**.
 - **Dibatasi selama 3 (tiga) sampai 4 (empat) bulan.**
 - Disusun dalam bentuk **bagan batang (*bar chart*)** sesuai format lampiran.
@@ -593,13 +601,13 @@ alokasi, larangan, dan format Tabel Rekapitulasi RAB.
 
 ### 8.5 Lampiran Proposal (6 Lampiran)
 
-| Lampiran | Isi |
-|---|---|
-| **Lampiran 1** | **Biodata Ketua dan Anggota, serta Dosen Pendamping** |
-| **Lampiran 2** | **Justifikasi Anggaran Kegiatan** |
-| **Lampiran 3** | **Susunan Tim Pengusul dan Pembagian Tugas** |
-| **Lampiran 4** | **Surat Pernyataan Ketua Tim Pengusul** (bermeterai Rp10.000, TT basah) |
-| **Lampiran 5** | **Gambaran Konsep Karya Inovatif yang akan dihasilkan** |
+| Lampiran       | Isi                                                                                                                                                                             |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Lampiran 1** | **Biodata Ketua dan Anggota, serta Dosen Pendamping**                                                                                                                           |
+| **Lampiran 2** | **Justifikasi Anggaran Kegiatan**                                                                                                                                               |
+| **Lampiran 3** | **Susunan Tim Pengusul dan Pembagian Tugas**                                                                                                                                    |
+| **Lampiran 4** | **Surat Pernyataan Ketua Tim Pengusul** (bermeterai Rp10.000, TT basah)                                                                                                         |
+| **Lampiran 5** | **Gambaran Konsep Karya Inovatif yang akan dihasilkan**                                                                                                                         |
 | **Lampiran 6** | **Hasil Uji Periksa Similaritas Proposal** (Turnitin/iThenticate/lainnya), indeks similaritas **maksimum 25%**, atas **bagian inti proposal** (Pendahuluan s.d. Daftar Pustaka) |
 
 > 🚨 **Ketentuan tanda tangan:** Setelah diisi dan diberi **tanda tangan basah (asli)**,
@@ -613,9 +621,11 @@ alokasi, larangan, dan format Tabel Rekapitulasi RAB.
 ### 9.1 Dua Tahap Seleksi (Daring)
 
 #### Tahap 1 — Seleksi Administrasi
+
 Dinilai oleh **1 orang penilai**. **Jika salah satu saja aspek tidak sesuai, proposal GUGUR.**
 
 Aspek yang diperiksa:
+
 1. **Kesesuaian persyaratan administrasi wajib**: tanggal-bulan-tahun proposal, **tanda tangan
    pengusul**, biodata yang ditandatangani, **jumlah dan nomor halaman**, surat pernyataan ketua
    pelaksana, **penulisan nama sesuai yang terdaftar di PDDikti**, dan lain-lain.
@@ -624,7 +634,9 @@ Aspek yang diperiksa:
 4. **Kesesuaian judul dengan tema yang dipilih.**
 
 #### Tahap 2 — Seleksi Substansi
+
 Dinilai oleh **2 orang penilai**. Menitikberatkan pada:
+
 - **Tingkat kreativitas program** yang diusulkan
 - **Aspek kekinian topik**
 - **Tantangan intelektual**
@@ -639,12 +651,12 @@ tersedia**. Hasil diumumkan di `simbelmawa/pkm`.
 NA = 0,3 · NP  +  0,2 · NLK  +  0,5 · NM
 ```
 
-| Simbol | Arti | Bobot |
-|---|---|---|
-| **NA** | Nilai Akhir | — |
-| **NP** | Nilai Proposal | **30%** |
-| **NLK** | Nilai Laporan Kemajuan | **20%** |
-| **NM** | Nilai PKP2 | **50%**, terdiri dari **10% Nilai Dokumen Teknis Produk** + **40% Nilai Presentasi** (pemantauan & evaluasi) |
+| Simbol  | Arti                   | Bobot                                                                                                        |
+| ------- | ---------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **NA**  | Nilai Akhir            | —                                                                                                            |
+| **NP**  | Nilai Proposal         | **30%**                                                                                                      |
+| **NLK** | Nilai Laporan Kemajuan | **20%**                                                                                                      |
+| **NM**  | Nilai PKP2             | **50%**, terdiri dari **10% Nilai Dokumen Teknis Produk** + **40% Nilai Presentasi** (pemantauan & evaluasi) |
 
 > 📌 **Khas PKM-KI:** komponen **Dokumen Teknis Produk** ikut dinilai (10%). Pada PKM-RE, RSH, K,
 > PM, PI, dan KC, seluruh 50% NM berasal dari presentasi saja. Pada PKM-VGK, NM = 25% video +
@@ -679,21 +691,22 @@ Terdiri dari **dua** bagian, keduanya wajib diisi dan diunggah buktinya:
 
 Header: Judul • Skema • Tahun • Dana Disetujui • Capaian (%) • Total Waktu (Menit) • Rekomendasi SKS
 
-| No | Tanggal Pelaksanaan | Kegiatan | Capaian (%) | Waktu Pelaksanaan (Menit) | Berkas | Validasi Dosen |
-|---|---|---|---|---|---|---|
-| 1 | | | | | | |
-| 2 | | | | | | |
+| No  | Tanggal Pelaksanaan | Kegiatan | Capaian (%) | Waktu Pelaksanaan (Menit) | Berkas | Validasi Dosen |
+| --- | ------------------- | -------- | ----------- | ------------------------- | ------ | -------------- |
+| 1   |                     |          |             |                           |        |                |
+| 2   |                     |          |             |                           |        |                |
 
 **b) Format Catatan Keuangan**
 
 Header: Judul • Skema • Tahun • Pendanaan Rp… • Penggunaan Rp… • Sisa Rp…
 
-| No | Tanggal | Keterangan | Harga Satuan | Jumlah | Total | Berkas | Validasi |
-|---|---|---|---|---|---|---|---|
-| 1 | | | | | | | |
-| 2 | | | | | | | |
+| No  | Tanggal | Keterangan | Harga Satuan | Jumlah | Total | Berkas | Validasi |
+| --- | ------- | ---------- | ------------ | ------ | ----- | ------ | -------- |
+| 1   |         |            |              |        |       |        |          |
+| 2   |         |            |              |        |       |        |          |
 
 **Ketentuan ukuran berkas Logbook:**
+
 - Berkas catatan harian: **maksimum 1 MB per kegiatan**
 - Berkas penggunaan dana (kuitansi, nota, bukti keuangan lain): **maksimum 1 MB per transaksi**
 
@@ -726,11 +739,11 @@ Header: Judul • Skema • Tahun • Pendanaan Rp… • Penggunaan Rp… • S
 Isi utama laporan kemajuan dikemas dalam **berkas PDF**, terdiri dari **Daftar Isi**, **Bagian
 Inti**, dan **Lampiran**.
 
-| Bagian | Penomoran | Posisi |
-|---|---|---|
-| Daftar Isi dst. | Romawi i, ii, iii, … mulai dari **Daftar Isi** | Sudut **kanan bawah** |
-| Bagian Inti (Bab 1 s.d. Daftar Pustaka) — **maks. 10 halaman** | Arab 1, 2, 3, … mulai dari **Bab 1** | Sudut **kanan atas** |
-| Lampiran | Melanjutkan angka Arab | Sudut **kanan atas** |
+| Bagian                                                         | Penomoran                                      | Posisi                |
+| -------------------------------------------------------------- | ---------------------------------------------- | --------------------- |
+| Daftar Isi dst.                                                | Romawi i, ii, iii, … mulai dari **Daftar Isi** | Sudut **kanan bawah** |
+| Bagian Inti (Bab 1 s.d. Daftar Pustaka) — **maks. 10 halaman** | Arab 1, 2, 3, … mulai dari **Bab 1**           | Sudut **kanan atas**  |
+| Lampiran                                                       | Melanjutkan angka Arab                         | Sudut **kanan atas**  |
 
 - Nama berkas: **`namaketua_namaPT_PKM-KI.pdf`**, divalidasi **dosen pendamping**.
 - 🚨 **Tidak ada halaman sampul dan halaman pengesahan** pada berkas laporan kemajuan.
@@ -757,15 +770,15 @@ DAFTAR PUSTAKA
 LAMPIRAN
 ```
 
-| Bab | Isi yang Diminta |
-|---|---|
-| **BAB 1. PENDAHULUAN** | Gambaran tentang **sumber inspirasi tantangan intelektual** dalam mewujudkan produk karya inovatif sebagai **solusi permasalahan faktual dari target pengguna** |
-| **BAB 2. TARGET LUARAN** | Menguraikan **capaian target luaran** dari produk karya inovatif yang **sudah dikerjakan** |
-| **BAB 3. TAHAP PELAKSANAAN** | Tahap pelaksanaan mulai dari **penemuan ide**, **karakterisasi produk yang dilakukan**, **desain teknis** (luring), sampai **produksi dan pengujian yang telah dilakukan** |
-| **BAB 4. HASIL YANG DICAPAI** | **Kesesuaian jenis dan jumlah luaran** yang telah dihasilkan serta **persentase hasil terhadap keseluruhan target kegiatan** |
-| **BAB 5. POTENSI HASIL** | **Peluang perolehan Kekayaan Intelektual** atau sejenisnya dan/atau **prediksi manfaat** (sosial-ekonomi-pendidikan, dll.) bagi target pengguna |
-| **BAB 6. RENCANA TAHAPAN BERIKUTNYA** | **Upaya untuk pencapaian target 100%** kegiatan |
-| **DAFTAR PUSTAKA** | TNR 12 normal, spasi 1,15, rata kiri-kanan, *hanging indent*, **Harvard style** |
+| Bab                                   | Isi yang Diminta                                                                                                                                                           |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **BAB 1. PENDAHULUAN**                | Gambaran tentang **sumber inspirasi tantangan intelektual** dalam mewujudkan produk karya inovatif sebagai **solusi permasalahan faktual dari target pengguna**            |
+| **BAB 2. TARGET LUARAN**              | Menguraikan **capaian target luaran** dari produk karya inovatif yang **sudah dikerjakan**                                                                                 |
+| **BAB 3. TAHAP PELAKSANAAN**          | Tahap pelaksanaan mulai dari **penemuan ide**, **karakterisasi produk yang dilakukan**, **desain teknis** (luring), sampai **produksi dan pengujian yang telah dilakukan** |
+| **BAB 4. HASIL YANG DICAPAI**         | **Kesesuaian jenis dan jumlah luaran** yang telah dihasilkan serta **persentase hasil terhadap keseluruhan target kegiatan**                                               |
+| **BAB 5. POTENSI HASIL**              | **Peluang perolehan Kekayaan Intelektual** atau sejenisnya dan/atau **prediksi manfaat** (sosial-ekonomi-pendidikan, dll.) bagi target pengguna                            |
+| **BAB 6. RENCANA TAHAPAN BERIKUTNYA** | **Upaya untuk pencapaian target 100%** kegiatan                                                                                                                            |
+| **DAFTAR PUSTAKA**                    | TNR 12 normal, spasi 1,15, rata kiri-kanan, *hanging indent*, **Harvard style**                                                                                            |
 
 ### 11.4 Lampiran Laporan Kemajuan
 
@@ -782,12 +795,12 @@ LAMPIRAN
 Isi utama laporan akhir dikemas dalam **berkas PDF**, terdiri dari **Ringkasan**, **Daftar Isi**,
 **Bagian Inti**, dan **Lampiran**.
 
-| Bagian | Penomoran | Posisi |
-|---|---|---|
-| **RINGKASAN** | **Tanpa nomor halaman** | — |
-| Daftar Isi dst. | Romawi i, ii, iii, … mulai dari **Daftar Isi** | Sudut **kanan bawah** |
-| Bagian Inti (Bab Pendahuluan s.d. Daftar Pustaka) — **maks. 10 halaman** | Arab 1, 2, 3, … mulai dari **Bab Pendahuluan** | Sudut **kanan atas** |
-| Lampiran | Melanjutkan angka Arab | Sudut **kanan atas** |
+| Bagian                                                                   | Penomoran                                      | Posisi                |
+| ------------------------------------------------------------------------ | ---------------------------------------------- | --------------------- |
+| **RINGKASAN**                                                            | **Tanpa nomor halaman**                        | —                     |
+| Daftar Isi dst.                                                          | Romawi i, ii, iii, … mulai dari **Daftar Isi** | Sudut **kanan bawah** |
+| Bagian Inti (Bab Pendahuluan s.d. Daftar Pustaka) — **maks. 10 halaman** | Arab 1, 2, 3, … mulai dari **Bab Pendahuluan** | Sudut **kanan atas**  |
+| Lampiran                                                                 | Melanjutkan angka Arab                         | Sudut **kanan atas**  |
 
 - Nama berkas: **`namaketua_namaPT_PKM-KI.pdf`**, divalidasi **dosen pendamping**.
 - 🚨 **Tidak ada halaman sampul dan halaman pengesahan** pada berkas laporan akhir.
@@ -817,14 +830,14 @@ DAFTAR PUSTAKA
 LAMPIRAN
 ```
 
-| Bab | Isi yang Diminta |
-|---|---|
-| **BAB 1. PENDAHULUAN** | Gambaran **sumber inspirasi tantangan intelektual** dalam mewujudkan produk karya inovatif sebagai solusi permasalahan faktual dari **target pengguna** |
-| **BAB 2. TINJAUAN PUSTAKA** | **Kajian teori** produk inovatif fungsional siap pakai yang dikerjakan; **gambaran produk sejenis** yang pernah ada untuk **memposisikan orisinalitas karya**; **standar industri dan regulasi** yang jadi rujukan (jika ada) |
-| **BAB 3. TAHAP PELAKSANAAN** | Tahapan yang **telah dilakukan** dalam realisasi produk: **karakterisasi produk yang dibutuhkan** → **penyusunan spesifikasi produk dan desain teknis** → **proses produksi** → **uji coba dan demonstrasi final** |
-| **BAB 4. HASIL YANG DICAPAI DAN POTENSI KHUSUS** | Gambaran **produk fungsional siap operasi** yang telah dihasilkan, **fungsi dan cara kerjanya**, **keunggulan**, serta **uji kemanfaatan bagi target pengguna** |
-| **BAB 5. PENUTUP** | **Kesimpulan dan saran** yang **terkait langsung** dengan produk karya inovatif yang dihasilkan |
-| **DAFTAR PUSTAKA** | TNR 12 normal, spasi 1,15, rata kiri-kanan, *hanging indent*, **Harvard style** |
+| Bab                                              | Isi yang Diminta                                                                                                                                                                                                              |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **BAB 1. PENDAHULUAN**                           | Gambaran **sumber inspirasi tantangan intelektual** dalam mewujudkan produk karya inovatif sebagai solusi permasalahan faktual dari **target pengguna**                                                                       |
+| **BAB 2. TINJAUAN PUSTAKA**                      | **Kajian teori** produk inovatif fungsional siap pakai yang dikerjakan; **gambaran produk sejenis** yang pernah ada untuk **memposisikan orisinalitas karya**; **standar industri dan regulasi** yang jadi rujukan (jika ada) |
+| **BAB 3. TAHAP PELAKSANAAN**                     | Tahapan yang **telah dilakukan** dalam realisasi produk: **karakterisasi produk yang dibutuhkan** → **penyusunan spesifikasi produk dan desain teknis** → **proses produksi** → **uji coba dan demonstrasi final**            |
+| **BAB 4. HASIL YANG DICAPAI DAN POTENSI KHUSUS** | Gambaran **produk fungsional siap operasi** yang telah dihasilkan, **fungsi dan cara kerjanya**, **keunggulan**, serta **uji kemanfaatan bagi target pengguna**                                                               |
+| **BAB 5. PENUTUP**                               | **Kesimpulan dan saran** yang **terkait langsung** dengan produk karya inovatif yang dihasilkan                                                                                                                               |
+| **DAFTAR PUSTAKA**                               | TNR 12 normal, spasi 1,15, rata kiri-kanan, *hanging indent*, **Harvard style**                                                                                                                                               |
 
 ### 12.4 Lampiran Laporan Akhir
 
@@ -842,81 +855,81 @@ LAMPIRAN
 
 **Skala skor yang berlaku untuk SEMUA formulir:**
 
-| Skor | 1 | 2 | 3 | 5 | 6 | 7 |
-|---|---|---|---|---|---|---|
+| Skor      | 1     | 2             | 3      | 5     | 6    | 7           |
+| --------- | ----- | ------------- | ------ | ----- | ---- | ----------- |
 | **Makna** | Buruk | Sangat kurang | Kurang | Cukup | Baik | Sangat baik |
 
 > **Nilai = Bobot × Skor.** Perhatikan bahwa **skor 4 tidak digunakan**.
 
 ### 13.1 Formulir Penilaian Proposal (Total 100)
 
-| No | Kriteria | Bobot |
-|---|---|---|
-| 1 | **Kreativitas:** Urgensi Permasalahan, Cakupan Pengguna | **15** |
-| 2 | **Kreativitas Gagasan Solusi** (orisinalitas, *problem based*, *specific*, *measurable*) | **25** |
-| 3 | **Kesesuaian Tahap Pelaksanaan** | **15** |
-| 4 | **Potensi Produk** (dampak ekonomi nasional) | **10** |
-| 5 | **Ketepatan IPTEK, Standar, Regulasi dan Metode yang Digunakan** | **25** |
-| 6 | **Penjadwalan Kegiatan dan Personalia** (lengkap, jelas, dan personalianya sesuai) | **5** |
-| 7 | **Penyusunan Anggaran Biaya** (lengkap, rinci, wajar dan jelas peruntukannya) | **5** |
-| | **TOTAL** | **100** |
+| No  | Kriteria                                                                                 | Bobot   |
+| --- | ---------------------------------------------------------------------------------------- | ------- |
+| 1   | **Kreativitas:** Urgensi Permasalahan, Cakupan Pengguna                                  | **15**  |
+| 2   | **Kreativitas Gagasan Solusi** (orisinalitas, *problem based*, *specific*, *measurable*) | **25**  |
+| 3   | **Kesesuaian Tahap Pelaksanaan**                                                         | **15**  |
+| 4   | **Potensi Produk** (dampak ekonomi nasional)                                             | **10**  |
+| 5   | **Ketepatan IPTEK, Standar, Regulasi dan Metode yang Digunakan**                         | **25**  |
+| 6   | **Penjadwalan Kegiatan dan Personalia** (lengkap, jelas, dan personalianya sesuai)       | **5**   |
+| 7   | **Penyusunan Anggaran Biaya** (lengkap, rinci, wajar dan jelas peruntukannya)            | **5**   |
+|     | **TOTAL**                                                                                | **100** |
 
 > 💡 **Bobot terbesar (25 + 25 = 50%) ada pada Kreativitas Gagasan Solusi dan Ketepatan
 > IPTEK/Standar/Regulasi/Metode.** Prioritaskan kedua hal ini saat menulis proposal.
 
 ### 13.2 Formulir Penilaian Laporan Kemajuan Pelaksanaan (Total 100)
 
-| No | Kriteria | Bobot |
-|---|---|---|
-| 1 | Pendahuluan | **10** |
-| 2 | Target Luaran | **10** |
-| 3 | Tahap Pelaksanaan | **25** |
-| 4 | **Hasil yang Dicapai** | **30** |
-| 5 | Potensi Hasil | **15** |
-| 6 | **Publikasi dan/atau promosi melalui media sosial** | **5** |
-| 7 | Rencana Tahapan Berikutnya | **5** |
-| | **TOTAL** | **100** |
+| No  | Kriteria                                            | Bobot   |
+| --- | --------------------------------------------------- | ------- |
+| 1   | Pendahuluan                                         | **10**  |
+| 2   | Target Luaran                                       | **10**  |
+| 3   | Tahap Pelaksanaan                                   | **25**  |
+| 4   | **Hasil yang Dicapai**                              | **30**  |
+| 5   | Potensi Hasil                                       | **15**  |
+| 6   | **Publikasi dan/atau promosi melalui media sosial** | **5**   |
+| 7   | Rencana Tahapan Berikutnya                          | **5**   |
+|     | **TOTAL**                                           | **100** |
 
 ### 13.3 Formulir Penilaian PKP2 (Total 100)
 
-| No | Kriteria | Bobot |
-|---|---|---|
-| 1 | **Target Luaran** (kesesuaian luaran dan permasalahan) | **10** |
-| 2 | **Tahap Pelaksanaan** (ketepatan dan keberhasilan tahap pelaksanaan) | **20** |
-| 3 | **Tingkat Kreativitas dan Ketercapaian Target Luaran** (permasalahan, ketepatan solusi, kesesuaian jenis dan jumlah luaran, **kesesuaian dengan catatan harian**) | **35** |
-| 4 | **Kesesuaian Pelaksanaan dan Rencana Tahapan Berikutnya** (waktu pelaksanaan, bahan dan alat serta metode yang digunakan, personalia, biaya) | **10** |
-| 5 | **Kekompakan Tim Pelaksana dan Peranan Dosen Pendamping** (kerja sama, pembagian tugas, mengoreksi, memantau pelaksanaan, melayani konsultasi) | **10** |
-| 6 | **Potensi Khusus** (peluang kekayaan intelektual, peluang komersial) | **15** |
-| | **TOTAL** | **100** |
+| No  | Kriteria                                                                                                                                                          | Bobot   |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| 1   | **Target Luaran** (kesesuaian luaran dan permasalahan)                                                                                                            | **10**  |
+| 2   | **Tahap Pelaksanaan** (ketepatan dan keberhasilan tahap pelaksanaan)                                                                                              | **20**  |
+| 3   | **Tingkat Kreativitas dan Ketercapaian Target Luaran** (permasalahan, ketepatan solusi, kesesuaian jenis dan jumlah luaran, **kesesuaian dengan catatan harian**) | **35**  |
+| 4   | **Kesesuaian Pelaksanaan dan Rencana Tahapan Berikutnya** (waktu pelaksanaan, bahan dan alat serta metode yang digunakan, personalia, biaya)                      | **10**  |
+| 5   | **Kekompakan Tim Pelaksana dan Peranan Dosen Pendamping** (kerja sama, pembagian tugas, mengoreksi, memantau pelaksanaan, melayani konsultasi)                    | **10**  |
+| 6   | **Potensi Khusus** (peluang kekayaan intelektual, peluang komersial)                                                                                              | **15**  |
+|     | **TOTAL**                                                                                                                                                         | **100** |
 
 > 💡 Kriteria no. 3 (bobot **35**, terbesar) secara eksplisit menilai **kesesuaian dengan catatan
 > harian (Logbook)**. Logbook yang rapi dan konsisten sejak awal = nilai PKP2 yang aman.
 
 ### 13.4 Formulir Penilaian Laporan Akhir (Total 100)
 
-| No | Kriteria | Bobot |
-|---|---|---|
-| 1 | **Pendahuluan** (urgensi permasalahan dan potensi target pengguna) | **10** |
-| 2 | **Tinjauan Pustaka** (kajian teori dari tantangan intelektual, orisinalitas/produk sejenis, standar, dan regulasi yang diacu) | **20** |
-| 3 | **Tahap Pelaksanaan** (karakterisasi produk, desain teknis, proses produksi, uji coba) | **20** |
-| 4 | **Hasil yang Dicapai** (**sudah digunakan oleh pengguna**) dan mempunyai **potensi khusus** | **30** |
-| 5 | **Penutup** (kesimpulan dan saran) | **10** |
-| 6 | **Daftar Pustaka** (sesuai sitasi, mutakhir, relevan, sumber pustaka, jumlah pustaka) | **10** |
-| | **TOTAL** | **100** |
+| No  | Kriteria                                                                                                                      | Bobot   |
+| --- | ----------------------------------------------------------------------------------------------------------------------------- | ------- |
+| 1   | **Pendahuluan** (urgensi permasalahan dan potensi target pengguna)                                                            | **10**  |
+| 2   | **Tinjauan Pustaka** (kajian teori dari tantangan intelektual, orisinalitas/produk sejenis, standar, dan regulasi yang diacu) | **20**  |
+| 3   | **Tahap Pelaksanaan** (karakterisasi produk, desain teknis, proses produksi, uji coba)                                        | **20**  |
+| 4   | **Hasil yang Dicapai** (**sudah digunakan oleh pengguna**) dan mempunyai **potensi khusus**                                   | **30**  |
+| 5   | **Penutup** (kesimpulan dan saran)                                                                                            | **10**  |
+| 6   | **Daftar Pustaka** (sesuai sitasi, mutakhir, relevan, sumber pustaka, jumlah pustaka)                                         | **10**  |
+|     | **TOTAL**                                                                                                                     | **100** |
 
 > 💡 Kriteria no. 4 secara eksplisit menuntut bukti bahwa produk **sudah digunakan oleh
 > pengguna** — bukan sekadar selesai dibuat.
 
 ### 13.5 Formulir Penilaian Dokumen Teknis Produk (Total 100) — Khas PKM-KI
 
-| No | Kriteria | Bobot |
-|---|---|---|
-| 1 | **Deskripsi dan Fungsi Produk** | **15** |
-| 2 | **Diagram Rancangan Sistem, Spesifikasi Teknis, dan Daftar Komponen (*Bill of Materials*)** | **30** |
-| 3 | **Kejelasan Proses Produksi** | **15** |
-| 4 | **Kecukupan Hasil Pengujian dan Validasi** | **20** |
-| 5 | **Kejelasan dan Kelengkapan Cara Menggunakan Produk** | **20** |
-| | **TOTAL** | **100** |
+| No  | Kriteria                                                                                    | Bobot   |
+| --- | ------------------------------------------------------------------------------------------- | ------- |
+| 1   | **Deskripsi dan Fungsi Produk**                                                             | **15**  |
+| 2   | **Diagram Rancangan Sistem, Spesifikasi Teknis, dan Daftar Komponen (*Bill of Materials*)** | **30**  |
+| 3   | **Kejelasan Proses Produksi**                                                               | **15**  |
+| 4   | **Kecukupan Hasil Pengujian dan Validasi**                                                  | **20**  |
+| 5   | **Kejelasan dan Kelengkapan Cara Menggunakan Produk**                                       | **20**  |
+|     | **TOTAL**                                                                                   | **100** |
 
 ---
 
@@ -925,10 +938,10 @@ LAMPIRAN
 ### 14.1 Format Jadwal Kegiatan
 
 | No. | Jenis Kegiatan | Bulan 1 | Bulan 2 | Bulan 3 | Bulan 4 | Penanggung Jawab |
-|---|---|---|---|---|---|---|
-| 1 | Kegiatan 1 | | | | | |
-| 2 | Kegiatan 2 | | | | | |
-| 3 | … | | | | | |
+| --- | -------------- | ------- | ------- | ------- | ------- | ---------------- |
+| 1   | Kegiatan 1     |         |         |         |         |                  |
+| 2   | Kegiatan 2     |         |         |         |         |                  |
+| 3   | …              |         |         |         |         |                  |
 
 *Disusun sebagai bagan batang (bar chart); durasi **3–4 bulan**.*
 
@@ -936,40 +949,40 @@ LAMPIRAN
 
 **A. Identitas Diri**
 
-| No | Item | Isian |
-|---|---|---|
-| 1 | Nama Lengkap | |
-| 2 | Jenis Kelamin | Laki-laki / Perempuan |
-| 3 | Program Studi | |
-| 4 | NIM | |
-| 5 | Tempat dan Tanggal Lahir | |
-| 6 | Alamat E-mail | |
-| 7 | Nomor Telepon/HP | |
+| No  | Item                     | Isian                 |
+| --- | ------------------------ | --------------------- |
+| 1   | Nama Lengkap             |                       |
+| 2   | Jenis Kelamin            | Laki-laki / Perempuan |
+| 3   | Program Studi            |                       |
+| 4   | NIM                      |                       |
+| 5   | Tempat dan Tanggal Lahir |                       |
+| 6   | Alamat E-mail            |                       |
+| 7   | Nomor Telepon/HP         |                       |
 
 **B. Kegiatan Kemahasiswaan yang Sedang/Pernah Diikuti**
 
-| No | Jenis Kegiatan | Status dalam Kegiatan | Waktu dan Tempat |
-|---|---|---|---|
-| 1 | | | |
-| 2 | | | |
-| 3 | | | |
+| No  | Jenis Kegiatan | Status dalam Kegiatan | Waktu dan Tempat |
+| --- | -------------- | --------------------- | ---------------- |
+| 1   |                |                       |                  |
+| 2   |                |                       |                  |
+| 3   |                |                       |                  |
 
 **C. Penghargaan yang Pernah Diterima**
 
-| No | Jenis Penghargaan | Pihak Pemberi Penghargaan | Tahun |
-|---|---|---|---|
-| 1 | | | |
-| 2 | | | |
+| No  | Jenis Penghargaan | Pihak Pemberi Penghargaan | Tahun |
+| --- | ----------------- | ------------------------- | ----- |
+| 1   |                   |                           |       |
+| 2   |                   |                           |       |
 
 **Pernyataan penutup (wajib disalin apa adanya):**
 
 > Semua data yang saya isikan dan tercantum dalam biodata ini adalah benar dan dapat
 > dipertanggungjawabkan secara hukum. Apabila di kemudian hari ternyata dijumpai ketidaksesuaian
 > dengan kenyataan, saya sanggup menerima sanksi.
->
+> 
 > Demikian biodata ini saya buat dengan sebenarnya untuk memenuhi salah satu persyaratan dalam
 > pengajuan PKM-KI.
->
+> 
 > *(rata kanan)* Kota, tanggal-bulan-tahun — Ketua/Anggota Tim — Tanda tangan (asli TT basah) —
 > (Nama Lengkap) — NIM
 
@@ -977,57 +990,57 @@ LAMPIRAN
 
 **A. Identitas Diri**
 
-| No | Item | Isian |
-|---|---|---|
-| 1 | Nama Lengkap (dengan gelar) | |
-| 2 | Jenis Kelamin | Laki-laki / Perempuan |
-| 3 | Program Studi | |
-| 4 | **NIP/NUPTK** | |
-| 5 | Tempat dan Tanggal Lahir | |
-| 6 | Alamat E-mail | |
-| 7 | Nomor Telepon/HP | |
+| No  | Item                        | Isian                 |
+| --- | --------------------------- | --------------------- |
+| 1   | Nama Lengkap (dengan gelar) |                       |
+| 2   | Jenis Kelamin               | Laki-laki / Perempuan |
+| 3   | Program Studi               |                       |
+| 4   | **NIP/NUPTK**               |                       |
+| 5   | Tempat dan Tanggal Lahir    |                       |
+| 6   | Alamat E-mail               |                       |
+| 7   | Nomor Telepon/HP            |                       |
 
 **B. Riwayat Pendidikan**
 
-| No | Jenjang | Bidang Ilmu | Institusi | Tahun Lulus |
-|---|---|---|---|---|
-| 1 | Sarjana (S-1) | | | |
-| 2 | Magister (S-2) | | | |
-| 3 | Doktor (S-3) | | | |
+| No  | Jenjang        | Bidang Ilmu | Institusi | Tahun Lulus |
+| --- | -------------- | ----------- | --------- | ----------- |
+| 1   | Sarjana (S-1)  |             |           |             |
+| 2   | Magister (S-2) |             |           |             |
+| 3   | Doktor (S-3)   |             |           |             |
 
 **C. Rekam Jejak Tri Dharma PT**
 
 *Pendidikan/Pengajaran*
 
-| No | Nama Mata Kuliah | Wajib/Pilihan | SKS |
-|---|---|---|---|
-| 1 | | | |
-| 2 | | | |
+| No  | Nama Mata Kuliah | Wajib/Pilihan | SKS |
+| --- | ---------------- | ------------- | --- |
+| 1   |                  |               |     |
+| 2   |                  |               |     |
 
 *Penelitian*
 
-| No | Judul Penelitian | Penyandang Dana | Tahun |
-|---|---|---|---|
-| 1 | | | |
-| 2 | | | |
+| No  | Judul Penelitian | Penyandang Dana | Tahun |
+| --- | ---------------- | --------------- | ----- |
+| 1   |                  |                 |       |
+| 2   |                  |                 |       |
 
 *Pengabdian Kepada Masyarakat*
 
-| No | Judul Pengabdian kepada Masyarakat | Penyandang Dana | Tahun |
-|---|---|---|---|
-| 1 | | | |
-| 2 | | | |
+| No  | Judul Pengabdian kepada Masyarakat | Penyandang Dana | Tahun |
+| --- | ---------------------------------- | --------------- | ----- |
+| 1   |                                    |                 |       |
+| 2   |                                    |                 |       |
 
 Ditutup dengan pernyataan yang sama seperti biodata mahasiswa, ditandatangani **Dosen
 Pendamping**, dengan **NUPTK**.
 
 ### 14.4 Susunan Tim Pengusul dan Pembagian Tugas
 
-| No | Nama / NIM | Program Studi | Bidang Ilmu | Alokasi Waktu (jam/minggu) | Uraian Tugas |
-|---|---|---|---|---|---|
-| 1 | | | | | |
-| 2 | | | | | |
-| 3 | | | | | |
+| No  | Nama / NIM | Program Studi | Bidang Ilmu | Alokasi Waktu (jam/minggu) | Uraian Tugas |
+| --- | ---------- | ------------- | ----------- | -------------------------- | ------------ |
+| 1   |            |               |             |                            |              |
+| 2   |            |               |             |                            |              |
+| 3   |            |               |             |                            |              |
 
 ### 14.5 Surat Pernyataan Ketua Tim Pengusul
 
@@ -1082,6 +1095,7 @@ sehingga penilai dapat membayangkan **wujud skala penuh (1:1)** produk akhir.
 ## 15. Format Daftar Pustaka (Harvard Style)
 
 **Aturan umum:**
+
 - Sistem **Harvard (*author–date*)**: nama penulis + tahun publikasi, urutan **alfabetis**
   berdasarkan nama penulis.
 - Publikasi dari **penulis sama & tahun sama** → tambahkan huruf `a`, `b`, `c` … tepat di
@@ -1094,6 +1108,7 @@ sehingga penilai dapat membayangkan **wujud skala penuh (1:1)** produk akhir.
 ### Contoh Format (mengikuti UCD Library, 2022)
 
 **Buku — penulis tunggal**
+
 ```
 Nama belakang, Nama depan disingkat. (Tahun) Judul Buku. Edisi. Tempat Publikasi: Penerbit.
 
@@ -1101,6 +1116,7 @@ McLeskey, J. (2013) Inclusion: effective practice for all students? 2nd edn. Lon
 ```
 
 **Buku — lebih dari satu penulis**
+
 ```
 Shalloway, A., Murphy T. and Trott, J. (2001) Design patterns explained: a new perspective
       on object-oriented design. London: Addison Wesley.
@@ -1111,6 +1127,7 @@ Hodges, N.J. and Link, A.N. (2018) Knowledge-Intensive Entrepreneurship: An Anal
 ```
 
 **Penulis berupa instansi/lembaga**
+
 ```
 Department of Agriculture, Food and Rural Development (2000) Pedigree sheep breed improvement
       programme: performance results for lambs summer 2000. Cavan: Department of Agriculture,
@@ -1118,6 +1135,7 @@ Department of Agriculture, Food and Rural Development (2000) Pedigree sheep bree
 ```
 
 **Publikasi lembaga pemerintah**
+
 ```
 Department of Health & Children (2006) 'A vision for change' report of the expert group on
       mental health policy'. Dublin: Stationery Office. Tersedia di:
@@ -1125,12 +1143,14 @@ Department of Health & Children (2006) 'A vision for change' report of the exper
 ```
 
 **Bab dalam buku (*book chapter*)**
+
 ```
 Rose, H. (2000) 'Risk, trust and scepticism in the age of the new genetics', in Adam, B.,
       Beck, U., Loon, J.V. (eds.) Risk Society and Beyond. London: Sage, pp. 77-80.
 ```
 
 **Buku elektronik**
+
 ```
 Luhr, W. (2004) The Coen brothers' Fargo. Cambridge University Press film handbooks series.
       Tersedia di: http://www.amazon.co.uk/Coen-Brothers-Fargo-Cambridge-Handbooks-ebook/...
@@ -1138,16 +1158,19 @@ Luhr, W. (2004) The Coen brothers' Fargo. Cambridge University Press film handbo
 ```
 
 **Teks kuno yang diterjemahkan**
+
 ```
 Sophocles (1999) Antigone. Translated by Mark Griffith. Cambridge: Cambridge University Press.
 ```
 
 **Buku terjemahan**
+
 ```
 Kafka, F. (2016) Metamorphosis. Translated by M. Hoffman. London: Penguin Books.
 ```
 
 **Artikel jurnal (penulis tunggal)**
+
 ```
 Nama belakang, Nama depan disingkat. (Tahun) 'Judul Artikel', Judul Jurnal, Volume(Edisi),
       hlm. nomor halaman.
@@ -1176,18 +1199,29 @@ Nama belakang, Nama depan disingkat. (Tahun) 'Judul Artikel', Judul Jurnal, Volu
 ### 16.2 Checklist Sebelum Unggah Proposal
 
 **Substansi**
+
 - [ ] Judul **≤ 20 kata**, huruf kapital, Bahasa Indonesia, tanpa akronim tidak baku
+
 - [ ] Judul **selaras dengan salah satu dari 10 tema PKM 2026**
+
 - [ ] Bab 1 memuat **permasalahan faktual + urgensi + target pengguna spesifik + luaran PKM-KI**
+
 - [ ] Bab 1 menegaskan teknologi manufaktur **sudah dikuasai** (tanpa riset / *trial and error*)
+
 - [ ] Bab 2 memuat **produk sejenis + perbedaan/orisinalitas + standar & regulasi** (jika ada)
+
 - [ ] Bab 3 memuat **ide → karakterisasi → desain teknis → produksi → pengujian**, **luring**,
+  
       lengkap dengan **metode, material, perangkat, dan fasilitas berizin**
+
 - [ ] Produk yang dijanjikan adalah **skala penuh 1:1**, bukan prototipe/desain teknis saja
+
 - [ ] Ada rencana **pengujian dan validasi** yang membuktikan kesiapan operasional
+
 - [ ] Ada argumen **potensi produksi massal / hilirisasi / potensi pasar**
 
 **Anggaran & Jadwal**
+
 - [ ] Total dana Belmawa **Rp 6.000.000 – Rp 8.000.000**
 - [ ] Dana pendamping PT **ada** (maks. Rp 2.000.000), surat komitmen tersedia
 - [ ] Komposisi **≥ 80% operasional / ≤ 20% administrasi**
@@ -1198,6 +1232,7 @@ Nama belakang, Nama depan disingkat. (Tahun) 'Judul Artikel', Judul Jurnal, Volu
 - [ ] Jadwal **3–4 bulan**, bentuk **bar chart**, ada **penanggung jawab** tiap kegiatan
 
 **Administrasi**
+
 - [ ] Tim **3–5 mahasiswa**, 1 ketua + 2–4 anggota, **satu PT**
 - [ ] Disarankan **minimum 2 angkatan berbeda**
 - [ ] Setiap anggota **hanya ikut 1 proposal PKM** tahun ini
@@ -1212,17 +1247,29 @@ Nama belakang, Nama depan disingkat. (Tahun) 'Judul Artikel', Judul Jurnal, Volu
 ### 16.3 Checklist Setelah Didanai
 
 - [ ] **Logbook diisi rutin sejak penandatanganan perjanjian** (catatan kegiatan + catatan keuangan)
+
 - [ ] Bukti tiap kegiatan ≤ 1 MB; bukti tiap transaksi ≤ 1 MB
+
 - [ ] **Akun media sosial dibuat**, nama terkait topik, profil memuat topik + program PKM
+
 - [ ] Akun **publik, aktif, tidak dikunci**; tautan dientri di `simbelmawa/pkm-akun`
+
 - [ ] Setiap unggahan: **logo Kemdiktisaintek + logo PKM**, tagar `#pkm #pkm2026 #pkmpendanaan2026`
+
 - [ ] Instagram: tag `@kemahasiswaan.dikti @belmawa.dikti @ditjen.dikti @kemdiktisaintek.ri`
+
 - [ ] **3 unggahan diberi Ads** sesuai jadwal 23 Mei / 20 Juni / 8 Agustus 2026
+
 - [ ] Total Ads **≤ Rp 500.000**
+
 - [ ] **Laporan Kemajuan** + **draf Dokumen Teknis** (lampiran terakhir) diunggah & divalidasi
+
 - [ ] Jumlah *followers* dan jumlah unggahan diisi saat unggah laporan kemajuan & akhir
+
 - [ ] **PKP2:** presentasi siap + **produk sementara dipamerkan** + Logbook lengkap
+
 - [ ] **Laporan Akhir** + **Dokumen Teknis lengkap** (+ rancangan manufaktur, uji produk, demo)
+  
       diunggah tepat waktu → **syarat pencairan dana tahap akhir**
 
 ---
@@ -1280,16 +1327,17 @@ Nama belakang, Nama depan disingkat. (Tahun) 'Judul Artikel', Judul Jurnal, Volu
 
 ### 18.1 Ketentuan Berkas
 
-| Jenis Berkas | Ukuran Maksimum |
-|---|---|
-| Proposal, Laporan Kemajuan, Laporan Akhir (PDF) | **5 MB** |
-| Catatan harian (Logbook) — per kegiatan | **1 MB** |
-| Bukti penggunaan dana (kuitansi/nota/bukti keuangan lain) — per transaksi | **1 MB** |
-| Berita Acara Evaluasi Internal + surat komitmen pendanaan (gabungan 1 PDF) | **3 MB** |
+| Jenis Berkas                                                               | Ukuran Maksimum |
+| -------------------------------------------------------------------------- | --------------- |
+| Proposal, Laporan Kemajuan, Laporan Akhir (PDF)                            | **5 MB**        |
+| Catatan harian (Logbook) — per kegiatan                                    | **1 MB**        |
+| Bukti penggunaan dana (kuitansi/nota/bukti keuangan lain) — per transaksi  | **1 MB**        |
+| Berita Acara Evaluasi Internal + surat komitmen pendanaan (gabungan 1 PDF) | **3 MB**        |
 
 ### 18.2 Empat Pengguna Simbelmawa/PKM
 
 **A. Operator Perguruan Tinggi**
+
 1. Mengetahui **kuota Klaster PT** dan mengunggah **Berita Acara Evaluasi Internal PT**
 2. **Mendaftarkan judul, ketua tim pengusul, dosen pendamping**, dan **memilih salah satu dari
    10 tema** yang sesuai dengan judul PKM
@@ -1298,6 +1346,7 @@ Nama belakang, Nama depan disingkat. (Tahun) 'Judul Artikel', Judul Jurnal, Volu
 5. Memonitor perkembangan pelaksanaan PKM mahasiswa
 
 **B. Mahasiswa Pengusul**
+
 1. Mengisi/entri **kelengkapan usulan proposal**
 2. Mengunggah **halaman utama proposal** (daftar isi, halaman inti, lampiran)
 3. Memperbarui **tautan akun media sosial** di profil simbelmawa (bagi peraih pendanaan)
@@ -1310,10 +1359,12 @@ Nama belakang, Nama depan disingkat. (Tahun) 'Judul Artikel', Judul Jurnal, Volu
 10. Mengunggah **luaran PKM**
 
 **C. Pimpinan PT Bidang Kemahasiswaan**
+
 1. **Memvalidasi dan mengesahkan proposal**
 2. Memonitor perkembangan pelaksanaan PKM mahasiswa
 
 **D. Dosen Pendamping**
+
 1. **Memvalidasi** proposal, catatan kegiatan, catatan keuangan, laporan kemajuan, laporan akhir,
    dan luaran PKM
 2. Memonitor perkembangan pelaksanaan PKM mahasiswa
@@ -1363,17 +1414,17 @@ Nama belakang, Nama depan disingkat. (Tahun) 'Judul Artikel', Judul Jurnal, Volu
 
 ## Lampiran: Perbedaan Cepat Proposal vs Laporan Kemajuan vs Laporan Akhir
 
-| Aspek | **Proposal** | **Laporan Kemajuan** | **Laporan Akhir** |
-|---|---|---|---|
-| **Ringkasan/Abstrak** | ❌ **DILARANG** (gugur Tahap 1) | ❌ Tidak ada | ✅ **WAJIB** (tanpa nomor halaman) |
-| **Halaman sampul & pengesahan** | ❌ Tidak ada | ❌ Tidak ada | ❌ Tidak ada |
-| **Jumlah bab inti** | 4 bab | **6 bab** | **5 bab** |
-| **Struktur bab** | Pendahuluan • Tinjauan Pustaka • Tahap Pelaksanaan • Biaya & Jadwal | Pendahuluan • Target Luaran • Tahap Pelaksanaan • Hasil yang Dicapai • Potensi Hasil • Rencana Tahapan Berikutnya | Pendahuluan • Tinjauan Pustaka • Tahap Pelaksanaan • Hasil yang Dicapai & Potensi Khusus • Penutup |
-| **Maks. halaman inti** | 10 | 10 | 10 |
-| **Lampiran utama** | 6 lampiran (biodata, justifikasi anggaran, susunan tim, surat pernyataan, gambaran konsep, uji similaritas) | 3 lampiran (penggunaan dana, bukti pendukung, **draf dokumen teknis**) | 2 lampiran (penggunaan dana + bukti, bukti pendukung termasuk dokumentasi manufaktur, detail produk, cara instalasi & kerja) |
-| **Dokumen teknis** | — (baru berupa "Gambaran Konsep") | **Draf** dokumen desain teknis | **Lengkap** + rancangan manufaktur + uji produk + demo penggunaan |
-| **Validator** | Dosen Pendamping **+ Pimpinan PT** | Dosen Pendamping | Dosen Pendamping |
-| **Bobot dalam NA** | **30% (NP)** | **20% (NLK)** | Dinilai dengan Formulir Penilaian Laporan Akhir |
+| Aspek                           | **Proposal**                                                                                                | **Laporan Kemajuan**                                                                                              | **Laporan Akhir**                                                                                                            |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| **Ringkasan/Abstrak**           | ❌ **DILARANG** (gugur Tahap 1)                                                                              | ❌ Tidak ada                                                                                                       | ✅ **WAJIB** (tanpa nomor halaman)                                                                                            |
+| **Halaman sampul & pengesahan** | ❌ Tidak ada                                                                                                 | ❌ Tidak ada                                                                                                       | ❌ Tidak ada                                                                                                                  |
+| **Jumlah bab inti**             | 4 bab                                                                                                       | **6 bab**                                                                                                         | **5 bab**                                                                                                                    |
+| **Struktur bab**                | Pendahuluan • Tinjauan Pustaka • Tahap Pelaksanaan • Biaya & Jadwal                                         | Pendahuluan • Target Luaran • Tahap Pelaksanaan • Hasil yang Dicapai • Potensi Hasil • Rencana Tahapan Berikutnya | Pendahuluan • Tinjauan Pustaka • Tahap Pelaksanaan • Hasil yang Dicapai & Potensi Khusus • Penutup                           |
+| **Maks. halaman inti**          | 10                                                                                                          | 10                                                                                                                | 10                                                                                                                           |
+| **Lampiran utama**              | 6 lampiran (biodata, justifikasi anggaran, susunan tim, surat pernyataan, gambaran konsep, uji similaritas) | 3 lampiran (penggunaan dana, bukti pendukung, **draf dokumen teknis**)                                            | 2 lampiran (penggunaan dana + bukti, bukti pendukung termasuk dokumentasi manufaktur, detail produk, cara instalasi & kerja) |
+| **Dokumen teknis**              | — (baru berupa "Gambaran Konsep")                                                                           | **Draf** dokumen desain teknis                                                                                    | **Lengkap** + rancangan manufaktur + uji produk + demo penggunaan                                                            |
+| **Validator**                   | Dosen Pendamping **+ Pimpinan PT**                                                                          | Dosen Pendamping                                                                                                  | Dosen Pendamping                                                                                                             |
+| **Bobot dalam NA**              | **30% (NP)**                                                                                                | **20% (NLK)**                                                                                                     | Dinilai dengan Formulir Penilaian Laporan Akhir                                                                              |
 
 ---
 

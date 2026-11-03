@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dengar lewat HP — I-Sora</title>
+<link rel="stylesheet" href="/tokens.css">
+<style>
+  /* Same layout language as buttons.html: shared WCAG-AA tokens, ≥48px targets. */
+  .wrap { max-width: 640px; margin: 0 auto; padding: var(--s-4) var(--s-4) var(--s-12); }
+  header.top { margin-bottom: var(--s-4); }
+  header.top h1 { font-size: var(--t-xl); margin: 0; line-height: 1.15; }
+  header.top .sub { color: var(--ink-2); font-size: var(--t-sm); margin: 6px 0 0; }
+  .back { display: inline-block; margin-bottom: var(--s-3); color: var(--accent); font-weight: 700; text-decoration: none; }
+
+  section.card { padding: var(--s-4); margin-bottom: var(--s-4); }
+  section.card > h2 { font-size: var(--t-sm); text-transform: uppercase; letter-spacing: .5px; color: var(--ink-3); margin: 0 0 var(--s-3); font-weight: 700; }
+
+  ol.steps { margin: 0; padding-left: 1.3em; line-height: 1.55; }
+  ol.steps li + li { margin-top: var(--s-2); }
+
+  #go { width: 100%; min-height: 88px; font-size: var(--t-lg); font-weight: 800; }
+  #go.on { background: var(--danger); border-color: var(--danger); color: #fff; }
+
+  .state { display: flex; align-items: center; gap: var(--s-2); margin-top: var(--s-3); font-weight: 700; }
+  .state .dot { width: 14px; height: 14px; }
+
+  .seg { display: flex; gap: var(--s-2); }
+  .seg .btn { flex: 1 1 0; min-height: 64px; flex-direction: column; gap: 2px; line-height: 1.2; }
+  .seg .btn .s2 { font-size: var(--t-xs); font-weight: 600; opacity: .85; }
+  .seg .btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .caption { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-md); padding: var(--s-3); min-height: 52px; font-size: var(--t-md); line-height: 1.35; }
+  .hint { color: var(--ink-2); font-size: var(--t-sm); margin: var(--s-3) 0 0; line-height: 1.5; }
+  #awake { display: none; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Lompat ke konten</a>
+<div class="wrap">
+
+<a class="back" href="/">← Kontrol perangkat</a>
+<header class="top">
+  <h1>Dengar lewat HP</h1>
+  <p class="sub">Suara I-Sora diputar di HP ini, dan dari HP ke earphone atau speaker Bluetooth yang sedang tersambung.</p>
+</header>
+
+<main id="main">
+
+<section class="card" aria-labelledby="h-go">
+  <h2 id="h-go">Suara di HP</h2>
+  <button class="btn btn--primary" id="go" onclick="toggle()">Mulai dengarkan</button>
+  <p class="state" role="status" aria-live="polite">
+    <span class="dot" id="dot" aria-hidden="true"></span><span id="stateTxt">Belum mulai</span>
+  </p>
+  <p class="hint" id="awake">
+    Atur layar HP supaya tidak mati sendiri selama dipakai. Kalau layar mati,
+    suara kembali ke speaker kacamata dalam beberapa detik.
+  </p>
+</section>
+
+<section class="card" aria-labelledby="h-spk">
+  <h2 id="h-spk">Speaker kacamata</h2>
+  <div class="seg" role="group" aria-label="Speaker kacamata saat HP mendengarkan">
+    <button class="btn" id="mQuiet" aria-pressed="true" onclick="setMute(true)">
+      Diam<span class="s2">hanya HP yang bunyi</span>
+    </button>
+    <button class="btn" id="mBoth" aria-pressed="false" onclick="setMute(false)">
+      Ikut bunyi<span class="s2">HP dan kacamata</span>
+    </button>
+  </div>
+  <p class="hint">Begitu halaman ini ditutup atau HP terputus, speaker kacamata bunyi lagi dengan sendirinya.</p>
+</section>
+
+<section class="card" aria-labelledby="h-cap">
+  <h2 id="h-cap">Terakhir diucapkan</h2>
+  <div class="caption" id="caption">—</div>
+</section>
+
+<section class="card" aria-labelledby="h-how">
+  <h2 id="h-how">Cara pakai</h2>
+  <ol class="steps">
+    <li>Sambungkan earphone atau speaker Bluetooth ke HP seperti biasa, lewat pengaturan Bluetooth HP.</li>
+    <li>Pastikan HP dan kacamata di WiFi yang sama. Paling mudah: kacamata tersambung ke hotspot HP ini.</li>
+    <li>Tekan <b>Mulai dengarkan</b>. Volume diatur dari tombol volume HP.</li>
+  </ol>
+</section>
+
+</main>
+</div>
+
+<script>
+var $ = function (id) { return document.getElementById(id); };
+
+function store(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+
+var client = load('isora_listen_client');
+if (!client) {
+  client = Math.random().toString(36).slice(2, 10) + '-' + Date.now().toString(36);
+  store('isora_listen_client', client);
+}
+
+var muteDevice = load('isora_listen_mute') !== '0';
+var running = false;   // user wants audio
+var loopGen = 0;       // bumps when a poll loop must stop
+var since = -1;
+var ctx = null;
+var queue = [];        // promises of decoded clips, in spoken order
+var playing = false;
+var current = null;    // AudioBufferSourceNode now sounding
+var playGen = 0;       // bumps on "stop": everything older is dropped
+var wakeLock = null;
+
+function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+function setState(kind, text) {
+  $('dot').className = 'dot' + (kind === 'ok' ? ' dot--ok' : kind === 'bad' ? ' dot--danger' : '');
+  $('stateTxt').textContent = text;
+}
+
+function renderMute() {
+  $('mQuiet').setAttribute('aria-pressed', muteDevice ? 'true' : 'false');
+  $('mBoth').setAttribute('aria-pressed', muteDevice ? 'false' : 'true');
+}
+
+function setMute(on) {
+  muteDevice = !!on;
+  store('isora_listen_mute', muteDevice ? '1' : '0');
+  renderMute();
+}
+
+function decode(buf) {
+  // Callback form: older Safari has no promise-returning decodeAudioData.
+  return new Promise(function (res, rej) { ctx.decodeAudioData(buf, res, rej); });
+}
+
+function fetchClip(id, gen) {
+  return fetch('/listen/clip/' + id + '.wav', { cache: 'no-store' })
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+    .then(decode)
+    .then(function (b) { return { buf: b, gen: gen }; })
+    .catch(function () { return null; });     // expired or broken clip: skip it
+}
+
+function pump() {
+  if (playing || !queue.length) return;
+  playing = true;
+  var next = queue.shift();
+  next.then(function (item) {
+    if (!item || item.gen !== playGen || !running) { playing = false; pump(); return; }
+    var src = ctx.createBufferSource();
+    src.buffer = item.buf;
+    src.connect(ctx.destination);
+    src.onended = function () { if (current === src) current = null; playing = false; pump(); };
+    current = src;
+    src.start();
+  });
+}
+
+function stopAll() {
+  playGen++;
+  queue = [];
+  if (current) { try { current.stop(); } catch (e) {} current = null; }
+}
+
+function handle(ev) {
+  if (ev.type === 'stop') { stopAll(); return; }
+  if (ev.type === 'clip') {
+    queue.push(fetchClip(ev.id, playGen));
+    pump();
+    if (ev.text) $('caption').textContent = ev.text;
+  }
+}
+
+async function pollLoop() {
+  var my = ++loopGen;
+  var failures = 0;
+  while (running && my === loopGen) {
+    try {
+      var r = await fetch('/listen/poll?client=' + client + '&since=' + since +
+                          '&mute=' + (muteDevice ? 1 : 0), { cache: 'no-store' });
+      if (!r.ok) throw new Error(r.status);
+      var j = await r.json();
+      if (my !== loopGen) return;
+      failures = 0;
+      setState('ok', j.device_muted ? 'Mendengarkan. Speaker kacamata diam.'
+                                    : 'Mendengarkan. Speaker kacamata ikut bunyi.');
+      for (var i = 0; i < j.events.length; i++) handle(j.events[i]);
+      since = j.seq;
+    } catch (e) {
+      failures++;
+      setState('bad', 'Terputus dari kacamata, mencoba lagi…');
+      await sleep(Math.min(5000, 500 * failures));
+    }
+  }
+}
+
+async function keepAwake() {
+  // Wake Lock exists only on secure (HTTPS) pages; this page is plain HTTP on
+  // the LAN, so on most phones the hint below is the real answer.
+  try {
+    if (navigator.wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); return; }
+  } catch (e) {}
+  $('awake').style.display = 'block';
+}
+
+async function start() {
+  var AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) { setState('bad', 'Browser ini tidak bisa memutar suara.'); return; }
+  ctx = ctx || new AC();
+  try { await ctx.resume(); } catch (e) {}
+  running = true;
+  since = -1;
+  $('go').textContent = 'Berhenti';
+  $('go').classList.add('on');
+  setState('', 'Menyambung ke kacamata…');
+  keepAwake();
+  pollLoop();
+}
+
+function leave() {
+  var body = JSON.stringify({ client: client });
+  if (navigator.sendBeacon) navigator.sendBeacon('/listen/leave', body);
+  else fetch('/listen/leave', { method: 'POST', body: body, keepalive: true });
+}
+
+function stop() {
+  running = false;
+  loopGen++;
+  stopAll();
+  leave();
+  if (wakeLock) { try { wakeLock.release(); } catch (e) {} wakeLock = null; }
+  $('go').textContent = 'Mulai dengarkan';
+  $('go').classList.remove('on');
+  setState('', 'Berhenti. Suara kembali ke speaker kacamata.');
+}
+
+function toggle() { if (running) stop(); else start(); }
+
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'visible' && ctx && running) {
+    try { ctx.resume(); } catch (e) {}
+  }
+});
+window.addEventListener('pagehide', function () { if (running) leave(); });
+
+renderMute();
+</script>
+</body>
+</html>

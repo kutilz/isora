@@ -14,7 +14,6 @@ import { detectMoney, loadMoneyModel, scanBand, type MoneyModel } from "@/lib/si
 import { qrisPhrase, scanQr } from "@/lib/sim/qris";
 import { SimAudio, type AudioMode } from "@/lib/sim/audio";
 import { DescribeError, describeScene, forgetStoredKey } from "@/lib/sim/describe";
-import { DESCRIBE_HOURS_LABEL } from "@/lib/sim/hours";
 import { positionFromBbox, type Tier } from "@/lib/sim/vision";
 
 type Mode = "penjelajah" | "qris" | "rupiah";
@@ -23,7 +22,6 @@ type Status = "idle" | "starting" | "running" | "error";
 type LogKind = "nav" | "near" | "system" | "ai" | "qris";
 type LogItem = { id: number; at: string; text: string; kind: LogKind };
 
-const LONG_PRESS_MS = 800;
 const LOG_MAX = 40;
 /** The permission prompt has no deadline, so past this we offer a retry beside it. */
 const SLOW_START_MS = 15_000;
@@ -83,7 +81,6 @@ export default function SimulasiClient() {
   const [debug, setDebug] = useState(false);
   const [stats, setStats] = useState({ ms: 0, count: 0 });
   const [detections, setDetections] = useState<Detection[]>([]);
-  const [holding, setHolding] = useState(false);
   const [describing, setDescribing] = useState(false);
 
   // The button arrives in the prerendered HTML, before it can do anything. On a
@@ -489,8 +486,6 @@ export default function SimulasiClient() {
 
   // ─── the single physical button ───────────────────────────────────────────
 
-  const pressTimer = useRef<number | null>(null);
-  const longFired = useRef(false);
 
   const describe = useCallback(async () => {
     const video = videoRef.current;
@@ -520,26 +515,10 @@ export default function SimulasiClient() {
     }
   }, [say]);
 
-  const onPressStart = () => {
+  /** Read the scene out now, bypassing cooldown and cap. */
+  const repeat = () => {
     if (status !== "running") return;
-    longFired.current = false;
-    setHolding(true);
-    pressTimer.current = window.setTimeout(() => {
-      longFired.current = true;
-      setHolding(false);
-      navigator.vibrate?.(30);
-      void describe();
-    }, LONG_PRESS_MS);
-  };
-
-  /** @param commit false when the pointer slid off or was cancelled. */
-  const onPressEnd = (commit: boolean) => {
-    if (pressTimer.current !== null) window.clearTimeout(pressTimer.current);
-    pressTimer.current = null;
-    setHolding(false);
-    if (!commit || status !== "running" || longFired.current) return;
     navigator.vibrate?.(15);
-    // Short press = read the scene out now, bypassing cooldown and cap.
     forceRef.current = true;
   };
 
@@ -628,7 +607,7 @@ export default function SimulasiClient() {
           {!running && (
             <div className="sim-stage__idle">
               <p style={{ margin: 0, fontSize: "var(--t-md)", fontWeight: 700 }}>
-                {starting ? "Membuka kamera…" : "Arahkan kamera belakang ke sekitarmu"}
+                {starting ? "Membuka kamera…" : "Arahkan kamera belakang ke sekitar"}
               </p>
               <p style={{ margin: "var(--s-3) 0 0", color: "#C9CEEA" }}>
                 {starting
@@ -664,24 +643,31 @@ export default function SimulasiClient() {
           </button>
         ) : (
           <>
-            <button
-              className="sim-button"
-              data-holding={holding}
-              onPointerDown={onPressStart}
-              onPointerUp={() => onPressEnd(true)}
-              onPointerLeave={() => onPressEnd(false)}
-              onPointerCancel={() => onPressEnd(false)}
-              onContextMenu={(e) => e.preventDefault()}
-              disabled={describing}
-            >
-              {describing
-                ? "Sedang memproses…"
-                : holding
-                  ? "Tahan terus untuk menjelaskan…"
-                  : "Tombol I-Sora — tekan sebentar: ulangi · tekan lama: jelaskan sekitar"}
-            </button>
+            <div className="sim-actions">
+              <button className="sim-button" onClick={repeat} aria-label="Ulangi, sebutkan lagi yang terlihat">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4.5h4.5" />
+                </svg>
+                Ulangi
+              </button>
+              <button
+                className="sim-button sim-button--ai"
+                onClick={() => {
+                  navigator.vibrate?.(30);
+                  void describe();
+                }}
+                disabled={describing}
+                aria-label="Jelaskan, gambarkan sekitar dengan AI"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                {describing ? "Memproses…" : "Jelaskan"}
+              </button>
+            </div>
             <button className="btn" onClick={stop}>
-              Hentikan simulasi
+              Berhenti
             </button>
           </>
         )}
@@ -722,12 +708,6 @@ export default function SimulasiClient() {
           </SettingsField>
         </SettingsGroup>
 
-        <SettingsGroup
-          title="Jelaskan sekitar"
-          note="Foto dari kamera dikirim ke layanan AI saat tombol ditekan lama. Tidak perlu daftar atau mengisi apa pun."
-        >
-          <SettingsItem label="Tekan lama tombol I-Sora" sub={`Aktif pukul ${DESCRIBE_HOURS_LABEL}.`} />
-        </SettingsGroup>
 
         <SettingsGroup title="Yang terdengar">
           {log.length === 0 ? (

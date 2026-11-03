@@ -47,6 +47,12 @@ _SALT       = b"AuralAI-SDK::secure_keys::v1"
 # isn't a security regression versus the old scheme.
 _SEED_FILE = "/root/.isora_secure_seed"
 _MIN_SEED_LEN = 16
+# Where the AuralAI firmware kept the same seed. A unit moved from AuralAI to
+# I-Sora must ADOPT it rather than mint a new one: every *_api_key_enc in the
+# config.json it keeps — and the E2E private key the paired phone encrypts
+# to — is sealed under it, so a fresh seed silently loses all of them
+# (seen 2026-10-21 on aural-88dd: "E2E keypair unusable ... regenerating").
+_LEGACY_SEED_FILES = ("/root/.aural_secure_seed",)
 
 # Last-resort seed when _SEED_FILE cannot be persisted at all (read-only /root
 # after an fsck, ENOSPC, or running non-root). It MUST stay stable within the
@@ -56,14 +62,22 @@ _MIN_SEED_LEN = 16
 _fallback_seed = None
 
 
-def _read_seed() -> bytes:
+def _read_seed(path: str = None) -> bytes:
     """Return the persisted seed, or b"" if it is absent/short/unreadable."""
     try:
-        with open(_SEED_FILE, "rb") as f:
+        with open(path or _SEED_FILE, "rb") as f:
             data = f.read()
     except Exception:
         return b""
     return data if len(data) >= _MIN_SEED_LEN else b""
+
+
+def _legacy_seed() -> bytes:
+    for path in _LEGACY_SEED_FILES:
+        data = _read_seed(path)
+        if data:
+            return data
+    return b""
 
 
 def _stable_fallback_seed() -> bytes:
@@ -122,7 +136,7 @@ def _machine_seed() -> bytes:
     if existing:
         return existing
 
-    seed = secrets.token_bytes(32)
+    seed = _legacy_seed() or secrets.token_bytes(32)
     try:
         fd = os.open(_SEED_FILE, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         with os.fdopen(fd, "wb") as f:

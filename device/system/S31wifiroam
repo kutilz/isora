@@ -1,0 +1,50 @@
+#!/bin/sh
+# I-Sora WiFi helpers. Installed to /etc/init.d/S31wifiroam by
+# `tools/run.py --autostart`; source of truth is device/system/S31wifiroam.
+#
+#   /etc/wifi_roam.sh   wpa_cli action script: new DHCP lease whenever
+#                       wpa_supplicant moves to a different access point.
+#   /etc/wifi_prefer.sh a few full scans after boot while not on the
+#                       highest-priority network.
+#
+# wpa_cli runs inside a respawn loop: it exits whenever wpa_supplicant goes
+# away (S30wifi restart, MaixPy Wifi.connect(), a manual restart), and a hook
+# that silently stopped would bring back "connected, old IP, no internet" with
+# nothing in the logs to say why.
+ROAM_PID=/run/wifi_roam_loop.pid
+PREFER_PID=/run/wifi_prefer.pid
+
+alive() { [ -f "$1" ] && kill -0 "$(cat "$1")" 2>/dev/null; }
+
+roam_loop() {
+    while :; do
+        wpa_cli -i wlan0 -a /etc/wifi_roam.sh
+        sleep 5
+    done
+}
+
+case "$1" in
+    start)
+        if ! alive $ROAM_PID; then
+            roam_loop </dev/null >/dev/null 2>&1 &
+            echo $! > $ROAM_PID
+        fi
+        if ! alive $PREFER_PID; then
+            /etc/wifi_prefer.sh </dev/null >/dev/null 2>&1 &
+            echo $! > $PREFER_PID
+        fi
+        ;;
+    stop)
+        for f in $ROAM_PID $PREFER_PID; do
+            alive $f && kill "$(cat $f)" 2>/dev/null
+            rm -f $f
+        done
+        # The loop's current wpa_cli child outlives its parent shell.
+        killall wpa_cli 2>/dev/null
+        ;;
+    restart)
+        "$0" stop
+        "$0" start
+        ;;
+esac
+exit 0

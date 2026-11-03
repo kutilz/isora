@@ -63,7 +63,8 @@ def main():
         from config import MODEL_PATH, CONF_THRESHOLD, IOU_THRESHOLD, INPUT_WIDTH, INPUT_HEIGHT
         from utils.health import _thermals, _meminfo
 
-        detector = nn.YOLO11(model=MODEL_PATH)
+        from utils.nn_compat import load_detector
+        detector, det_name = load_detector(MODEL_PATH)
         cam = camera.Camera(INPUT_WIDTH, INPUT_HEIGHT, mi.Format.FMT_RGB888)
         cam.open()
 

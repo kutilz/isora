@@ -17,8 +17,8 @@ Persisted in config:
     device_pubkey       — raw uncompressed point (0x04||X||Y), base64
     device_privkey_enc  — private scalar (hex), encrypted at rest via secure_keys
 
-Public API (unchanged): available(), ensure_keypair(cfg), public_key_b64(cfg),
-unseal(cfg, sealed).
+Public API: available(), ensure_keypair(cfg), keypair_status(cfg),
+public_key_b64(cfg), unseal(cfg, sealed).
 """
 
 import base64
@@ -107,10 +107,24 @@ def _pub_to_raw(Q) -> bytes:
     return b"\x04" + x.to_bytes(32, "big") + y.to_bytes(32, "big")
 
 
+_B = 0x5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B
+
+
+def _on_curve(x: int, y: int) -> bool:
+    return 0 <= x < _P and 0 <= y < _P and (y * y - (x * x * x + _A * x + _B)) % _P == 0
+
+
 def _raw_to_pub(b: bytes):
     if len(b) != 65 or b[0] != 4:
         raise ValueError("bad public point")
-    return (int.from_bytes(b[1:33], "big"), int.from_bytes(b[33:65], "big"))
+    x, y = int.from_bytes(b[1:33], "big"), int.from_bytes(b[33:65], "big")
+    # The doubling/addition formulas never use b, so a point off P-256 is
+    # silently multiplied on whatever weaker curve it does lie on. Fed such
+    # points, and told which decrypts succeed, a sender can recover the private
+    # key piece by piece (invalid-curve attack). Only points on the curve.
+    if not _on_curve(x, y):
+        raise ValueError("public point not on P-256")
+    return (x, y)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -281,8 +295,44 @@ def available() -> bool:
     return True   # pure Python — always available
 
 
+def keypair_status(cfg) -> str:
+    """"ok" | "missing" | "unusable" — can this device still USE its keypair?
+
+    "Both fields are present" is not the same question. The private half is
+    encrypted at rest with a device-derived key (see secure_keys), and that key
+    can change under the device's feet: a re-flash, a lost/rewritten seed file,
+    or the machine-id scheme this image used to depend on (secure_keys' header
+    documents a key that decrypted fine pre-reboot and returned "" after one).
+
+    When that happens the device keeps advertising a public key whose private
+    half it can no longer read. Every API key the web seals to it then fails to
+    open — the relay is fine, the phone says "terkirim", the device logs one
+    line nobody reads, and the person is left with an assistant that will never
+    describe anything. So this also re-derives the public key from the scalar:
+    a pair that does not match is just as unusable as one that will not open.
+    """
+    if not cfg.get("device_pubkey") or not cfg.get("device_privkey_enc"):
+        return "missing"
+    d = _load_scalar(cfg)
+    if not d or not (1 <= d < _N):
+        return "unusable"
+    try:
+        Q = _scalar_mult(d, _GX, _GY)
+        if Q is None:
+            return "unusable"
+        return "ok" if base64.b64encode(_pub_to_raw(Q)).decode() == public_key_b64(cfg) else "unusable"
+    except Exception:
+        return "unusable"
+
+
 def ensure_keypair(cfg) -> bool:
-    if cfg.get("device_pubkey") and cfg.get("device_privkey_enc"):
+    """Guarantee a usable keypair, regenerating an unusable one.
+
+    Nothing is lost by regenerating: the scalar only ever decrypts inbound
+    secrets, which are re-pushable, and the relay refreshes `pubkey` on the next
+    register() — which cloud.py runs immediately after this.
+    """
+    if keypair_status(cfg) == "ok":
         return True
     try:
         from utils.secure_keys import encrypt as enc_at_rest

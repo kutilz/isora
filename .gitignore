@@ -11,6 +11,7 @@ tools/.mock_device.json
 
 # ─── Model Files (besar, download manual dari MaixHub) ────────────────────────
 models/*.mud
+models/*.cvimodel
 models/*.onnx
 models/*.tflite
 models/*.pt

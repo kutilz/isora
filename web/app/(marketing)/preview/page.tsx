@@ -51,8 +51,8 @@ export default function PreviewPage() {
     <div className="container section">
       <h1 style={{ fontSize: "var(--t-2xl)", letterSpacing: "-.02em" }}>Coba suara I-Sora</h1>
       <p className="sub">
-        Dengarkan contoh suara yang akan kamu dengar dari perangkat — chime objek
-        dan sapaan — supaya kamu terbiasa sebelum mulai memakainya.
+        Dengarkan contoh suara dari perangkat — chime objek
+        dan sapaan — supaya terbiasa sebelum mulai memakainya.
       </p>
 
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
@@ -68,7 +68,7 @@ export default function PreviewPage() {
       <h2 style={{ marginTop: "var(--s-10)" }}>Chime objek (offline)</h2>
       <p className="sub">
         Chime ini berbunyi sepenuhnya tanpa internet. Posisi (kiri / tengah / kanan)
-        membantumu tahu arah objek.
+        membantu mengetahui arah objek.
       </p>
       <div className="audio-grid" style={{ marginTop: "var(--s-4)" }}>
         {CHIMES.map((s) => (

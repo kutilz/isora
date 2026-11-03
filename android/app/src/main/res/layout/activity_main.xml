@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingTop="20dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="32dp">
+
+        <TextView
+            style="@style/Isora.Title"
+            android:accessibilityHeading="true"
+            android:text="@string/app_name" />
+
+        <TextView
+            style="@style/Isora.Body.Muted"
+            android:text="@string/intro" />
+
+        <!-- Suara di HP -->
+        <LinearLayout style="@style/Isora.Card">
+
+            <TextView
+                style="@style/Isora.Heading"
+                android:accessibilityHeading="true"
+                android:text="@string/h_listen" />
+
+            <Button
+                android:id="@+id/listen"
+                style="@style/Isora.Button.Big"
+                android:text="@string/listen_start" />
+
+            <TextView
+                android:id="@+id/listenStatus"
+                style="@style/Isora.Status"
+                android:accessibilityLiveRegion="polite" />
+
+            <Button
+                android:id="@+id/openControl"
+                style="@style/Isora.Button"
+                android:text="@string/open_control" />
+
+            <TextView
+                style="@style/Isora.Label"
+                android:text="@string/h_speaker" />
+
+            <RadioGroup
+                android:id="@+id/muteGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <RadioButton
+                    android:id="@+id/muteOn"
+                    style="@style/Isora.Radio"
+                    android:text="@string/mute_on" />
+
+                <RadioButton
+                    android:id="@+id/muteOff"
+                    style="@style/Isora.Radio"
+                    android:text="@string/mute_off" />
+            </RadioGroup>
+
+            <TextView
+                style="@style/Isora.Label"
+                android:text="@string/h_caption" />
+
+            <TextView
+                android:id="@+id/caption"
+                style="@style/Isora.Caption"
+                android:text="@string/caption_none" />
+        </LinearLayout>
+
+        <!-- Earphone Bluetooth -->
+        <LinearLayout style="@style/Isora.Card">
+
+            <TextView
+                style="@style/Isora.Heading"
+                android:accessibilityHeading="true"
+                android:text="@string/h_earphone" />
+
+            <TextView
+                android:id="@+id/outputStatus"
+                style="@style/Isora.Status"
+                android:accessibilityLiveRegion="polite" />
+
+            <Button
+                android:id="@+id/btEnable"
+                style="@style/Isora.Button"
+                android:text="@string/bt_enable" />
+
+            <Button
+                android:id="@+id/btScan"
+                style="@style/Isora.Button"
+                android:text="@string/bt_scan" />
+
+            <TextView
+                style="@style/Isora.Body.Muted"
+                android:text="@string/bt_scan_hint" />
+
+            <TextView
+                android:id="@+id/btMessage"
+                style="@style/Isora.Body"
+                android:accessibilityLiveRegion="polite"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/btFound"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <TextView
+                android:id="@+id/btSavedLabel"
+                style="@style/Isora.Label"
+                android:text="@string/bt_saved"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/btSaved"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <Button
+                android:id="@+id/btSettings"
+                style="@style/Isora.Button.Secondary"
+                android:text="@string/bt_settings" />
+        </LinearLayout>
+
+        <!-- Kacamata -->
+        <LinearLayout style="@style/Isora.Card">
+
+            <TextView
+                style="@style/Isora.Heading"
+                android:accessibilityHeading="true"
+                android:text="@string/h_device" />
+
+            <TextView
+                android:id="@+id/deviceStatus"
+                style="@style/Isora.Status"
+                android:accessibilityLiveRegion="polite" />
+
+            <LinearLayout
+                android:id="@+id/deviceChoices"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <Button
+                android:id="@+id/findDevice"
+                style="@style/Isora.Button.Secondary"
+                android:text="@string/device_find" />
+
+            <Button
+                android:id="@+id/typeAddress"
+                style="@style/Isora.Button.Secondary"
+                android:text="@string/device_type" />
+        </LinearLayout>
+
+        <TextView
+            style="@style/Isora.Body.Muted"
+            android:layout_marginTop="20dp"
+            android:text="@string/footer" />
+    </LinearLayout>
+</ScrollView>

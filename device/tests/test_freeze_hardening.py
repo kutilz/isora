@@ -36,7 +36,7 @@ class _RecordingEngine:
     def __init__(self):
         self.calls = []
 
-    def reload_model(self):
+    def reload_model(self, *_model):
         self.calls.append(("reload", threading.current_thread().name))
 
     def release_model(self):
@@ -87,7 +87,7 @@ def test_engine_sync_happens_on_the_ai_loop_and_is_idempotent(orch):
 
 def test_engine_sync_survives_an_engine_that_raises(orch):
     class _Angry:
-        def reload_model(self):
+        def reload_model(self, *_model):
             raise RuntimeError("NPU busy")
 
         def release_model(self):

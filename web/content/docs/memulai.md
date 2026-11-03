@@ -1,7 +1,7 @@
 ---
 title: Memulai
 order: 1
-summary: Gambaran singkat I-Sora dan apa yang kamu butuhkan sebelum mulai.
+summary: Gambaran singkat I-Sora dan apa saja yang dibutuhkan sebelum mulai.
 ---
 
 # Memulai dengan I-Sora
@@ -11,7 +11,7 @@ pemandangan, dan membaca kode QRIS** — semuanya berbahasa Indonesia, lewat sua
 Perangkat ini dirancang untuk pengguna tunanetra, jadi semua interaksi inti bisa
 dilakukan tanpa melihat layar: cukup **suara dari speaker** dan **satu tombol**.
 
-## Yang kamu butuhkan
+## Yang dibutuhkan
 
 - Perangkat I-Sora (berbasis Sipeed MaixCAM).
 - Jaringan WiFi rumah (2,4 GHz).
@@ -30,5 +30,5 @@ dilakukan tanpa melihat layar: cukup **suara dari speaker** dan **satu tombol**.
    tambahkan lewat [aplikasi I-Sora](/app). Lihat [Menghubungkan perangkat](/docs/menghubungkan).
 4. **Atur layanan AI & suara** dari halaman web — pengaturan terdorong otomatis ke perangkat.
 
-Setelah terhubung, kamu bisa memantau dan mengatur perangkat kapan saja dari
+Setelah terhubung, perangkat bisa dipantau dan diatur kapan saja dari
 [aplikasi I-Sora](/app).

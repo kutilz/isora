@@ -104,7 +104,8 @@ def run(n_frames: int = TARGET_FRAMES, emit_cb=None) -> dict:
     # ── Init hardware ─────────────────────────────────────────────────────────
     try:
         emit("  Initialising camera + model...")
-        detector = nn.YOLO11(model=cfg.MODEL_PATH)
+        from utils.nn_compat import load_detector
+        detector, det_name = load_detector(cfg.MODEL_PATH)
         cam      = camera.Camera(cfg.INPUT_WIDTH, cfg.INPUT_HEIGHT, mi.Format.FMT_RGB888)
         cam.open()
         emit(f"  Camera: {cfg.INPUT_WIDTH}×{cfg.INPUT_HEIGHT}", "ok")
@@ -248,26 +249,40 @@ def _measure_audio_queue_latency(emit) -> float | None:
 
         pq = _q.PriorityQueue()
 
+        # The consumer must survive all 50 iterations. It used to `return` after
+        # the first sentinel, so iterations 2-50 only hit the 0.5s wait timeout
+        # while t_put kept advancing and t_pick stayed frozen — the average came
+        # out around -11800 ms, a measurement artefact reported as real latency.
         def _consumer():
-            while True:
-                _, _, item = pq.get(timeout=1.0)
+            while not stop.is_set():
+                try:
+                    _, _, item = pq.get(timeout=1.0)
+                except _q.Empty:
+                    continue
                 if item is SENTINEL:
                     t_pick[0] = time.perf_counter()
                     done.set()
-                    return
 
+        stop = _t.Event()
         _t.Thread(target=_consumer, daemon=True).start()
 
         # Measure queue latency over 50 iterations
         deltas = []
-        for _ in range(50):
+        for i in range(50):
             t_put[0] = time.perf_counter()
-            pq.put((0, 0, SENTINEL))
-            done.wait(timeout=0.5)
+            # Second field is a unique counter: PriorityQueue falls through to it
+            # on a tie, and comparing two bare object()s would raise.
+            pq.put((0, i, SENTINEL))
+            if not done.wait(timeout=0.5):
+                continue            # missed pick — do not record a bogus delta
             done.clear()
             delta_ms = (t_pick[0] - t_put[0]) * 1000
             deltas.append(delta_ms)
             time.sleep(0.001)
+
+        stop.set()
+        if not deltas:
+            return None
 
         avg_delta = round(sum(deltas) / len(deltas), 3)
         emit(f"  Audio queue-to-consume avg: {avg_delta} ms (50 iterations)")

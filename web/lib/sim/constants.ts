@@ -27,7 +27,12 @@ export const NAV_OBJECTS: Record<string, string> = {
   backpack: "ransel",
 };
 
-export const RELEVANT_LABELS = new Set(Object.keys(NAV_OBJECTS));
+/** Detected but never announced. Mirrors config.MUTED_NAV_LABELS. */
+const MUTED_NAV_LABELS = new Set(["dog", "cat"]);
+
+export const RELEVANT_LABELS = new Set(
+  Object.keys(NAV_OBJECTS).filter((label) => !MUTED_NAV_LABELS.has(label)),
+);
 
 /** Indonesian 3×3 grid cell → English position key. Mirrors _POS_KEY. */
 export const POS_KEY: Record<string, string> = {
